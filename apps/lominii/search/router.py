@@ -1,4 +1,5 @@
 """LOMINII Search Room – Unified Search Router"""
+import asyncio
 import hashlib
 import httpx
 from fastapi import APIRouter, Request, HTTPException, Depends
