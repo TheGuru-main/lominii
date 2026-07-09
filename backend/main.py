@@ -5,11 +5,11 @@ Gurutech Platform Architecture – Shared Platform, Independent Modules
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from apps.lominii.admin.router import router as admin_router
-app.include_router(admin_router)
+
 # ── Import application routers ──────────────────────────
 from apps.lominii.search.router import router as search_router
-
+from apps.lominii.admin.router import router as admin_router
+app.include_router(admin_router)
 app = FastAPI(title="LOMINII Platform", version="1.0.0")
 
 # CORS – allow requests from any frontend
