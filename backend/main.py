@@ -6,8 +6,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# We will import these as soon as we create the platform files
-# from platform.database import engine, Base
+# ── Import application routers ──────────────────────────
+from apps.lominii.search.router import router as search_router
 
 app = FastAPI(title="LOMINII Platform", version="1.0.0")
 
@@ -20,14 +20,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static files (we'll add the frontend later)
-# app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# ── Mount application routes ────────────────────────────
+app.include_router(search_router)
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": "LOMINII"}
 
-# For local development
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
