@@ -364,6 +364,8 @@ CREATE TABLE crawler.pages (
     gsp_cell VARCHAR(10),
     title TEXT,
     content TEXT,
+    out_links JSONB DEFAULT '[]',
+    pagerank FLOAT DEFAULT 0.0,
     last_crawled TIMESTAMPTZ DEFAULT NOW()
 );
 
