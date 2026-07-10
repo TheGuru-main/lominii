@@ -4,7 +4,12 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from platform.auth import verify_password, get_password_hash, create_access_token
-from platform.bubblejumbo import create_token as create_bjt
+from platform.bubblejumbo import (
+    create_token as create_bjt,
+    record_failure,
+    reset_failures,
+    get_required_copies
+)
 from platform.content_filter import is_blocked
 from platform.database import get_db
 from platform.models import User
@@ -52,12 +57,12 @@ async def signup(request: Request, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.commit()
 
-    # Issue token
-    token = create_bjt(full_name)   # BubbleJumbo token with GSP cell
+    # Issue token (normal K=5, no failures yet)
+    token = create_bjt(full_name)
     return {"access_token": token, "token_type": "bearer", "email": email}
 
 # ---------------------------------------------------------------------------
-# Email + Password Login
+# Email + Password Login (with dynamic K‑escalation)
 # ---------------------------------------------------------------------------
 @router.post("/login")
 async def login(request: Request, db: AsyncSession = Depends(get_db)):
@@ -69,10 +74,20 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email and password required")
 
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if not user or not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_bjt(user.full_name)
+    # Check credentials
+    if not user or not verify_password(password, user.password_hash):
+        fails = record_failure(email)
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid credentials. Warning: account security increased after 5 failures. (Attempt {fails})"
+        )
+
+    # Successful login – reset failure counter and issue token with dynamic K
+    reset_failures(email)
+    copies = get_required_copies(email)   # normally 5, higher after an attack
+    token = create_bjt(user.full_name, copies=copies)
+
     return {"access_token": token, "token_type": "bearer", "email": email}
 
 # ---------------------------------------------------------------------------
