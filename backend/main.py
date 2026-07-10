@@ -12,8 +12,10 @@ from apps.lominii.admin.router import router as admin_router
 from apps.lominii.auth.router import router as auth_router
 from apps.lominii.social.router import router as social_router
 
-app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(search_router)
+app.include_router(social_router)
+app.include_router(auth_router)
 app = FastAPI(title="LOMINII Platform", version="1.0.0")
 
 # CORS – allow requests from any frontend
