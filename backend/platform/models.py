@@ -420,3 +420,13 @@ class CrawlerPage(Base):
     out_links = Column(JSONB, default=[])
     pagerank = Column(Float, default=0.0)
     last_crawled = Column(DateTime, server_default="now()")
+
+class OTP(Base):
+    __tablename__ = "otps"
+    __table_args__ = {"schema": "public"}
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    phone = Column(String(20), nullable=False)
+    code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default="now()")
