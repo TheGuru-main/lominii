@@ -1,7 +1,8 @@
-"""LOMINII Search Room – Unified Search Router (Real DB + GSG)"""
+"""LOMINII Search Room – Unified Search Router (Real DB + GSG + Cache)"""
 import asyncio
 import hashlib
 import httpx
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -11,9 +12,20 @@ from platform.content_filter import is_blocked, is_ai_blocked
 from platform.auth import get_current_user
 from platform.database import get_db
 from platform.gsg import gps_to_gsg
-from models import User, Search   # ← real models
+from platform.intent_analyzer import analyze
+from models import User, Search, SearchCache   # ← added SearchCache
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
+
+# Cache TTLs (in minutes)
+CACHE_TTL_ANONYMOUS = 5
+CACHE_TTL_AUTHENTICATED = 30
+
+
+def build_cache_key(query: str, lang: str, domain: str) -> str:
+    """Create a deterministic cache key from the search parameters."""
+    raw = f"{query}|{lang}|{domain}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
 @router.post("/")
@@ -31,20 +43,31 @@ async def unified_search(
     if is_blocked(query):
         raise HTTPException(status_code=400, detail="Blocked query")
 
-    # 2. Real user context from database
+    # 2. User context
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if user is None:
-        # fallback for guests (should not happen with auth)
-        lang, country, tier = "en", "Nigeria", "free"
-    else:
-        lang = user.language or "en"
-        country = "Nigeria"          # you can add a country column later
-        tier = user.subscription_status or "free"
+    lang = user.language if user and user.language else "en"
+    country = "Nigeria"   # can be extended
+    tier = user.subscription_status if user else "free"
 
-    # 3. Normalisation (language‑aware)
+    # 3. Normalisation
     norm_query = normalise(query, lang)
 
-    # 4. GSP placement (word‑based)
+    # 4. Intent / domain
+    ctx = analyze(norm_query)
+    domain = ctx["domain"]
+
+    # 5. Cache key & lookup
+    cache_key = build_cache_key(norm_query, lang, domain)
+    cached = (await db.execute(
+        select(SearchCache).where(SearchCache.cache_key == cache_key)
+    )).scalar_one_or_none()
+
+    ttl = CACHE_TTL_AUTHENTICATED if user else CACHE_TTL_ANONYMOUS
+    if cached and (datetime.utcnow() - cached.cached_at) < timedelta(minutes=ttl):
+        # Serve from cache
+        return cached.result
+
+    # 6. GSP placement (word‑based)
     L = calculate_lsum(norm_query, lang)
     S = calculate_ssum(norm_query, lang)
     c = first_letter_index(norm_query, lang)
@@ -52,7 +75,7 @@ async def unified_search(
     cloud = elastic_cloud(L, S, c, radius=1, first_letter_radius=1)
     primary = gsp["primary_cell"]
 
-    # 5. GSG cell (location‑aware, additive)
+    # 7. GSG cell (location‑aware, additive)
     gsg_data = None
     lat = data.get("lat")
     lon = data.get("lon")
@@ -67,7 +90,7 @@ async def unified_search(
         except Exception:
             gsg_data = None
 
-    # 6. Fetch external sources (parallel)
+    # 8. Fetch external sources (parallel)
     async with httpx.AsyncClient() as client:
         dict_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{norm_query}"
         news_url = f"https://gnews.io/api/v4/search?q={norm_query}&lang=en&max=6&apikey=demo"
@@ -85,25 +108,15 @@ async def unified_search(
         news_data = news_resp.json()
         news_articles = [{"title": a["title"], "url": a["url"]} for a in news_data.get("articles", [])[:6]]
 
-    # 7. AI Summary (if not blocked)
+    # 9. AI Summary (if not blocked)
     ai_summary = None
     if not is_ai_blocked(query):
         prompt_template = get_prompt(tier)
         sources = f"Dictionary: {definition or 'None'}\nNews: {news_articles}"
         prompt = prompt_template.format(query=norm_query, sources=sources, country=country, language=lang)
-        ai_summary = prompt   # replace with real AI call later
+        ai_summary = prompt   # placeholder until real AI call
 
-    # 8. Persist search in database
-    if user is not None:
-        new_search = Search(
-            user_id=user.id,
-            query=query,
-            gsp_cell=f"{primary['col']},{primary['row']}"
-        )
-        db.add(new_search)
-        await db.commit()
-
-    # 9. Build response
+    # 10. Build response
     response = {
         "query": query,
         "Lsum": L,
@@ -119,4 +132,21 @@ async def unified_search(
         "related_questions": [],
         "gsg_cell": gsg_data
     }
+
+    # 11. Persist search and update cache
+    if user:
+        new_search = Search(user_id=user.id, query=query,
+                            gsp_cell=f"{primary['col']},{primary['row']}")
+        db.add(new_search)
+
+    # Update or create cache entry
+    if cached:
+        cached.result = response
+        cached.cached_at = datetime.utcnow()
+    else:
+        cache_entry = SearchCache(cache_key=cache_key, result=response,
+                                  cached_at=datetime.utcnow())
+        db.add(cache_entry)
+    await db.commit()
+
     return response
