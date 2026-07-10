@@ -135,47 +135,5 @@ async def google_auth(request: Request, db: AsyncSession = Depends(get_db)):
     token = create_bjt(user.full_name)
     return {"access_token": token, "token_type": "bearer", "email": user.email}
 
-# ---------------------------------------------------------------------------
-# Phone OTP – Request
-# ---------------------------------------------------------------------------
-@router.post("/phone/request")
-async def phone_request(request: Request):
-    data = await request.json()
-    phone = data.get("phone", "").strip()
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number required")
-    # In production, generate OTP, send via SMS, store temporarily.
-    # For now, return a static OTP for testing.
-    return {"message": "OTP sent", "otp": "123456"}   # demo only
+# 
 
-# ---------------------------------------------------------------------------
-# Phone OTP – Verify
-# ---------------------------------------------------------------------------
-@router.post("/phone/verify")
-async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
-    data = await request.json()
-    phone = data.get("phone", "").strip()
-    otp = data.get("otp", "").strip()
-    full_name = data.get("full_name", "").strip()
-
-    if not phone or not otp or not full_name:
-        raise HTTPException(status_code=400, detail="Missing fields")
-
-    # In production, verify OTP against stored value.
-    if otp != "123456":   # demo check
-        raise HTTPException(status_code=400, detail="Invalid OTP")
-
-    # Find or create user by phone
-    user = (await db.execute(select(User).where(User.phone == phone))).scalar_one_or_none()
-    if not user:
-        user = User(
-            email=f"{phone}@lominii.local",   # temporary email
-            full_name=full_name,
-            phone=phone,
-            password_hash=""
-        )
-        db.add(user)
-        await db.commit()
-
-    token = create_bjt(full_name)
-    return {"access_token": token, "token_type": "bearer", "phone": phone}
