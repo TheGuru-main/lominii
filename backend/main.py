@@ -9,6 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 # ── Import application routers ──────────────────────────
 from apps.lominii.search.router import router as search_router
 from apps.lominii.admin.router import router as admin_router
+from apps.lominii.auth.router import router as auth_router
+from apps.lominii.social.router import router as social_router
+
+app.include_router(auth_router)
 app.include_router(admin_router)
 app = FastAPI(title="LOMINII Platform", version="1.0.0")
 
