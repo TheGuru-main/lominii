@@ -14,6 +14,9 @@ from platform.content_filter import is_blocked
 from platform.database import get_db
 from platform.models import User
 import re
+from platform.otp_service import generate_otp, send_otp
+from platform.models import OTP
+from sqlalchemy import delete as sql_delete
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -135,5 +138,78 @@ async def google_auth(request: Request, db: AsyncSession = Depends(get_db)):
     token = create_bjt(user.full_name)
     return {"access_token": token, "token_type": "bearer", "email": user.email}
 
-# 
+# ---------------------------------------------------------------------------
+# Phone OTP – Request
+# ---------------------------------------------------------------------------
+@router.post("/phone/request")
+async def phone_request(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    phone = data.get("phone", "").strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number required")
 
+    # 1. Generate OTP and expiry (5 minutes)
+    otp_code = generate_otp()
+    expires = datetime.utcnow() + timedelta(minutes=5)
+
+    # 2. Save OTP in database
+    otp_entry = OTP(phone=phone, code=otp_code, expires_at=expires)
+    db.add(otp_entry)
+    await db.commit()
+
+    # 3. Send via Africa's Talking
+    success = await send_otp(phone, otp_code)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
+
+    return {"message": "OTP sent successfully"}
+
+
+# ---------------------------------------------------------------------------
+# Phone OTP – Verify
+# ---------------------------------------------------------------------------
+@router.post("/phone/verify")
+async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    phone = data.get("phone", "").strip()
+    otp_input = data.get("otp", "").strip()
+    full_name = data.get("full_name", "").strip()
+
+    if not phone or not otp_input or not full_name:
+        raise HTTPException(status_code=400, detail="Missing fields")
+
+    # 1. Find the most recent unused OTP for this phone
+    otp_record = (await db.execute(
+        select(OTP).where(OTP.phone == phone, OTP.verified == False)
+        .order_by(OTP.created_at.desc()).limit(1)
+    )).scalar_one_or_none()
+
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="No OTP requested for this number")
+
+    # 2. Check expiry
+    if datetime.utcnow() > otp_record.expires_at:
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+
+    # 3. Verify code
+    if otp_record.code != otp_input:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    # 4. Mark OTP as used
+    otp_record.verified = True
+    await db.commit()
+
+    # 5. Find or create user by phone
+    user = (await db.execute(select(User).where(User.phone == phone))).scalar_one_or_none()
+    if not user:
+        user = User(
+            email=f"{phone}@lominii.local",
+            full_name=full_name,
+            phone=phone,
+            password_hash=""
+        )
+        db.add(user)
+        await db.commit()
+
+    token = create_bjt(full_name)
+    return {"access_token": token, "token_type": "bearer", "phone": phone}
