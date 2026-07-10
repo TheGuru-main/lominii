@@ -1,3 +1,31 @@
+/* ---------- Multi‑API failover configuration ---------- */
+const API_URLS = [
+  "https://lominii-api.onrender.com",    // Primary (Render)
+  "https://lominii-api.fly.dev"          // Secondary (Fly.io)
+];
+
+/**
+ * Fetch wrapper that tries each API URL in order.
+ * Returns the response from the first successful call.
+ * Throws an error if all URLs fail.
+ */
+async function apiFetch(path, options = {}) {
+  for (const baseUrl of API_URLS) {
+    try {
+      const url = `${baseUrl}${path}`;
+      const response = await fetch(url, options);
+      if (response.ok) {
+        return response;
+      }
+      // If response is not ok (e.g., 500), try the next URL
+    } catch (error) {
+      // Network error, try the next URL
+      continue;
+    }
+  }
+  throw new Error("All API servers are unreachable");
+}
+
 /* ---------- Interactive particle network ---------- */
 const canvas = document.getElementById('particleCanvas');
 const ctx = canvas.getContext('2d');
@@ -85,7 +113,7 @@ function draw() {
 }
 draw();
 
-/* ---------- Navigation stubs ---------- */
+/* ---------- Navigation stubs (to be replaced with real routing) ---------- */
 function navigate(path) {
   alert(`Navigate to ${path}`);
 }
