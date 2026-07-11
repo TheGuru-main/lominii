@@ -1,20 +1,21 @@
-"""LOMINII Social Room – Router (and lomiNews acess)"""
+"""LOMINII Social Room – Router (with lomiNews feed & subscriptions)"""
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, text
 from platform.database import get_db
 from platform.auth import get_current_user
 from platform.content_filter import is_blocked
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
-from platform.models import User, Message, Follow, Post, Comment
+from platform.models import (
+    User, Message, Follow, Post, Comment, NewsSubscription
+)
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
 
 # ═══════════════════════════════════════════════════════════
 # MESSAGING (unchanged)
 # ═══════════════════════════════════════════════════════════
-
 @router.post("/messages/send")
 async def send_message(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
@@ -68,7 +69,6 @@ async def delete_message(message_id: str, email: str = Depends(get_current_user)
 # ═══════════════════════════════════════════════════════════
 # FOLLOWS (unchanged)
 # ═══════════════════════════════════════════════════════════
-
 @router.post("/follow")
 async def follow_user(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
@@ -111,7 +111,6 @@ async def unfollow_user(request: Request, email: str = Depends(get_current_user)
 # ═══════════════════════════════════════════════════════════
 # POSTS & COMMENTS (unchanged)
 # ═══════════════════════════════════════════════════════════
-
 @router.post("/post")
 async def create_post(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
@@ -143,17 +142,133 @@ async def add_comment(request: Request, email: str = Depends(get_current_user), 
     return {"comment_id": str(comment.id), "created_at": comment.created_at.isoformat()}
 
 # ═══════════════════════════════════════════════════════════
-# lomiNews FEED (NEW)
+# NEWSLETTER SUBSCRIPTIONS (NEW)
 # ═══════════════════════════════════════════════════════════
+@router.post("/news/subscribe")
+async def subscribe_category(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    category = data.get("category", "").strip().lower()
+    if not category:
+        raise HTTPException(status_code=400, detail="Missing category")
 
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if already subscribed
+    existing = (await db.execute(
+        select(NewsSubscription).where(
+            NewsSubscription.user_id == user.id,
+            NewsSubscription.category == category
+        )
+    )).scalar_one_or_none()
+    if existing:
+        return {"status": "already_subscribed"}
+
+    sub = NewsSubscription(user_id=user.id, category=category)
+    db.add(sub)
+    await db.commit()
+    return {"status": "subscribed"}
+
+@router.delete("/news/subscribe")
+async def unsubscribe_category(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    category = data.get("category", "").strip().lower()
+    if not category:
+        raise HTTPException(status_code=400, detail="Missing category")
+
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    sub = (await db.execute(
+        select(NewsSubscription).where(
+            NewsSubscription.user_id == user.id,
+            NewsSubscription.category == category
+        )
+    )).scalar_one_or_none()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Not subscribed")
+
+    await db.delete(sub)
+    await db.commit()
+    return {"status": "unsubscribed"}
+
+@router.get("/news/subscriptions")
+async def my_subscriptions(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    subs = (await db.execute(
+        select(NewsSubscription).where(NewsSubscription.user_id == user.id)
+    )).scalars().all()
+    return [s.category for s in subs]
+
+# ═══════════════════════════════════════════════════════════
+# lomiNews FEED (ENHANCED – followed + subscriptions)
+# ═══════════════════════════════════════════════════════════
 @router.get("/news")
-async def news_feed(category: str = None, country: str = None, db: AsyncSession = Depends(get_db)):
-    """Return posts from newscasters, optionally filtered by category."""
-    query = select(Post).join(User, Post.author_id == User.id).where(User.creator_role == "newscaster")
+async def news_feed(
+    request: Request,
+    email: str = Depends(get_current_user),
+    category: str = None,
+    country: str = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Personalized news feed:
+    - Posts from newscasters the user follows
+    - Posts from newscasters in categories the user subscribes to
+    Optional category filter overrides personalization.
+    """
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # If a specific category is requested, just return that category's posts
     if category:
-        query = query.where(User.news_category == category)
-    query = query.order_by(Post.created_at.desc()).limit(50)
+        query = select(Post).join(User, Post.author_id == User.id).where(
+            User.creator_role == "newscaster",
+            User.news_category == category
+        ).order_by(Post.created_at.desc()).limit(50)
+        posts = (await db.execute(query)).scalars().all()
+        return [{"id": str(p.id), "content": p.content, "author_id": str(p.author_id),
+                 "created_at": p.created_at.isoformat()} for p in posts]
+
+    # 1. Find newscasters the user follows
+    followed_query = select(Follow.followee_id).where(Follow.follower_id == user.id)
+    followed_newscasters = (await db.execute(
+        select(User.id).where(
+            User.id.in_(followed_query),
+            User.creator_role == "newscaster"
+        )
+    )).scalars().all()
+
+    # 2. Find categories the user subscribes to
+    subscribed_categories = (await db.execute(
+        select(NewsSubscription.category).where(NewsSubscription.user_id == user.id)
+    )).scalars().all()
+
+    # Build the final query: posts from followed newscasters OR from newscasters in subscribed categories
+    conditions = []
+    if followed_newscasters:
+        conditions.append(Post.author_id.in_(followed_newscasters))
+    if subscribed_categories:
+        conditions.append(
+            Post.author_id.in_(
+                select(User.id).where(
+                    User.creator_role == "newscaster",
+                    User.news_category.in_(subscribed_categories)
+                )
+            )
+        )
+
+    if not conditions:
+        return []   # no personalized feed yet
+
+    query = select(Post).where(or_(*conditions)).order_by(Post.created_at.desc()).limit(50)
     posts = (await db.execute(query)).scalars().all()
+
     return [
         {
             "id": str(p.id),
