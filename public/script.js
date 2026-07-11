@@ -1,11 +1,134 @@
 /* ===== MULTI‑API FAILOVER ===== */
-const API_URLS = ["https://lominii-api.onrender.com", "https://lominii-api.fly.dev"];
+const API_URLS = [
+  "https://lominii-api.onrender.com",   // (← replace with your actual ngrok URL)
+
+  "https://lominii-api.fly.dev"
+];
+
+let authToken = localStorage.getItem('lominii_token') || '';
+
 async function apiFetch(path, options = {}) {
+  // Add auth header if token exists
+  if (authToken) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${authToken}`
+    };
+  }
   for (const baseUrl of API_URLS) {
-    try { const url = `${baseUrl}${path}`; const r = await fetch(url, options); if (r.ok) return r; } catch (e) { continue; }
+    try {
+      const url = `${baseUrl}${path}`;
+      const response = await fetch(url, options);
+      if (response.ok) return response;
+    } catch (error) {
+      continue;
+    }
   }
   throw new Error("All API servers are unreachable");
 }
+
+/* ===== GUEST LOGIN (for testing without registration) ===== */
+async function loginAsGuest() {
+  try {
+    const resp = await apiFetch('/auth/guest', { method: 'POST' });
+    const data = await resp.json();
+    authToken = data.access_token;
+    localStorage.setItem('lominii_token', authToken);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ===== FRIENDS FEED ===== */
+async function loadFriendsFeed() {
+  const feedContainer = document.getElementById('friendsFeed');
+  feedContainer.innerHTML = '<div class="placeholder">Loading…</div>';
+  try {
+    const resp = await apiFetch('/api/social/feed');
+    const posts = await resp.json();
+    if (posts.length === 0) {
+      feedContainer.innerHTML = '<div class="placeholder">Follow some people to see their posts here.</div>';
+      return;
+    }
+    feedContainer.innerHTML = posts.map(p => `
+      <div class="card">
+        <div class="post-author">User ${p.author_id.slice(0,8)}</div>
+        <p>${p.content}</p>
+        <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    feedContainer.innerHTML = '<div class="placeholder">Could not load feed. Is the server running?</div>';
+  }
+}
+
+/* ===== lomiNews FEED ===== */
+async function loadNewsFeed() {
+  const feedContainer = document.getElementById('newsFeed');
+  feedContainer.innerHTML = '<div class="placeholder">Loading…</div>';
+  try {
+    const resp = await apiFetch('/api/social/news');
+    const posts = await resp.json();
+    if (posts.length === 0) {
+      feedContainer.innerHTML = '<div class="placeholder">No news yet. Subscribe to categories or follow newscasters.</div>';
+      return;
+    }
+    feedContainer.innerHTML = posts.map(p => `
+      <div class="card">
+        <div class="post-author">User ${p.author_id.slice(0,8)} <span class="badge-newscaster">Newscaster</span></div>
+        <p>${p.content}</p>
+        <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    feedContainer.innerHTML = '<div class="placeholder">Could not load news. Is the server running?</div>';
+  }
+}
+
+/* ===== SOCIAL TAB SWITCHING (loads data on demand) ===== */
+function switchSocialTab(tab) {
+  const friendsFeed = document.getElementById('friendsFeed');
+  const newsFeed = document.getElementById('newsFeed');
+  const tabFriends = document.getElementById('tabFriends');
+  const tabNews = document.getElementById('tabNews');
+
+  if (tab === 'friends') {
+    friendsFeed.style.display = 'block';
+    newsFeed.style.display = 'none';
+    tabFriends.classList.add('active');
+    tabNews.classList.remove('active');
+    loadFriendsFeed();   // ← fetch real data
+  } else {
+    friendsFeed.style.display = 'none';
+    newsFeed.style.display = 'block';
+    tabFriends.classList.remove('active');
+    tabNews.classList.add('active');
+    loadNewsFeed();      // ← fetch real data
+  }
+}
+
+/* ===== CATEGORY SUBSCRIPTION ===== */
+async function subscribeCategory(category) {
+  try {
+    const response = await apiFetch('/api/social/news/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: category })
+    });
+    if (response.ok) {
+      alert(`Subscribed to ${category} news!`);
+      loadNewsFeed();  // refresh
+    } else {
+      const err = await response.json();
+      alert(err.detail || 'Subscription failed');
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+  }
+}
+
+//
 
 /* ===== PARTICLE NETWORK ===== */
 const canvas = document.getElementById('particleCanvas');
