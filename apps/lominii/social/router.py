@@ -142,6 +142,13 @@ async def add_comment(request: Request, email: str = Depends(get_current_user), 
     await db.commit()
     return {"comment_id": str(comment.id), "created_at": comment.created_at.isoformat()}
 
+# inside create_post
+post = Post(
+    author_id=author.id,
+    content=content,
+    nsid=NSID.SOCIAL
+)
+
 # ═══════════════════════════════════════════════════════════
 # NEWSLETTER SUBSCRIPTIONS (NEW)
 # ═══════════════════════════════════════════════════════════
@@ -244,13 +251,6 @@ async def news_feed(
             User.creator_role == "newscaster"
         )
     )).scalars().all()
-
-# inside create_post
-post = Post(
-    author_id=author.id,
-    content=content,
-    nsid=NSID.SOCIAL
-)
 
     # 2. Find categories the user subscribes to
     subscribed_categories = (await db.execute(
