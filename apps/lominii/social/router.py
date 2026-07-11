@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, text
 from platform.database import get_db
+from platform.nsid import NSID
 from platform.auth import get_current_user
 from platform.content_filter import is_blocked
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
@@ -243,6 +244,13 @@ async def news_feed(
             User.creator_role == "newscaster"
         )
     )).scalars().all()
+
+# inside create_post
+post = Post(
+    author_id=author.id,
+    content=content,
+    nsid=NSID.SOCIAL
+)
 
     # 2. Find categories the user subscribes to
     subscribed_categories = (await db.execute(
