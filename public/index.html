@@ -9,63 +9,53 @@
 </head>
 <body>
 
-  <!-- Particle canvas (used only on landing page) -->
   <canvas id="particleCanvas"></canvas>
 
-  <!-- ========== LANDING PAGE ========== -->
-  <div class="landing-container">
+  <!-- LANDING PAGE -->
+  <div id="landingView">
+    <div class="landing-container">
+      <div class="landing-container">
     <div class="logo-icon">♾️</div>
     <h1>WELCOME TO LOMINII</h1>
     <p class="tagline">Your social, adaptive, collaborative, informative, and educational search engine🔍🌍</p>
 <p class="tagline" Stay enlightened. Stay updated </p>
-
     <p class="sub-tagline">🔍 Browse – 📚 Learn – 👥 Connect – 🎮 Fun.</p>
-
       <button class="btn btn-primary" id="btnSignup">Create account</button>
       <button class="btn btn-outline" id="btnExplore">Explore free</button>
       <button class="btn btn-ghost" id="btnLogin">I already have an account</button>
-
       <p class="footer-note">Powered by GURUTECH</p>
     </div>
   </div>
 
-  <!-- ========== DASHBOARD ========== -->
+  <!-- DASHBOARD -->
   <div id="dashboardView" style="display: none;">
-    <!-- Header -->
     <header class="header">
-      <a class="logo" href="#">
-        <span class="logo-icon">🔲</span>
-        <span>LOMINII</span>
-      </a>
+      <a class="logo" href="#"><span class="logo-icon">🔲</span><span>LOMINII</span></a>
       <div class="user-icon" id="userIcon">A
         <div class="dropdown" id="userDropdown">
-          <a href="#">Profile & Settings</a>
+          <a href="#" id="btnProfile">My Profile</a>
           <a href="#">Privacy & Consent</a>
           <a href="#">Premium Status</a>
           <a href="#">Language & Preferences</a>
-          <a href="#">Logout</a>
+          <a href="#" id="btnLogout">Logout</a>
         </div>
       </div>
     </header>
 
-    <!-- Main Content Area -->
     <div class="main-content" id="mainContent">
-
-      <!-- SEARCH HOME (visible by default) -->
+      <!-- SEARCH HOME -->
       <div id="homeView">
         <div class="search-section">
           <input type="text" class="search-input" placeholder="Search anything…" id="searchInput">
           <button class="btn" id="btnSearch">Search</button>
         </div>
         <div id="searchResults" class="search-results"></div>
-
         <div class="card-grid">
-          <div class="card" onclick="alert('Trending')"><div class="icon">🔥</div><h3>Trending</h3><p>What's hot right now</p></div>
-          <div class="card" onclick="alert('News')"><div class="icon">📰</div><h3>News</h3><p>Latest headlines</p></div>
-          <div class="card" onclick="alert('Map')"><div class="icon">🗺️</div><h3>Map</h3><p>Your location</p></div>
-          <div class="card" onclick="alert('Prayer Times')"><div class="icon">🕌</div><h3>Prayer Times</h3><p>Daily schedule</p></div>
+          <div class="card"><div class="icon">🔥</div><h3>Trending</h3></div>
+          <div class="card"><div class="icon">📰</div><h3>News</h3></div>
+          <div class="card"><div class="icon">🗺️</div><h3>Map</h3></div>
+          <div class="card"><div class="icon">🕌</div><h3>Prayer Times</h3></div>
         </div>
-
         <div class="game-carousel">
           <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
           <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
@@ -75,7 +65,6 @@
           <div class="game-card coming-soon"><div class="icon">🔫</div><h4>Sniper</h4><span class="cs-badge">Soon</span></div>
           <div class="game-card coming-soon"><div class="icon">🧩</div><h4>Edu Arcade</h4><span class="cs-badge">Soon</span></div>
         </div>
-
         <div class="placeholder">📰 Latest News (loading…)</div>
       </div>
 
@@ -94,51 +83,34 @@
         <div class="placeholder">More games coming soon!</div>
       </div>
 
-      <!-- SOCIAL WORKSPACE (updated) -->
+      <!-- SOCIAL WORKSPACE -->
       <div id="socialView" style="display: none;">
-        <h2>👥 Social</h2>
-        <!-- Sub‑tabs: Feed, Friends, Messages, lomiNews -->
-        <div class="sub-tabs">
-          <button class="sub-tab active" data-subtab="feed">Feed</button>
-          <button class="sub-tab" data-subtab="friends">Friends</button>
-          <button class="sub-tab" data-subtab="messages">Messages</button>
-          <button class="sub-tab" data-subtab="news">lomiNews</button>
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn" id="btnShowFeed">Friends</button>
+          <button class="btn btn-outline" id="btnShowNews">News</button>
+          <button class="btn btn-outline" id="btnShowChat">Chat</button>
         </div>
-
-        <!-- Feed Sub‑tab -->
-        <div id="feedSubtab" class="sub-content active">
-          <div id="feedContainer" class="feed-list">
-            <div class="placeholder">Loading your feed…</div>
-          </div>
+        <!-- Post creation -->
+        <div id="postBox" style="display:none;">
+          <textarea id="postContent" rows="2" placeholder="What's on your mind?"></textarea>
+          <button class="btn" id="btnPost">Post</button>
         </div>
-
-        <!-- Friends Sub‑tab -->
-        <div id="friendsSubtab" class="sub-content" style="display:none;">
-          <div id="friendsList" class="friends-list">
-            <div class="placeholder">Your friends will appear here.</div>
-          </div>
+        <!-- Feed / News / Chat containers -->
+        <div id="feedContainer"></div>
+        <div id="newsContainer" style="display:none;"></div>
+        <div id="chatContainer" style="display:none;">
+          <div id="chatMessages" style="max-height:300px; overflow-y:auto; border:1px solid #d0dce4; padding:0.5rem; border-radius:8px; margin-bottom:1rem;"></div>
+          <input type="text" id="chatRecipient" placeholder="Recipient UID" style="margin-bottom:0.5rem;">
+          <input type="text" id="chatInput" placeholder="Type a message…">
+          <button class="btn" id="btnChatSend">Send</button>
         </div>
-
-        <!-- Messages Sub‑tab -->
-        <div id="messagesSubtab" class="sub-content" style="display:none;">
-          <div class="msg-layout">
-            <div id="conversationList" class="conv-list">
-              <div class="placeholder">No conversations yet.</div>
-            </div>
-            <div id="chatWindow" class="chat-window" style="display:none;">
-              <div id="chatMessages" class="chat-messages"></div>
-              <div class="chat-input-area">
-                <input type="text" id="chatInput" placeholder="Type a message…">
-                <button id="sendChatBtn">Send</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- lomiNews Sub‑tab -->
-        <div id="newsSubtab" class="sub-content" style="display:none;">
-          <div id="newsFeed" class="feed-list">
-            <div class="placeholder">Loading lomiNews…</div>
+        <!-- Profile view (modal) -->
+        <div id="profileModal" class="modal" style="display:none;">
+          <div class="modal-content">
+            <span class="close" id="closeProfile">&times;</span>
+            <h2 id="profileName"></h2>
+            <p id="profileRole"></p>
+            <div id="profilePosts"></div>
           </div>
         </div>
       </div>
@@ -161,7 +133,6 @@
       </div>
     </div>
 
-    <!-- Centered Footer (only on Search home) -->
     <nav class="footer-nav">
       <div class="nav-icon active" data-workspace="home"><span>🔍</span><span>Search</span></div>
       <div class="nav-icon" data-workspace="games"><span>🎮</span><span>Games</span></div>
@@ -170,13 +141,8 @@
       <div class="nav-icon" data-workspace="quran"><span>📖</span><span>Quran</span></div>
     </nav>
 
-    <!-- Back to Search toggle (on workspace pages) -->
     <div class="back-toggle" id="backToggle" onclick="goHome()">← Back to Search</div>
-
-    <!-- Footer -->
-    <footer class="footer">
-      Powered by <strong>GURUTECH</strong>
-    </footer>
+    <footer class="footer">Powered by <strong>GURUTECH</strong></footer>
   </div>
 
   <script src="script.js"></script>
