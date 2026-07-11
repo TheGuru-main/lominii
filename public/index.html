@@ -84,8 +84,61 @@
       </div>
 
       <!-- SOCIAL WORKSPACE -->
-      <div id="socialView" style="display: none;">
-        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+<div id="socialView" style="display: none;">
+  <div class="social-tabs">
+    <button class="social-tab active" id="tabFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
+    <button class="social-tab" id="tabNews" onclick="switchSocialTab('news')">📰 lomiNews</button>
+  </div>
+
+  <!-- Friends Feed -->
+  <div id="friendsFeed" class="social-feed">
+    <div class="card">
+      <div class="post-author">Alice Mbaka</div>
+      <p>Just finished reading about photosynthesis. Amazing how plants convert sunlight into energy! 🌿</p>
+      <div class="post-time">2 minutes ago</div>
+    </div>
+    <div class="card">
+      <div class="post-author">John Okafor</div>
+      <p>Who else is excited about the AFCON finals? 🇳🇬</p>
+      <div class="post-time">15 minutes ago</div>
+    </div>
+    <div class="placeholder">Your friends' posts will appear here.</div>
+  </div>
+
+  <!-- lomiNews Feed -->
+  <div id="newsFeed" class="social-feed" style="display: none;">
+    <div class="news-categories">
+      <span class="news-chip" onclick="subscribeCategory('sports')">⚽ Sports</span>
+      <span class="news-chip" onclick="subscribeCategory('business')">💼 Business</span>
+      <span class="news-chip" onclick="subscribeCategory('finance')">📈 Finance</span>
+      <span class="news-chip" onclick="subscribeCategory('tech')">💻 Tech</span>
+      <span class="news-chip" onclick="subscribeCategory('education')">📚 Education</span>
+    </div>
+    <div class="card">
+      <div class="post-author">Chioma Nwosu <span class="badge-newscaster">Newscaster</span></div>
+      <p>Breaking: Nigeria's GDP growth exceeds expectations in Q3. Analysts say the tech sector is driving the recovery.</p>
+      <div class="post-time">1 hour ago</div>
+    </div>
+    <div class="card">
+      <div class="post-author">Emeka Obi <span class="badge-newscaster">Newscaster</span></div>
+      <p>Transfer news: Chelsea close to signing a new striker. Deal could be announced tomorrow.</p>
+      <div class="post-time">3 hours ago</div>
+    </div>
+    <div class="placeholder">Your personalized news feed will appear here.</div>
+  </div>
+
+  <!-- Messages -->
+  <div class="social-messages">
+    <h3>💬 Messages</h3>
+    <div class="card" onclick="alert('Chat with Alice')">
+      <div class="msg-preview"><strong>Alice Mbaka</strong> – Hey, are you joining the study group?</div>
+    </div>
+    <div class="card" onclick="alert('Chat with John')">
+      <div class="msg-preview"><strong>John Okafor</strong> – Did you see the match last night?</div>
+    </div>
+    <div class="placeholder">Open a conversation to start chatting.</div>
+  </div>
+</div>
           <button class="btn" id="btnShowFeed">Friends</button>
           <button class="btn btn-outline" id="btnShowNews">News</button>
           <button class="btn btn-outline" id="btnShowChat">Chat</button>
