@@ -1,21 +1,20 @@
-"""LOMINII Social Room – Router (with lomiNews feed & subscriptions)"""
+"""LOMINII Social Room – Router (complete: feed, likes, profile, news, chat)"""
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, text
+from sqlalchemy import select, and_, or_, func
 from platform.database import get_db
-from platform.nsid import NSID
 from platform.auth import get_current_user
 from platform.content_filter import is_blocked
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
 from platform.models import (
-    User, Message, Follow, Post, Comment, NewsSubscription
+    User, Message, Follow, Post, Comment, Like, NewsSubscription
 )
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
 
 # ═══════════════════════════════════════════════════════════
-# MESSAGING (unchanged)
+# MESSAGING
 # ═══════════════════════════════════════════════════════════
 @router.post("/messages/send")
 async def send_message(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -37,14 +36,8 @@ async def send_message(request: Request, email: str = Depends(get_current_user),
     c = first_letter_index(receiver.full_name)
     primary = gsp_place(L, S, c, K=1)["primary_cell"]
 
-    msg = Message(
-    from_user_id=sender.id,
-    to_user_id=receiver.id,
-    text=text,
-    gsp_cell=f"{primary['col']},{primary['row']}",
-    nsid=NSID.SOCIAL
-)
-
+    msg = Message(from_user_id=sender.id, to_user_id=receiver.id, text=text,
+                  gsp_cell=f"{primary['col']},{primary['row']}")
     db.add(msg)
     await db.commit()
     return {"message_id": str(msg.id), "gsp_cell": f"{primary['col']},{primary['row']}",
@@ -74,7 +67,7 @@ async def delete_message(message_id: str, email: str = Depends(get_current_user)
     return {"status": "deleted"}
 
 # ═══════════════════════════════════════════════════════════
-# FOLLOWS (unchanged)
+# FOLLOWS
 # ═══════════════════════════════════════════════════════════
 @router.post("/follow")
 async def follow_user(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -116,7 +109,7 @@ async def unfollow_user(request: Request, email: str = Depends(get_current_user)
     return {"status": "unfollowed"}
 
 # ═══════════════════════════════════════════════════════════
-# POSTS & COMMENTS (unchanged)
+# POSTS & COMMENTS & LIKES
 # ═══════════════════════════════════════════════════════════
 @router.post("/post")
 async def create_post(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -127,12 +120,7 @@ async def create_post(request: Request, email: str = Depends(get_current_user), 
     author = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not author:
         raise HTTPException(status_code=404, detail="User not found")
-    post = Post(
-    author_id=author.id,
-    content=content,
-    nsid=NSID.SOCIAL
-)
-
+    post = Post(author_id=author.id, content=content)
     db.add(post)
     await db.commit()
     return {"post_id": str(post.id), "created_at": post.created_at.isoformat()}
@@ -148,25 +136,101 @@ async def add_comment(request: Request, email: str = Depends(get_current_user), 
     post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
     if not author or not post:
         raise HTTPException(status_code=404, detail="Not found")
-    comment = Comment(
-    post_id=post.id,
-    author_id=author.id,
-    content=content,
-    nsid=NSID.SOCIAL)
-
+    comment = Comment(post_id=post.id, author_id=author.id, content=content)
     db.add(comment)
     await db.commit()
     return {"comment_id": str(comment.id), "created_at": comment.created_at.isoformat()}
 
-# inside create_post
-post = Post(
-    author_id=author.id,
-    content=content,
-    nsid=NSID.SOCIAL
-)
+@router.post("/like")
+async def like_post(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    post_id = data.get("post_id")
+    if not post_id:
+        raise HTTPException(status_code=400, detail="Missing post_id")
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if not user or not post:
+        raise HTTPException(status_code=404, detail="Not found")
+    existing = (await db.execute(
+        select(Like).where(Like.post_id == post.id, Like.user_id == user.id)
+    )).scalar_one_or_none()
+    if existing:
+        return {"status": "already_liked"}
+    like = Like(post_id=post.id, user_id=user.id)
+    db.add(like)
+    await db.commit()
+    return {"status": "liked"}
+
+@router.delete("/like")
+async def unlike_post(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    post_id = data.get("post_id")
+    if not post_id:
+        raise HTTPException(status_code=400, detail="Missing post_id")
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
+    if not user or not post:
+        raise HTTPException(status_code=404, detail="Not found")
+    like = (await db.execute(
+        select(Like).where(Like.post_id == post.id, Like.user_id == user.id)
+    )).scalar_one_or_none()
+    if not like:
+        raise HTTPException(status_code=404, detail="Not liked")
+    await db.delete(like)
+    await db.commit()
+    return {"status": "unliked"}
 
 # ═══════════════════════════════════════════════════════════
-# NEWSLETTER SUBSCRIPTIONS (NEW)
+# GENERAL FEED (friends + own posts)
+# ═══════════════════════════════════════════════════════════
+@router.get("/feed")
+async def main_feed(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # posts from people the user follows + own posts
+    followed = select(Follow.followee_id).where(Follow.follower_id == user.id)
+    query = select(Post).where(
+        or_(
+            Post.author_id.in_(followed),
+            Post.author_id == user.id
+        )
+    ).order_by(Post.created_at.desc()).limit(50)
+    posts = (await db.execute(query)).scalars().all()
+    result = []
+    for p in posts:
+        author = (await db.execute(select(User).where(User.id == p.author_id))).scalar_one_or_none()
+        like_count = (await db.execute(select(func.count()).where(Like.post_id == p.id))).scalar_one()
+        result.append({
+            "id": str(p.id),
+            "content": p.content,
+            "author_name": author.full_name if author else "Unknown",
+            "author_id": str(p.author_id),
+            "created_at": p.created_at.isoformat(),
+            "likes": like_count
+        })
+    return result
+
+# ═══════════════════════════════════════════════════════════
+# PROFILE
+# ═══════════════════════════════════════════════════════════
+@router.get("/profile/{uid}")
+async def get_profile(uid: str, db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(select(User).where(User.id == uid))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    posts = (await db.execute(
+        select(Post).where(Post.author_id == user.id).order_by(Post.created_at.desc()).limit(20)
+    )).scalars().all()
+    return {
+        "full_name": user.full_name,
+        "creator_role": user.creator_role,
+        "news_category": user.news_category,
+        "posts": [{"id": str(p.id), "content": p.content, "created_at": p.created_at.isoformat()} for p in posts]
+    }
+
+# ═══════════════════════════════════════════════════════════
+# NEWSLETTER SUBSCRIPTIONS (unchanged)
 # ═══════════════════════════════════════════════════════════
 @router.post("/news/subscribe")
 async def subscribe_category(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -174,21 +238,14 @@ async def subscribe_category(request: Request, email: str = Depends(get_current_
     category = data.get("category", "").strip().lower()
     if not category:
         raise HTTPException(status_code=400, detail="Missing category")
-
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    # Check if already subscribed
     existing = (await db.execute(
-        select(NewsSubscription).where(
-            NewsSubscription.user_id == user.id,
-            NewsSubscription.category == category
-        )
+        select(NewsSubscription).where(NewsSubscription.user_id == user.id, NewsSubscription.category == category)
     )).scalar_one_or_none()
     if existing:
         return {"status": "already_subscribed"}
-
     sub = NewsSubscription(user_id=user.id, category=category)
     db.add(sub)
     await db.commit()
@@ -200,20 +257,14 @@ async def unsubscribe_category(request: Request, email: str = Depends(get_curren
     category = data.get("category", "").strip().lower()
     if not category:
         raise HTTPException(status_code=400, detail="Missing category")
-
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     sub = (await db.execute(
-        select(NewsSubscription).where(
-            NewsSubscription.user_id == user.id,
-            NewsSubscription.category == category
-        )
+        select(NewsSubscription).where(NewsSubscription.user_id == user.id, NewsSubscription.category == category)
     )).scalar_one_or_none()
     if not sub:
         raise HTTPException(status_code=404, detail="Not subscribed")
-
     await db.delete(sub)
     await db.commit()
     return {"status": "unsubscribed"}
@@ -223,82 +274,33 @@ async def my_subscriptions(email: str = Depends(get_current_user), db: AsyncSess
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    subs = (await db.execute(
-        select(NewsSubscription).where(NewsSubscription.user_id == user.id)
-    )).scalars().all()
+    subs = (await db.execute(select(NewsSubscription).where(NewsSubscription.user_id == user.id))).scalars().all()
     return [s.category for s in subs]
 
 # ═══════════════════════════════════════════════════════════
-# lomiNews FEED (ENHANCED – followed + subscriptions)
+# lomiNews FEED (unchanged)
 # ═══════════════════════════════════════════════════════════
 @router.get("/news")
-async def news_feed(
-    request: Request,
-    email: str = Depends(get_current_user),
-    category: str = None,
-    country: str = None,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Personalized news feed:
-    - Posts from newscasters the user follows
-    - Posts from newscasters in categories the user subscribes to
-    Optional category filter overrides personalization.
-    """
+async def news_feed(request: Request, email: str = Depends(get_current_user), category: str = None, country: str = None, db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    # If a specific category is requested, just return that category's posts
     if category:
         query = select(Post).join(User, Post.author_id == User.id).where(
-            User.creator_role == "newscaster",
-            User.news_category == category
+            User.creator_role == "newscaster", User.news_category == category
         ).order_by(Post.created_at.desc()).limit(50)
         posts = (await db.execute(query)).scalars().all()
-        return [{"id": str(p.id), "content": p.content, "author_id": str(p.author_id),
-                 "created_at": p.created_at.isoformat()} for p in posts]
-
-    # 1. Find newscasters the user follows
+        return [{"id": str(p.id), "content": p.content, "author_id": str(p.author_id), "created_at": p.created_at.isoformat()} for p in posts]
     followed_query = select(Follow.followee_id).where(Follow.follower_id == user.id)
-    followed_newscasters = (await db.execute(
-        select(User.id).where(
-            User.id.in_(followed_query),
-            User.creator_role == "newscaster"
-        )
-    )).scalars().all()
-
-    # 2. Find categories the user subscribes to
-    subscribed_categories = (await db.execute(
-        select(NewsSubscription.category).where(NewsSubscription.user_id == user.id)
-    )).scalars().all()
-
-    # Build the final query: posts from followed newscasters OR from newscasters in subscribed categories
+    followed_newscasters = (await db.execute(select(User.id).where(User.id.in_(followed_query), User.creator_role == "newscaster"))).scalars().all()
+    subscribed_categories = (await db.execute(select(NewsSubscription.category).where(NewsSubscription.user_id == user.id))).scalars().all()
     conditions = []
     if followed_newscasters:
         conditions.append(Post.author_id.in_(followed_newscasters))
     if subscribed_categories:
-        conditions.append(
-            Post.author_id.in_(
-                select(User.id).where(
-                    User.creator_role == "newscaster",
-                    User.news_category.in_(subscribed_categories)
-                )
-            )
-        )
-
+        conditions.append(Post.author_id.in_(select(User.id).where(User.creator_role == "newscaster", User.news_category.in_(subscribed_categories))))
     if not conditions:
-        return []   # no personalized feed yet
-
+        return []
     query = select(Post).where(or_(*conditions)).order_by(Post.created_at.desc()).limit(50)
     posts = (await db.execute(query)).scalars().all()
-
-    return [
-        {
-            "id": str(p.id),
-            "content": p.content,
-            "author_id": str(p.author_id),
-            "created_at": p.created_at.isoformat()
-        }
-        for p in posts
-    ]
+    return [{"id": str(p.id), "content": p.content, "author_id": str(p.author_id), "created_at": p.created_at.isoformat()} for p in posts]
