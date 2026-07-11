@@ -67,38 +67,80 @@
         </div>
 
         <div class="game-carousel">
-  <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
-  <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
-  <div class="game-card"><div class="icon">🟤</div><h4>Draft</h4></div>
-  <div class="game-card"><div class="icon">🎱</div><h4>Snooker</h4></div>
-  <div class="game-card coming-soon"><div class="icon">🏎️</div><h4>Car Race</h4><span class="cs-badge">Soon</span></div>
-  <div class="game-card coming-soon"><div class="icon">🔫</div><h4>Sniper</h4><span class="cs-badge">Soon</span></div>
-  <div class="game-card coming-soon"><div class="icon">🧩</div><h4>Edu Arcade</h4><span class="cs-badge">Soon</span></div>
-</div>
+          <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
+          <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
+          <div class="game-card"><div class="icon">🟤</div><h4>Draft</h4></div>
+          <div class="game-card"><div class="icon">🎱</div><h4>Snooker</h4></div>
+          <div class="game-card coming-soon"><div class="icon">🏎️</div><h4>Car Race</h4><span class="cs-badge">Soon</span></div>
+          <div class="game-card coming-soon"><div class="icon">🔫</div><h4>Sniper</h4><span class="cs-badge">Soon</span></div>
+          <div class="game-card coming-soon"><div class="icon">🧩</div><h4>Edu Arcade</h4><span class="cs-badge">Soon</span></div>
+        </div>
 
         <div class="placeholder">📰 Latest News (loading…)</div>
       </div>
 
       <!-- GAMES WORKSPACE -->
-      <div class="game-carousel">
-  <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
-  <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
-  <div class="game-card"><div class="icon">🟤</div><h4>Draft</h4></div>
-  <div class="game-card"><div class="icon">🎱</div><h4>Snooker</h4></div>
-  <div class="game-card coming-soon"><div class="icon">🏎️</div><h4>Car Race</h4><span class="cs-badge">Soon</span></div>
-  <div class="game-card coming-soon"><div class="icon">🔫</div><h4>Sniper</h4><span class="cs-badge">Soon</span></div>
-  <div class="game-card coming-soon"><div class="icon">🧩</div><h4>Edu Arcade</h4><span class="cs-badge">Soon</span></div>
-</div>
+      <div id="gamesView" style="display: none;">
+        <h2>🎮 Games</h2>
+        <div class="game-carousel">
+          <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
+          <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
+          <div class="game-card"><div class="icon">🟤</div><h4>Draft</h4></div>
+          <div class="game-card"><div class="icon">🎱</div><h4>Snooker</h4></div>
+          <div class="game-card coming-soon"><div class="icon">🏎️</div><h4>Car Race</h4><span class="cs-badge">Soon</span></div>
+          <div class="game-card coming-soon"><div class="icon">🔫</div><h4>Sniper</h4><span class="cs-badge">Soon</span></div>
+          <div class="game-card coming-soon"><div class="icon">🧩</div><h4>Edu Arcade</h4><span class="cs-badge">Soon</span></div>
+        </div>
+        <div class="placeholder">More games coming soon!</div>
+      </div>
 
-      <!-- SOCIAL WORKSPACE -->
+      <!-- SOCIAL WORKSPACE (updated) -->
       <div id="socialView" style="display: none;">
         <h2>👥 Social</h2>
-        <div class="card-grid">
-          <div class="card"><div class="icon">📰</div><h3>Feed</h3></div>
-          <div class="card"><div class="icon">👥</div><h3>Friends</h3></div>
-          <div class="card"><div class="icon">💬</div><h3>Messages</h3></div>
+        <!-- Sub‑tabs: Feed, Friends, Messages, lomiNews -->
+        <div class="sub-tabs">
+          <button class="sub-tab active" data-subtab="feed">Feed</button>
+          <button class="sub-tab" data-subtab="friends">Friends</button>
+          <button class="sub-tab" data-subtab="messages">Messages</button>
+          <button class="sub-tab" data-subtab="news">lomiNews</button>
         </div>
-        <div class="placeholder">Your social feed will appear here.</div>
+
+        <!-- Feed Sub‑tab -->
+        <div id="feedSubtab" class="sub-content active">
+          <div id="feedContainer" class="feed-list">
+            <div class="placeholder">Loading your feed…</div>
+          </div>
+        </div>
+
+        <!-- Friends Sub‑tab -->
+        <div id="friendsSubtab" class="sub-content" style="display:none;">
+          <div id="friendsList" class="friends-list">
+            <div class="placeholder">Your friends will appear here.</div>
+          </div>
+        </div>
+
+        <!-- Messages Sub‑tab -->
+        <div id="messagesSubtab" class="sub-content" style="display:none;">
+          <div class="msg-layout">
+            <div id="conversationList" class="conv-list">
+              <div class="placeholder">No conversations yet.</div>
+            </div>
+            <div id="chatWindow" class="chat-window" style="display:none;">
+              <div id="chatMessages" class="chat-messages"></div>
+              <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Type a message…">
+                <button id="sendChatBtn">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- lomiNews Sub‑tab -->
+        <div id="newsSubtab" class="sub-content" style="display:none;">
+          <div id="newsFeed" class="feed-list">
+            <div class="placeholder">Loading lomiNews…</div>
+          </div>
+        </div>
       </div>
 
       <!-- EDU WORKSPACE -->
