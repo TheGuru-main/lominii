@@ -13,14 +13,6 @@ from platform.auth import get_current_user
 from platform.database import get_db
 from platform.gsg import gps_to_gsg
 from platform.nsid import NSID
-
-# inside unified_search, when saving a search
-new_search = Search(
-    user_id=user.id,
-    query=query,
-    gsp_cell=f"{primary['col']},{primary['row']}",
-    nsid=NSID.SEARCH
-)
 from platform.intent_analyzer import analyze
 from models import User, Search, SearchCache   #added SearchCache
 
@@ -141,6 +133,14 @@ async def unified_search(
         "related_questions": [],
         "gsg_cell": gsg_data
     }
+
+# inside unified_search, when saving a search
+new_search = Search(
+    user_id=user.id,
+    query=query,
+    gsp_cell=f"{primary['col']},{primary['row']}",
+    nsid=NSID.SEARCH
+)
 
     # 11. Persist search and update cache
     if user:
