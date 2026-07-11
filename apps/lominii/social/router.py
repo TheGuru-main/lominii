@@ -37,8 +37,14 @@ async def send_message(request: Request, email: str = Depends(get_current_user),
     c = first_letter_index(receiver.full_name)
     primary = gsp_place(L, S, c, K=1)["primary_cell"]
 
-    msg = Message(from_user_id=sender.id, to_user_id=receiver.id, text=text,
-                  gsp_cell=f"{primary['col']},{primary['row']}")
+    msg = Message(
+    from_user_id=sender.id,
+    to_user_id=receiver.id,
+    text=text,
+    gsp_cell=f"{primary['col']},{primary['row']}",
+    nsid=NSID.SOCIAL
+)
+
     db.add(msg)
     await db.commit()
     return {"message_id": str(msg.id), "gsp_cell": f"{primary['col']},{primary['row']}",
@@ -121,7 +127,12 @@ async def create_post(request: Request, email: str = Depends(get_current_user), 
     author = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not author:
         raise HTTPException(status_code=404, detail="User not found")
-    post = Post(author_id=author.id, content=content)
+    post = Post(
+    author_id=author.id,
+    content=content,
+    nsid=NSID.SOCIAL
+)
+
     db.add(post)
     await db.commit()
     return {"post_id": str(post.id), "created_at": post.created_at.isoformat()}
@@ -137,7 +148,12 @@ async def add_comment(request: Request, email: str = Depends(get_current_user), 
     post = (await db.execute(select(Post).where(Post.id == post_id))).scalar_one_or_none()
     if not author or not post:
         raise HTTPException(status_code=404, detail="Not found")
-    comment = Comment(post_id=post.id, author_id=author.id, content=content)
+    comment = Comment(
+    post_id=post.id,
+    author_id=author.id,
+    content=content,
+    nsid=NSID.SOCIAL)
+
     db.add(comment)
     await db.commit()
     return {"comment_id": str(comment.id), "created_at": comment.created_at.isoformat()}
