@@ -87,6 +87,70 @@ textarea { width:100%; padding:0.8rem; border:2px solid #d0dce4; border-radius:1
 .modal-content { background:#fff; border-radius:16px; padding:2rem; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; }
 .close { float:right; font-size:1.5rem; cursor:pointer; }
 
+.social-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.social-tab {
+  flex: 1;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: 2px solid #d0dce4;
+  color: #4a6578;
+}
+.social-tab.active {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #f0f4ff;
+}
+.social-feed {
+  margin-bottom: 2rem;
+}
+.news-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.news-chip {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 20px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #3b82f6;
+}
+.news-chip:active { background: #3b82f6; color: #fff; }
+.post-author {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.3rem;
+}
+.post-time {
+  font-size: 0.75rem;
+  color: #6b7f8e;
+  margin-top: 0.4rem;
+}
+.badge-newscaster {
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  margin-left: 0.3rem;
+  font-weight: 600;
+}
+.social-messages { margin-top: 2rem; }
+.msg-preview { font-size: 0.9rem; color: #4a6578; }
+
 /* ===== FOOTER ===== */
 .footer { text-align:center; padding:1.5rem; font-size:0.8rem; color:#6b7f8e; background:#fff; border-top:1px solid #d0dce4; margin-top:auto; display:none; }
 .search-home .footer { display:block; }
