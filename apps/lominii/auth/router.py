@@ -13,10 +13,9 @@ from platform.bubblejumbo import (
 from platform.content_filter import is_blocked
 from platform.database import get_db
 from platform.models import User
-import re
 from platform.otp_service import generate_otp, send_otp
 from platform.models import OTP
-from sqlalchemy import delete as sql_delete
+import re
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -35,6 +34,8 @@ async def signup(request: Request, db: AsyncSession = Depends(get_db)):
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
     full_name = data.get("full_name", "").strip()
+    creator_role = data.get("creator_role", "creator").strip().lower()
+    news_category = data.get("news_category", "").strip()
 
     # Validation
     if not is_valid_email(email):
@@ -43,6 +44,10 @@ async def signup(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     if not full_name:
         raise HTTPException(status_code=400, detail="Full name is required")
+    if creator_role not in ("creator", "newscaster"):
+        raise HTTPException(status_code=400, detail="Invalid creator role")
+    if creator_role == "newscaster" and not news_category:
+        raise HTTPException(status_code=400, detail="News category required for newscasters")
     if is_blocked(email) or is_blocked(password) or is_blocked(full_name):
         raise HTTPException(status_code=400, detail="Blocked content")
 
@@ -55,7 +60,9 @@ async def signup(request: Request, db: AsyncSession = Depends(get_db)):
     user = User(
         email=email,
         full_name=full_name,
-        password_hash=get_password_hash(password)
+        password_hash=get_password_hash(password),
+        creator_role=creator_role,
+        news_category=news_category if creator_role == "newscaster" else None
     )
     db.add(user)
     await db.commit()
@@ -98,7 +105,6 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
 # ---------------------------------------------------------------------------
 @router.post("/guest")
 async def guest():
-    # Generate a temporary, anonymous token
     import uuid
     guest_name = f"guest-{uuid.uuid4().hex[:8]}"
     token = create_bjt(guest_name)
@@ -117,20 +123,17 @@ async def google_auth(request: Request, db: AsyncSession = Depends(get_db)):
     if not google_id or not email or not full_name:
         raise HTTPException(status_code=400, detail="Missing Google credentials")
 
-    # Check if user exists by Google ID or email
     user = (await db.execute(select(User).where((User.google_id == google_id) | (User.email == email)))).scalar_one_or_none()
     if not user:
-        # Create new user
         user = User(
             email=email,
             full_name=full_name,
             google_id=google_id,
-            password_hash=""   # no password for Google users
+            password_hash=""
         )
         db.add(user)
         await db.commit()
     else:
-        # Update Google ID if needed
         if not user.google_id:
             user.google_id = google_id
             await db.commit()
@@ -148,22 +151,18 @@ async def phone_request(request: Request, db: AsyncSession = Depends(get_db)):
     if not phone:
         raise HTTPException(status_code=400, detail="Phone number required")
 
-    # 1. Generate OTP and expiry (5 minutes)
     otp_code = generate_otp()
     expires = datetime.utcnow() + timedelta(minutes=5)
 
-    # 2. Save OTP in database
     otp_entry = OTP(phone=phone, code=otp_code, expires_at=expires)
     db.add(otp_entry)
     await db.commit()
 
-    # 3. Send via Africa's Talking
     success = await send_otp(phone, otp_code)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
 
     return {"message": "OTP sent successfully"}
-
 
 # ---------------------------------------------------------------------------
 # Phone OTP – Verify
@@ -178,7 +177,6 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
     if not phone or not otp_input or not full_name:
         raise HTTPException(status_code=400, detail="Missing fields")
 
-    # 1. Find the most recent unused OTP for this phone
     otp_record = (await db.execute(
         select(OTP).where(OTP.phone == phone, OTP.verified == False)
         .order_by(OTP.created_at.desc()).limit(1)
@@ -187,19 +185,15 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
     if not otp_record:
         raise HTTPException(status_code=400, detail="No OTP requested for this number")
 
-    # 2. Check expiry
     if datetime.utcnow() > otp_record.expires_at:
         raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
 
-    # 3. Verify code
     if otp_record.code != otp_input:
         raise HTTPException(status_code=400, detail="Invalid OTP")
 
-    # 4. Mark OTP as used
     otp_record.verified = True
     await db.commit()
 
-    # 5. Find or create user by phone
     user = (await db.execute(select(User).where(User.phone == phone))).scalar_one_or_none()
     if not user:
         user = User(
