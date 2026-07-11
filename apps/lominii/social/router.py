@@ -230,6 +230,42 @@ async def get_profile(uid: str, db: AsyncSession = Depends(get_db)):
     }
 
 # ═══════════════════════════════════════════════════════════
+# return post 
+# ═══════════════════════════════════════════════════════════
+@router.get("/feed")
+async def friends_feed(
+    email: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return posts from users the current user follows, newest first."""
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get list of followed user IDs
+    followed_ids = (await db.execute(
+        select(Follow.followee_id).where(Follow.follower_id == user.id)
+    )).scalars().all()
+
+    if not followed_ids:
+        return []   # user follows nobody
+
+    posts = (await db.execute(
+        select(Post).where(Post.author_id.in_(followed_ids))
+        .order_by(Post.created_at.desc()).limit(50)
+    )).scalars().all()
+
+    return [
+        {
+            "id": str(p.id),
+            "content": p.content,
+            "author_id": str(p.author_id),
+            "created_at": p.created_at.isoformat()
+        }
+        for p in posts
+    ]
+
+# ═══════════════════════════════════════════════════════════
 # NEWSLETTER SUBSCRIPTIONS (unchanged)
 # ═══════════════════════════════════════════════════════════
 @router.post("/news/subscribe")
