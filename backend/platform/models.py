@@ -430,3 +430,14 @@ class OTP(Base):
     expires_at = Column(DateTime, nullable=False)
     verified = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default="now()")
+
+#
+==========================================================# ===========================================================================
+# NEWS SUB..
+# ===========================================================================
+class NewsSubscription(Base):
+    __tablename__ = "news_subscriptions"
+    __table_args__ = {"schema": "social"}
+    user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
+    category = Column(String(50), primary_key=True)
+    subscribed_at = Column(DateTime, server_default="now()")
