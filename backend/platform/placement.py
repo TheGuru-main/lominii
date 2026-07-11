@@ -1,11 +1,6 @@
 """
 Placement Source Interface (Platform Layer)
-
-Defines the contract for all placement families.
-Every placement source must provide:
-    - identity inputs (what is being placed)
-    - parameters (K, D, grid size)
-    - compute() -> list of cells
+Every placement family now includes a namespace identifier.
 """
 
 from abc import ABC, abstractmethod
@@ -16,7 +11,9 @@ from .gsp import (
     gsp_place,
 )
 from .gsg import gps_to_gsg
+from .nsid import NSID
 import hashlib
+
 
 class PlacementSource(ABC):
     """Abstract base for all GSP placement families."""
@@ -29,6 +26,11 @@ class PlacementSource(ABC):
     @abstractmethod
     def parameters(self) -> dict:
         """Return K, D, C, R, and any other placement parameters."""
+        ...
+
+    @abstractmethod
+    def namespace_id(self) -> int:
+        """Return the NSID for this placement family."""
         ...
 
     def compute(self):
@@ -47,11 +49,12 @@ class PlacementSource(ABC):
 class KeyboardPlacement(PlacementSource):
     """Placement based on a word or name (keyboard geometry)."""
 
-    def __init__(self, word: str, K: int = 5, D: int = 8, lang: str = "en"):
+    def __init__(self, word: str, K: int = 5, D: int = 8, lang: str = "en", nsid: int = None):
         self.word = word
         self._K = K
         self._D = D
         self.lang = lang
+        self._nsid = nsid if nsid is not None else NSID.SEARCH
 
     def identity_inputs(self) -> dict:
         return {"word": self.word, "language": self.lang}
@@ -62,15 +65,19 @@ class KeyboardPlacement(PlacementSource):
         c = first_letter_index(self.word, self.lang)
         return {"L": L, "S": S, "c": c, "K": self._K, "D": self._D}
 
+    def namespace_id(self) -> int:
+        return self._nsid
+
 
 class GSGPlacement(PlacementSource):
     """Placement based on GPS coordinates (Guru Spatial Grid)."""
 
-    def __init__(self, lat: float, lon: float, K: int = 5, D: int = 8):
+    def __init__(self, lat: float, lon: float, K: int = 5, D: int = 8, nsid: int = None):
         self.lat = lat
         self.lon = lon
         self._K = K
         self._D = D
+        self._nsid = nsid if nsid is not None else NSID.SHOP
 
     def identity_inputs(self) -> dict:
         return {"latitude": self.lat, "longitude": self.lon}
@@ -79,6 +86,9 @@ class GSGPlacement(PlacementSource):
         (gsg_x, gsg_y), (L, S, c) = gps_to_gsg(self.lat, self.lon)
         return {"L": L, "S": S, "c": c, "K": self._K, "D": self._D,
                 "gsg_cell": (gsg_x, gsg_y)}
+
+    def namespace_id(self) -> int:
+        return self._nsid
 
 
 class CrawlerPlacement(PlacementSource):
@@ -100,3 +110,6 @@ class CrawlerPlacement(PlacementSource):
         L = len(self.url)
         S = int(hashlib.sha256(self.url.encode()).hexdigest()[:8], 16) % 1_000_000
         return {"L": L, "S": S, "c": c, "K": self._K, "D": self._D}
+
+    def namespace_id(self) -> int:
+        return NSID.CRAWLER
