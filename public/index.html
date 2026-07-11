@@ -30,7 +30,7 @@
   <!-- DASHBOARD -->
   <div id="dashboardView" style="display: none;">
     <header class="header">
-      <a class="logo" href="#"><span class="logo-icon">🔲</span><span>LOMINII</span></a>
+      <a class="logo" href="#"><span class="logo-icon">♾️</span><span>LOMINII</span></a>
       <div class="user-icon" id="userIcon">A
         <div class="dropdown" id="userDropdown">
           <a href="#" id="btnProfile">My Profile</a>
@@ -84,48 +84,19 @@
       </div>
 
       <!-- SOCIAL WORKSPACE -->
+<!-- SOCIAL WORKSPACE -->
 <div id="socialView" style="display: none;">
   <div class="social-tabs">
     <button class="social-tab active" id="tabFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
     <button class="social-tab" id="tabNews" onclick="switchSocialTab('news')">📰 lomiNews</button>
   </div>
+<div id="socialView" style="display: none;">
+  <div class="social-tabs">
+    <button class="social-tab active" id="tabFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
+    <button class="social-tab" id="tabNews" onclick="switchSocialTab('news')">📰 lomiNews</button>
+    </div>
 
-  <!-- Friends Feed -->
-  <div id="friendsFeed" class="social-feed">
-    <div class="card">
-      <div class="post-author">Alice Mbaka</div>
-      <p>Just finished reading about photosynthesis. Amazing how plants convert sunlight into energy! 🌿</p>
-      <div class="post-time">2 minutes ago</div>
-    </div>
-    <div class="card">
-      <div class="post-author">John Okafor</div>
-      <p>Who else is excited about the AFCON finals? 🇳🇬</p>
-      <div class="post-time">15 minutes ago</div>
-    </div>
-    <div class="placeholder">Your friends' posts will appear here.</div>
-  </div>
-
-  <!-- lomiNews Feed -->
-  <div id="newsFeed" class="social-feed" style="display: none;">
-    <div class="news-categories">
-      <span class="news-chip" onclick="subscribeCategory('sports')">⚽ Sports</span>
-      <span class="news-chip" onclick="subscribeCategory('business')">💼 Business</span>
-      <span class="news-chip" onclick="subscribeCategory('finance')">📈 Finance</span>
-      <span class="news-chip" onclick="subscribeCategory('tech')">💻 Tech</span>
-      <span class="news-chip" onclick="subscribeCategory('education')">📚 Education</span>
-    </div>
-    <div class="card">
-      <div class="post-author">Chioma Nwosu <span class="badge-newscaster">Newscaster</span></div>
-      <p>Breaking: Nigeria's GDP growth exceeds expectations in Q3. Analysts say the tech sector is driving the recovery.</p>
-      <div class="post-time">1 hour ago</div>
-    </div>
-    <div class="card">
-      <div class="post-author">Emeka Obi <span class="badge-newscaster">Newscaster</span></div>
-      <p>Transfer news: Chelsea close to signing a new striker. Deal could be announced tomorrow.</p>
-      <div class="post-time">3 hours ago</div>
-    </div>
     <div class="placeholder">Your personalized news feed will appear here.</div>
-  </div>
 
   <!-- Messages -->
   <div class="social-messages">
@@ -148,25 +119,39 @@
           <textarea id="postContent" rows="2" placeholder="What's on your mind?"></textarea>
           <button class="btn" id="btnPost">Post</button>
         </div>
+
         <!-- Feed / News / Chat containers -->
         <div id="feedContainer"></div>
         <div id="newsContainer" style="display:none;"></div>
         <div id="chatContainer" style="display:none;">
-          <div id="chatMessages" style="max-height:300px; overflow-y:auto; border:1px solid #d0dce4; padding:0.5rem; border-radius:8px; margin-bottom:1rem;"></div>
-          <input type="text" id="chatRecipient" placeholder="Recipient UID" style="margin-bottom:0.5rem;">
-          <input type="text" id="chatInput" placeholder="Type a message…">
-          <button class="btn" id="btnChatSend">Send</button>
-        </div>
-        <!-- Profile view (modal) -->
-        <div id="profileModal" class="modal" style="display:none;">
-          <div class="modal-content">
-            <span class="close" id="closeProfile">&times;</span>
-            <h2 id="profileName"></h2>
-            <p id="profileRole"></p>
-            <div id="profilePosts"></div>
-          </div>
-        </div>
-      </div>
+
+  <!-- Friends Feed -->
+  <div id="friendsFeed" class="social-feed">
+    <div class="placeholder" id="friendsLoading">Loading posts from friends…</div>
+    <div id="friendsPosts"></div>
+  </div>
+
+  <!-- lomiNews Feed -->
+  <div id="newsFeed" class="social-feed" style="display: none;">
+    <div class="news-categories">
+      <span class="news-chip" onclick="subscribeCategory('sports')">⚽ Sports</span>
+      <span class="news-chip" onclick="subscribeCategory('business')">💼 Business</span>
+      <span class="news-chip" onclick="subscribeCategory('finance')">📈 Finance</span>
+      <span class="news-chip" onclick="subscribeCategory('tech')">💻 Tech</span>
+      <span class="news-chip" onclick="subscribeCategory('education')">📚 Education</span>
+    </div>
+    <div class="placeholder" id="newsLoading">Loading news…</div>
+    <div id="newsPosts"></div>
+  </div>
+
+  <!-- Messages -->
+  <div class="social-messages">
+    <h3>💬 Messages</h3>
+    <div id="messagesList">
+      <div class="placeholder">Open a conversation to start chatting.</div>
+    </div>
+  </div>
+</div>
 
       <!-- EDU WORKSPACE -->
       <div id="eduView" style="display: none;">
