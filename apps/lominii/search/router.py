@@ -12,8 +12,17 @@ from platform.content_filter import is_blocked, is_ai_blocked
 from platform.auth import get_current_user
 from platform.database import get_db
 from platform.gsg import gps_to_gsg
+from platform.nsid import NSID
+
+# inside unified_search, when saving a search
+new_search = Search(
+    user_id=user.id,
+    query=query,
+    gsp_cell=f"{primary['col']},{primary['row']}",
+    nsid=NSID.SEARCH
+)
 from platform.intent_analyzer import analyze
-from models import User, Search, SearchCache   # ← added SearchCache
+from models import User, Search, SearchCache   #added SearchCache
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
 
