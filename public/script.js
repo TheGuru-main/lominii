@@ -148,6 +148,109 @@ document.addEventListener('click', () => userDropdown.classList.remove('show'));
 // initialise dashboard to home
 switchToWorkspace('home');
 
+/* ===== SOCIAL WORKSPACE SUB‑TABS ===== */
+const subTabs = document.querySelectorAll('.sub-tab');
+const subContents = {
+  feed: document.getElementById('feedSubtab'),
+  friends: document.getElementById('friendsSubtab'),
+  messages: document.getElementById('messagesSubtab'),
+  news: document.getElementById('newsSubtab')
+};
+
+subTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.getAttribute('data-subtab');
+    // Update active tab styling
+    subTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    // Show corresponding content
+    Object.values(subContents).forEach(c => c.style.display = 'none');
+    if (subContents[target]) subContents[target].style.display = 'block';
+  });
+});
+
+/* ===== MOCK DATA (replace with real API calls later) ===== */
+function loadMockFeed() {
+  const feed = document.getElementById('feedContainer');
+  feed.innerHTML = '';
+  const posts = [
+    { author: 'Alice', text: 'Just finished an amazing article on GSP!', time: '2 min ago' },
+    { author: 'Bob (Newscaster)', text: 'Breaking: Nigeria wins AFCON qualifiers!', time: '10 min ago' },
+    { author: 'Charlie', text: 'Anyone up for a chess match?', time: '25 min ago' }
+  ];
+  posts.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'feed-item';
+    div.innerHTML = `<div class="author">${p.author}</div><div class="text">${p.text}</div><div class="time">${p.time}</div>`;
+    feed.appendChild(div);
+  });
+}
+function loadMockFriends() {
+  const list = document.getElementById('friendsList');
+  list.innerHTML = '';
+  const friends = ['Alice', 'Bob (Newscaster)', 'Charlie'];
+  friends.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'feed-item';
+    div.innerHTML = `<div class="author">${f}</div><div class="text">Online</div>`;
+    list.appendChild(div);
+  });
+}
+function loadMockMessages() {
+  const convList = document.getElementById('conversationList');
+  convList.innerHTML = '';
+  const convs = ['Alice', 'Bob (Newscaster)'];
+  convs.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'conv-item';
+    div.textContent = c;
+    div.onclick = () => openChat(c);
+    convList.appendChild(div);
+  });
+}
+function openChat(name) {
+  document.getElementById('chatWindow').style.display = 'flex';
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="chat-msg received"><span class="bubble">Hey! How are you?</span></div>
+    <div class="chat-msg sent"><span class="bubble">I'm good, thanks!</span></div>
+  `;
+}
+document.getElementById('sendChatBtn').addEventListener('click', () => {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (msg) {
+    const chatDiv = document.getElementById('chatMessages');
+    chatDiv.innerHTML += `<div class="chat-msg sent"><span class="bubble">${msg}</span></div>`;
+    input.value = '';
+  }
+});
+function loadMockNews() {
+  const feed = document.getElementById('newsFeed');
+  feed.innerHTML = '';
+  const news = [
+    { author: 'BBC Pidgin', text: 'Nigeria election updates: Voters dey wait for results', time: '1 hour ago' },
+    { author: 'Sports Analyst', text: 'Transfer news: Osimhen to Chelsea?', time: '3 hours ago' }
+  ];
+  news.forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'feed-item';
+    div.innerHTML = `<div class="author">${n.author}</div><div class="text">${n.text}</div><div class="time">${n.time}</div>`;
+    feed.appendChild(div);
+  });
+}
+
+// Load mock data when Social workspace is shown
+const socialObserver = new MutationObserver(() => {
+  const socialView = document.getElementById('socialView');
+  if (socialView.style.display === 'block') {
+    loadMockFeed();
+    loadMockFriends();
+    loadMockMessages();
+    loadMockNews();
+  }
+});
+socialObserver.observe(document.getElementById('socialView'), { attributes: true, attributeFilter: ['style'] });
+
 /* ===== SEARCH FUNCTIONALITY (connected to real backend) ===== */
 async function performSearch() {
   const query = document.getElementById('searchInput').value.trim();
