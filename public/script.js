@@ -187,6 +187,100 @@ async function subscribeCategory(category) {
   }
 }
 
+// ── Social Tab Switching ──
+function switchSocialTab(tab) {
+  const friendsFeed = document.getElementById('friendsFeed');
+  const newsFeed = document.getElementById('newsFeed');
+  const tabFriends = document.getElementById('tabFriends');
+  const tabNews = document.getElementById('tabNews');
+
+  if (tab === 'friends') {
+    friendsFeed.style.display = 'block';
+    newsFeed.style.display = 'none';
+    tabFriends.classList.add('active');
+    tabNews.classList.remove('active');
+    loadFriendsFeed();
+  } else {
+    friendsFeed.style.display = 'none';
+    newsFeed.style.display = 'block';
+    tabFriends.classList.remove('active');
+    tabNews.classList.add('active');
+    loadNewsFeed();
+  }
+}
+
+// ── Load Friends Feed ──
+async function loadFriendsFeed() {
+  const container = document.getElementById('friendsPosts');
+  const loading = document.getElementById('friendsLoading');
+  try {
+    const resp = await apiFetch('/api/social/feed');
+    if (!resp.ok) throw new Error('Failed to load feed');
+    const posts = await resp.json();
+    if (posts.length === 0) {
+      container.innerHTML = '<div class="placeholder">No posts from friends yet. Follow someone to see their updates!</div>';
+    } else {
+      container.innerHTML = posts.map(p => `
+        <div class="card">
+          <div class="post-author">${p.author_name}</div>
+          <p>${p.content}</p>
+          <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
+        </div>
+      `).join('');
+    }
+    loading.style.display = 'none';
+  } catch (e) {
+    container.innerHTML = '<div class="placeholder">⚠️ Could not load posts. Please try again.</div>';
+    loading.style.display = 'none';
+  }
+}
+
+// ── Load lomiNews Feed ──
+async function loadNewsFeed() {
+  const container = document.getElementById('newsPosts');
+  const loading = document.getElementById('newsLoading');
+  try {
+    const resp = await apiFetch('/api/social/news');
+    if (!resp.ok) throw new Error('Failed to load news');
+    const posts = await resp.json();
+    if (posts.length === 0) {
+      container.innerHTML = '<div class="placeholder">No news posts yet. Subscribe to categories or follow newscasters!</div>';
+    } else {
+      container.innerHTML = posts.map(p => `
+        <div class="card">
+          <div class="post-author">${p.author_name || 'Newscaster'} <span class="badge-newscaster">Newscaster</span></div>
+          <p>${p.content}</p>
+          <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
+        </div>
+      `).join('');
+    }
+    loading.style.display = 'none';
+  } catch (e) {
+    container.innerHTML = '<div class="placeholder">⚠️ Could not load news. Please try again.</div>';
+    loading.style.display = 'none';
+  }
+}
+
+// ── Category Subscription (lomiNews) ──
+async function subscribeCategory(category) {
+  try {
+    const response = await apiFetch('/api/social/news/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: category })
+    });
+    if (response.ok) {
+      alert(`Subscribed to ${category} news!`);
+      loadNewsFeed();
+    } else {
+      const err = await response.json();
+      alert(err.detail || 'Subscription failed');
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+  }
+}
+
 // Post, like, comment actions
 document.getElementById('btnPost').addEventListener('click', async () => {
   const content = document.getElementById('postContent').value.trim();
