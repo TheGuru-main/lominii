@@ -8,21 +8,130 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+  <!-- Particle canvas (used only on landing page) -->
   <canvas id="particleCanvas"></canvas>
 
+  <!-- ========== LANDING PAGE ========== -->
   <div class="landing-container">
-    <div class="logo-icon">☪️</div>
+    <div class="logo-icon">♾️</div>
     <h1>WELCOME TO LOMINII</h1>
     <p class="tagline">Your social, adaptive, collaborative, informative, and educational search engine🔍🌍</p>
-<p class="tagline" Gain Knowledge. Stay enlightened. Stay updated </p>
+<p class="tagline" Stay enlightened. Stay updated </p>
 
     <p class="sub-tagline">🔍 Browse – 📚 Learn – 👥 Connect – 🎮 Fun.</p>
 
-    <button class="btn btn-primary" onclick="navigate('/auth/signup')">Create account</button>
-    <button class="btn btn-outline" onclick="exploreAsGuest()">Explore free</button>
-    <button class="btn btn-ghost" onclick="navigate('/auth/login')">I already have an account</button>
+      <button class="btn btn-primary" id="btnSignup">Create account</button>
+      <button class="btn btn-outline" id="btnExplore">Explore free</button>
+      <button class="btn btn-ghost" id="btnLogin">I already have an account</button>
 
-    <p class="footer-note">Powered by GURUTECH</p>
+      <p class="footer-note">Powered by GURUTECH</p>
+    </div>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <div id="dashboardView" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+      <a class="logo" href="#">
+        <span class="logo-icon">🔲</span>
+        <span>LOMINII</span>
+      </a>
+      <div class="user-icon" id="userIcon">A
+        <div class="dropdown" id="userDropdown">
+          <a href="#">Profile & Settings</a>
+          <a href="#">Privacy & Consent</a>
+          <a href="#">Premium Status</a>
+          <a href="#">Language & Preferences</a>
+          <a href="#">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="main-content" id="mainContent">
+
+      <!-- SEARCH HOME (visible by default) -->
+      <div id="homeView">
+        <div class="search-section">
+          <input type="text" class="search-input" placeholder="Search anything…" id="searchInput">
+          <button class="btn" id="btnSearch">Search</button>
+        </div>
+        <div id="searchResults" class="search-results"></div>
+
+        <div class="card-grid">
+          <div class="card" onclick="alert('Trending')"><div class="icon">🔥</div><h3>Trending</h3><p>What's hot right now</p></div>
+          <div class="card" onclick="alert('News')"><div class="icon">📰</div><h3>News</h3><p>Latest headlines</p></div>
+          <div class="card" onclick="alert('Map')"><div class="icon">🗺️</div><h3>Map</h3><p>Your location</p></div>
+          <div class="card" onclick="alert('Prayer Times')"><div class="icon">🕌</div><h3>Prayer Times</h3><p>Daily schedule</p></div>
+        </div>
+
+        <div class="game-carousel">
+          <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
+          <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
+          <div class="game-card"><div class="icon">🟤</div><h4>Draft</h4></div>
+        </div>
+
+        <div class="placeholder">📰 Latest News (loading…)</div>
+      </div>
+
+      <!-- GAMES WORKSPACE -->
+      <div id="gamesView" style="display: none;">
+        <h2>🎮 Games</h2>
+        <div class="game-carousel">
+          <div class="game-card"><div class="icon">🎲</div><h4>Ludo</h4></div>
+          <div class="game-card"><div class="icon">♟️</div><h4>Chess</h4></div>
+          <div class="game-card"><div class="icon">🟤</div><h4>Draft</h4></div>
+          <div class="game-card"><div class="icon">🎱</div><h4>Snooker</h4></div>
+        </div>
+        <div class="placeholder">More games coming soon!</div>
+      </div>
+
+      <!-- SOCIAL WORKSPACE -->
+      <div id="socialView" style="display: none;">
+        <h2>👥 Social</h2>
+        <div class="card-grid">
+          <div class="card"><div class="icon">📰</div><h3>Feed</h3></div>
+          <div class="card"><div class="icon">👥</div><h3>Friends</h3></div>
+          <div class="card"><div class="icon">💬</div><h3>Messages</h3></div>
+        </div>
+        <div class="placeholder">Your social feed will appear here.</div>
+      </div>
+
+      <!-- EDU WORKSPACE -->
+      <div id="eduView" style="display: none;">
+        <h2>🎓 EDU</h2>
+        <div class="card-grid">
+          <div class="card"><div class="icon">📚</div><h3>Curriculum</h3></div>
+          <div class="card"><div class="icon">🏫</div><h3>Classroom</h3></div>
+          <div class="card"><div class="icon">📊</div><h3>Progress</h3></div>
+        </div>
+        <div class="placeholder">Your educational dashboard will appear here.</div>
+      </div>
+
+      <!-- QURAN WORKSPACE -->
+      <div id="quranView" style="display: none;">
+        <h2>📖 Quran</h2>
+        <div class="placeholder">Quran reader and prayer times will appear here.</div>
+      </div>
+    </div>
+
+    <!-- Centered Footer (only on Search home) -->
+    <nav class="footer-nav">
+      <div class="nav-icon active" data-workspace="home"><span>🔍</span><span>Search</span></div>
+      <div class="nav-icon" data-workspace="games"><span>🎮</span><span>Games</span></div>
+      <div class="nav-icon" data-workspace="social"><span>👥</span><span>Social</span></div>
+      <div class="nav-icon" data-workspace="edu"><span>🎓</span><span>EDU</span></div>
+      <div class="nav-icon" data-workspace="quran"><span>📖</span><span>Quran</span></div>
+    </nav>
+
+    <!-- Back to Search toggle (on workspace pages) -->
+    <div class="back-toggle" id="backToggle" onclick="goHome()">← Back to Search</div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      Powered by <strong>GURUTECH</strong>
+    </footer>
   </div>
 
   <script src="script.js"></script>
