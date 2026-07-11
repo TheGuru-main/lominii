@@ -11,6 +11,7 @@ from platform.prompts import get_prompt
 from platform.content_filter import is_blocked, is_ai_blocked
 from platform.auth import get_current_user
 from platform.database import get_db
+from apps.lominii.football.router import router as football_router
 from platform.gsg import gps_to_gsg
 from platform.nsid import NSID
 from platform.intent_analyzer import analyze
