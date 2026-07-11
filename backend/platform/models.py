@@ -1,11 +1,13 @@
 """SQLAlchemy ORM Models – all LOMINII schemas"""
 import uuid
 from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, ForeignKey, Boolean, JSON, Text
+    Column, Integer, SmallInteger, String, Float, DateTime,
+    ForeignKey, Boolean, JSON, Text
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from platform.database import Base
+from platform.nsid import NSID
 
 # ===========================================================================
 # PUBLIC (shared)
@@ -36,16 +38,29 @@ class Search(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"))
     query = Column(Text, nullable=False)
     gsp_cell = Column(String(10))
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
     created_at = Column(DateTime, server_default="now()")
 
 class Message(Base):
     __tablename__ = "messages"
     __table_args__ = {"schema": "search"}
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    from_user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"))
-    to_user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"))
-    text = Column(Text, nullable=False)
-    created_at = Column(DateTime, server_default="now()")
+    sender_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False)
+    recipient_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False)
+    sender_cell = Column(String(10), nullable=False)
+    conversation_cell = Column(String(10), nullable=False)
+    body = Column(Text)
+    media_url = Column(Text)
+    reply_to_id = Column(UUID(as_uuid=True), ForeignKey("search.messages.id"), nullable=True)
+    is_edited = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default="now()")
+    updated_at = Column(DateTime(timezone=True), onupdate="now()")
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+
+    sender = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
 
 class Trending(Base):
     __tablename__ = "trending"
@@ -53,6 +68,7 @@ class Trending(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     query = Column(Text, nullable=False)
     count = Column(Integer, default=1)
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
     updated_at = Column(DateTime, server_default="now()")
 
 class Correction(Base):
@@ -63,6 +79,7 @@ class Correction(Base):
     corrected = Column(Text, nullable=False)
     gsp_cell = Column(String(10))
     confidence = Column(Float, default=0.0)
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
 
 class NewsArticle(Base):
     __tablename__ = "news_articles"
@@ -74,6 +91,7 @@ class NewsArticle(Base):
     source = Column(String(255))
     published_at = Column(DateTime)
     inserted_at = Column(DateTime, server_default="now()")
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
 
 class NewsCache(Base):
     __tablename__ = "news_cache"
@@ -81,6 +99,7 @@ class NewsCache(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     category = Column(String(50), unique=True, nullable=False)
     articles = Column(JSONB, nullable=False)
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
     cached_at = Column(DateTime, server_default="now()")
 
 class DictionaryCache(Base):
@@ -90,6 +109,7 @@ class DictionaryCache(Base):
     word = Column(String(255), unique=True, nullable=False)
     definition = Column(Text, nullable=False)
     language = Column(String(10), default="en")
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
     cached_at = Column(DateTime, server_default="now()")
 
 class SearchCache(Base):
@@ -98,6 +118,7 @@ class SearchCache(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     cache_key = Column(String(64), unique=True, nullable=False)
     result = Column(JSONB, nullable=False)
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
     cached_at = Column(DateTime, server_default="now()")
 
 class VideoCache(Base):
@@ -106,6 +127,7 @@ class VideoCache(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     query = Column(Text, nullable=False)
     videos = Column(JSONB, nullable=False)
+    nsid = Column(SmallInteger, default=NSID.SEARCH)
     cached_at = Column(DateTime, server_default="now()")
 
 # ===========================================================================
@@ -120,7 +142,8 @@ class SocialProfile(Base):
     full_name = Column(String(255), nullable=False)
     bio = Column(Text)
     avatar_url = Column(Text)
-    location = Column(String)          # PostGIS geography simplified
+    location = Column(String)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class Follow(Base):
@@ -128,6 +151,7 @@ class Follow(Base):
     __table_args__ = {"schema": "social"}
     follower_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), primary_key=True)
     followee_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), primary_key=True)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class Post(Base):
@@ -139,6 +163,7 @@ class Post(Base):
     media_urls = Column(JSONB)
     visibility = Column(String(20), default="public")
     location = Column(String)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class Comment(Base):
@@ -148,6 +173,7 @@ class Comment(Base):
     post_id = Column(UUID(as_uuid=True), ForeignKey("social.posts.id", ondelete="CASCADE"), nullable=False)
     author_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), nullable=False)
     content = Column(Text, nullable=False)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class Like(Base):
@@ -155,6 +181,7 @@ class Like(Base):
     __table_args__ = {"schema": "social"}
     post_id = Column(UUID(as_uuid=True), ForeignKey("social.posts.id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), primary_key=True)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class Community(Base):
@@ -164,6 +191,7 @@ class Community(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     created_by = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), nullable=False)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class CommunityMember(Base):
@@ -172,6 +200,7 @@ class CommunityMember(Base):
     community_id = Column(UUID(as_uuid=True), ForeignKey("social.communities.id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), primary_key=True)
     role = Column(String(20), default="member")
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     joined_at = Column(DateTime, server_default="now()")
 
 class PrivacySettings(Base):
@@ -182,6 +211,7 @@ class PrivacySettings(Base):
     search_visibility = Column(String(20), default="public")
     friend_request_permission = Column(String(20), default="everyone")
     last_seen_visibility = Column(String(20), default="friends")
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
 
@@ -192,6 +222,7 @@ class FriendRequest(Base):
     sender_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
     receiver_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(20), default="pending")
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
 
@@ -200,6 +231,7 @@ class BlockedUser(Base):
     __table_args__ = {"schema": "social"}
     blocker_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
     blocked_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class MutedUser(Base):
@@ -207,6 +239,7 @@ class MutedUser(Base):
     __table_args__ = {"schema": "social"}
     muter_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
     muted_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 # ===========================================================================
@@ -217,6 +250,7 @@ class Subject(Base):
     __table_args__ = {"schema": "curriculum"}
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), unique=True, nullable=False)
+    nsid = Column(SmallInteger, default=NSID.EDU)
 
 class Topic(Base):
     __tablename__ = "topics"
@@ -224,6 +258,7 @@ class Topic(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     subject_id = Column(Integer, ForeignKey("curriculum.subjects.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
+    nsid = Column(SmallInteger, default=NSID.EDU)
 
 class Subtopic(Base):
     __tablename__ = "subtopics"
@@ -231,6 +266,7 @@ class Subtopic(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     topic_id = Column(Integer, ForeignKey("curriculum.topics.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
+    nsid = Column(SmallInteger, default=NSID.EDU)
 
 class Concept(Base):
     __tablename__ = "concepts"
@@ -238,6 +274,7 @@ class Concept(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     subtopic_id = Column(Integer, ForeignKey("curriculum.subtopics.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
+    nsid = Column(SmallInteger, default=NSID.EDU)
 
 class Question(Base):
     __tablename__ = "questions"
@@ -251,6 +288,7 @@ class Question(Base):
     exam_type = Column(String(20))
     year = Column(Integer)
     tags = Column(JSONB)
+    nsid = Column(SmallInteger, default=NSID.EDU)
 
 class KnowledgeLink(Base):
     __tablename__ = "knowledge_links"
@@ -259,6 +297,7 @@ class KnowledgeLink(Base):
     concept_id_1 = Column(Integer, ForeignKey("curriculum.concepts.id", ondelete="CASCADE"), nullable=False)
     concept_id_2 = Column(Integer, ForeignKey("curriculum.concepts.id", ondelete="CASCADE"), nullable=False)
     relationship = Column(String(50))
+    nsid = Column(SmallInteger, default=NSID.EDU)
 
 # ===========================================================================
 # CLASSROOM (EDU)
@@ -270,6 +309,7 @@ class Class(Base):
     teacher_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
     subject_id = Column(Integer, ForeignKey("curriculum.subjects.id"), nullable=False)
     name = Column(String(255), nullable=False)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     created_at = Column(DateTime, server_default="now()")
 
 class ClassEnrollment(Base):
@@ -277,6 +317,7 @@ class ClassEnrollment(Base):
     __table_args__ = {"schema": "classroom"}
     class_id = Column(UUID(as_uuid=True), ForeignKey("classroom.classes.id", ondelete="CASCADE"), primary_key=True)
     student_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     joined_at = Column(DateTime, server_default="now()")
 
 class Lesson(Base):
@@ -287,6 +328,7 @@ class Lesson(Base):
     concept_id = Column(Integer, ForeignKey("curriculum.concepts.id"), nullable=False)
     title = Column(String(255), nullable=False)
     content = Column(Text)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     created_at = Column(DateTime, server_default="now()")
 
 class Assignment(Base):
@@ -297,6 +339,7 @@ class Assignment(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text)
     due_date = Column(DateTime)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     created_at = Column(DateTime, server_default="now()")
 
 class Submission(Base):
@@ -306,6 +349,7 @@ class Submission(Base):
     assignment_id = Column(UUID(as_uuid=True), ForeignKey("classroom.assignments.id", ondelete="CASCADE"), nullable=False)
     student_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     submitted_at = Column(DateTime, server_default="now()")
 
 # ===========================================================================
@@ -317,6 +361,7 @@ class ConceptMastery(Base):
     student_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
     concept_id = Column(Integer, ForeignKey("curriculum.concepts.id", ondelete="CASCADE"), primary_key=True)
     mastery = Column(Float, default=0.0)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     last_practiced = Column(DateTime)
 
 class QuestionLog(Base):
@@ -327,6 +372,7 @@ class QuestionLog(Base):
     question_id = Column(Integer, ForeignKey("curriculum.questions.id", ondelete="CASCADE"), nullable=False)
     chosen_answer = Column(Text)
     is_correct = Column(Boolean)
+    nsid = Column(SmallInteger, default=NSID.EDU)
     answered_at = Column(DateTime, server_default="now()")
 
 # ===========================================================================
@@ -341,6 +387,7 @@ class GameSession(Base):
     players = Column(JSONB, nullable=False)
     game_state = Column(JSONB)
     status = Column(String(20), default="waiting")
+    nsid = Column(SmallInteger, default=NSID.GAMES)
     created_at = Column(DateTime, server_default="now()")
     finished_at = Column(DateTime)
 
@@ -354,6 +401,7 @@ class Leaderboard(Base):
     losses = Column(Integer, default=0)
     draws = Column(Integer, default=0)
     points = Column(Integer, default=1000)
+    nsid = Column(SmallInteger, default=NSID.GAMES)
     updated_at = Column(DateTime, server_default="now()")
 
 # ===========================================================================
@@ -369,6 +417,7 @@ class PremiumSubscription(Base):
     end_date = Column(DateTime, nullable=False)
     status = Column(String(20), default="active")
     payment_reference = Column(Text)
+    nsid = Column(SmallInteger, default=NSID.SHOP)
     created_at = Column(DateTime, server_default="now()")
 
 class SponsoredCell(Base):
@@ -382,6 +431,7 @@ class SponsoredCell(Base):
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
     active = Column(Boolean, default=True)
+    nsid = Column(SmallInteger, default=NSID.SHOP)
 
 # ===========================================================================
 # ADMIN
@@ -397,6 +447,7 @@ class Occupancy(Base):
     messages = Column(Integer, default=0)
     api_calls = Column(Integer, default=0)
     cache_hits = Column(Integer, default=0)
+    nsid = Column(SmallInteger, default=NSID.ADMIN)
 
 class UsernameCell(Base):
     __tablename__ = "username_cells"
@@ -405,6 +456,7 @@ class UsernameCell(Base):
     row = Column(Integer, primary_key=True)
     username = Column(String(255), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id"))
+    nsid = Column(SmallInteger, default=NSID.ADMIN)
 
 # ===========================================================================
 # CRAWLER
@@ -419,6 +471,7 @@ class CrawlerPage(Base):
     content = Column(Text)
     out_links = Column(JSONB, default=[])
     pagerank = Column(Float, default=0.0)
+    nsid = Column(SmallInteger, default=NSID.CRAWLER)
     last_crawled = Column(DateTime, server_default="now()")
 
 class OTP(Base):
@@ -430,13 +483,3 @@ class OTP(Base):
     expires_at = Column(DateTime, nullable=False)
     verified = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default="now()")
-
-#========================================================== ===========================================================================
-#NEWS SUB
-# ===========================================================================
-class NewsSubscription(Base):
-    __tablename__ = "news_subscriptions"
-    __table_args__ = {"schema": "social"}
-    user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), primary_key=True)
-    category = Column(String(50), primary_key=True)
-    subscribed_at = Column(DateTime, server_default="now()")
