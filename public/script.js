@@ -79,6 +79,7 @@ footerIcons.forEach(icon => icon.addEventListener('click', ()=>{ switchToWorkspa
 userIcon.addEventListener('click', (e)=>{ e.stopPropagation(); userDropdown.classList.toggle('show'); });
 document.addEventListener('click', ()=>userDropdown.classList.remove('show'));
 
+
 /* ===== SEARCH ===== */
 async function performSearch() {
   const q = document.getElementById('searchInput').value.trim(); if (!q) return;
@@ -144,6 +145,47 @@ async function loadMessages() {
   } catch(e) { msgs.innerHTML = 'Messages unavailable.'; }
 }
 setInterval(() => { if (currentSocialTab==='chat') loadMessages(); }, 3000);
+
+/* ── Social Workspace Tab Switching ── */
+
+function switchSocialTab(tab) {
+  const friendsFeed = document.getElementById('friendsFeed');
+  const newsFeed = document.getElementById('newsFeed');
+  const tabFriends = document.getElementById('tabFriends');
+  const tabNews = document.getElementById('tabNews');
+
+  if (tab === 'friends') {
+    friendsFeed.style.display = 'block';
+    newsFeed.style.display = 'none';
+    tabFriends.classList.add('active');
+    tabNews.classList.remove('active');
+  } else {
+    friendsFeed.style.display = 'none';
+    newsFeed.style.display = 'block';
+    tabFriends.classList.remove('active');
+    tabNews.classList.add('active');
+  }
+}
+
+/* ── Category Subscription (lomiNews) ── */
+
+async function subscribeCategory(category) {
+  try {
+    const response = await apiFetch('/api/social/news/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: category })
+    });
+    if (response.ok) {
+      alert(`Subscribed to ${category} news!`);
+    } else {
+      const err = await response.json();
+      alert(err.detail || 'Subscription failed');
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+  }
+}
 
 // Post, like, comment actions
 document.getElementById('btnPost').addEventListener('click', async () => {
