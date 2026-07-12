@@ -14,6 +14,7 @@ from platform.database import get_db
 from platform.sportmonk_service import get_live_scores
 from platform.gsg import gps_to_gsg
 from platform.nsid import NSID
+from schemas import MessageOut, MessageCreate
 from platform.intent_analyzer import analyze
 from models import User, Search, SearchCache   #added SearchCache
 
