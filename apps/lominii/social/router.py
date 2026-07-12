@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
 from platform.database import get_db
 from platform.auth import get_current_user
-from schemas import MessageOut, MessageCreate
+from platform.schemas import MessageCreate, MessageOut
 from platform.content_filter import is_blocked
 from platform.nsid import NSID
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
@@ -19,11 +19,12 @@ router = APIRouter(prefix="/api/social", tags=["Social"])
 # MESSAGING (aligned with real Message model)
 # ═══════════════════════════════════════════════════════════
 
-@router.post("/messages/send")
+@router.post("/messages/send", response_model=MessageOut)
 async def send_message(
-    request: Request,
+    payload: MessageCreate,   # FastAPI validates the incoming JSON automatically
     email: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
+
 ):
     data = await request.json()
     recipient_uid = data.get("recipient_uid")    # core UID of the recipient
@@ -74,11 +75,10 @@ async def send_message(
     }
 
 
-@router.get("/messages/inbox")
-async def inbox(
-    email: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+@router.get("/messages/inbox", response_model=list[MessageOut])
+async def inbox(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
+    
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
