@@ -1,4 +1,6 @@
+"""ApiTube Video Service (Platform Layer)"""
 import os
 import httpx
 
-APITUBE_API_KEY = os.getenv("")
+API_KEY = os.getenv("APITUBE_API_KEY", "")
+BASE_URL = os.getenv("APITUBE_BASE_URL", "https://api.apitube.io")
