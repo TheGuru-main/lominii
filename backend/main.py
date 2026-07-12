@@ -32,19 +32,32 @@ async def health():
     return {"status": "ok", "app": "LOMINII"}
 
 from fastapi import WebSocket, WebSocketDisconnect
+from collections import defaultdict
+import json
 
-@app.websocket("/ws/game/{room_id}")
+# room_id -> connected websockets
+game_rooms = defaultdict(set)
+
+@app.websocket("/ws/games/{game_id}/{room_id}")
 async def game_websocket(websocket: WebSocket, room_id: str):
     await websocket.accept()
+
+    game_rooms[room_id].add(websocket)
+
     try:
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data)
-            # Here you would validate moves and broadcast to other players in the room
-            # For now, we just echo back for testing
-            await websocket.send_text(json.dumps({"echo": msg}))
+
+            # Broadcast to every player in the room except the sender
+            for client in list(game_rooms[room_id]):
+                if client != websocket:
+                    await client.send_text(data)
+
     except WebSocketDisconnect:
-        pass
+        game_rooms[room_id].discard(websocket)
+
+        if not game_rooms[room_id]:
+            del game_rooms[room_id]
 
 if __name__ == "__main__":
     import uvicorn
