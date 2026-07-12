@@ -404,6 +404,26 @@ class Leaderboard(Base):
     nsid = Column(SmallInteger, default=NSID.GAMES)
     updated_at = Column(DateTime, server_default="now()")
 
+class GameAchievement(Base):
+    __tablename__ = "achievements"
+    __table_args__ = {"schema": "game"}
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
+    game_id = Column(String(20), nullable=False)
+    achievement_key = Column(String(50), nullable=False)
+    unlocked_at = Column(DateTime, server_default="now()")
+
+class GameReward(Base):
+    __tablename__ = "rewards"
+    __table_args__ = {"schema": "game"}
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
+    game_id = Column(String(20), nullable=False)
+    reward_type = Column(String(30), nullable=False)
+    amount = Column(Integer, default=0)
+    description = Column(Text)
+    created_at = Column(DateTime, server_default="now()")
+
 # ===========================================================================
 # ADS
 # ===========================================================================
