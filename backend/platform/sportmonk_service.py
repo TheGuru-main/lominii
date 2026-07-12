@@ -3,7 +3,7 @@ import os
 import httpx
 
 API_KEY = os.getenv("SPORTMONK_API_KEY", "")
-BASE_URL = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonk.com/v3")
+BASE_URL = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonk.com/v2.0" )
 
 async def get_live_scores(competition: str = None) -> list:
     """Fetch live football scores from Sportmonk."""
