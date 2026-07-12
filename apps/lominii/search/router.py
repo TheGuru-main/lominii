@@ -95,7 +95,7 @@ async def unified_search(
     # 8. Fetch external sources (parallel)
     async with httpx.AsyncClient() as client:
         dict_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{norm_query}"
-        news_url = f"https://gnews.io/api/v4/search?q={norm_query}&lang=en&max=6&apikey=demo"
+        news_url = f"https://gnews.io/api/v4/search?q={norm_query}&lang=en&max=6&apikey=cd041149a111d938d24f8ab3fca2f280"
         dict_task = client.get(dict_url)
         news_task = client.get(news_url)
         dict_resp, news_resp = await asyncio.gather(dict_task, news_task)
