@@ -30,6 +30,8 @@ app.mount("/", StaticFiles(directory="public", html=True), name="static")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Start the live‑score proxy as a background task (never blocks the API)
+   asyncio.create_task(start_webhook_proxy_loop())
 
 @app.get("/health")
 async def health():
