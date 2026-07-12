@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from apps.lominii.search.router import router as search_router
 from apps.lominii.football.router import router as football_router
+from apps.lominii.games.router import router as games_router
 from apps.lominii.social.router import router as social_router
 from apps.lominii.auth.router import router as auth_router
 from apps.lominii.admin.router import router as admin_router
@@ -17,6 +18,7 @@ app = FastAPI(title="LOMINII Platform", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(search_router)
 app.include_router(social_router)
+app.include_router(games_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(football_router)
