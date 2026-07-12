@@ -36,7 +36,7 @@ async def send_message(
 
     # Look up both users
     sender = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    recipient = (await db.execute(select(User).where(User.id == recipient_uid))).scalar_one_or_none()
+    recipient = (await db.execute(select(User).where(User.id == payload.recipient_uid))).scalar_one_or_none()
     if not sender or not recipient:
         raise HTTPException(status_code=404, detail="User not found")
 
