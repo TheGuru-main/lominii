@@ -441,6 +441,34 @@ document.getElementById('btnChatSend').addEventListener('click', async ()=>{
   document.getElementById('chatInput').value = '';
   loadMessages();
 });
+async function loadGames() {
+  try {
+    const response = await apiFetch('/api/games');
+    const games = await response.json();
+    const carousels = document.querySelectorAll('.game-carousel');
+    carousels.forEach(carousel => {
+      carousel.innerHTML = games.map(game => {
+        const comingSoon = game.coming_soon ? 'coming-soon' : '';
+        const badge = game.coming_soon ? '<span class="cs-badge">Soon</span>' : '';
+        return `
+          <div class="game-card ${comingSoon}" onclick="${game.coming_soon ? '' : `alert('Launching ${game.name}...')`}">
+            <div class="icon">${game.icon}</div>
+            <h4>${game.name}</h4>
+            ${badge}
+          </div>`;
+      }).join('');
+    });
+  } catch (e) {
+    // fallback to static list
+  }
+}
+
+// Call on dashboard load
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('dashboardView')) {
+    loadGames();
+  }
+});
 
 // initialize
 switchToWorkspace('home');
