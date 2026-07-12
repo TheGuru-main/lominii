@@ -32,7 +32,6 @@ async def health():
     return {"status": "ok", "app": "LOMINII"}
 
 from fastapi import WebSocket, WebSocketDisconnect
-from collections import defaultdict
 import json
 
 # room_id -> connected websockets
