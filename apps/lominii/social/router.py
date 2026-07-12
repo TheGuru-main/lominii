@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
 from platform.database import get_db
 from platform.auth import get_current_user
+from schemas import MessageOut, MessageCreate
 from platform.content_filter import is_blocked
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
 from platform.models import (
