@@ -1,121 +1,112 @@
-"""Sportmonk Live Football Service (Platform Layer - Extended)"""
+"""Sportmonks Proxy Webhook Dispatcher Engine"""
 import os
 import httpx
+import asyncio
+from datetime import datetime
 
+# API Configurations
 API_KEY = os.getenv("SPORTMONK_API_KEY", "")
-BASE_URL = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonks.com/v3/football")
+LIVESCORE_URL = os.getenv("SPORTMONK_LIVE_URL", "https://api.sportmonks.com/v3/football/livescores/inplay")
 
-async def get_live_scores_extended(competition: str = None) -> list:
-    """Fetch live football scores, events, lineups, statistics, and betting odds from Sportmonks v3."""
-    if not API_KEY:
-        return []
-        
-    headers = {"Authorization": API_KEY}   
-    url = f"{BASE_URL}/matches"
-    
-    # Comma-separated string combining all related entities in one pass
-    # Using nested includes (e.g. statistics.type) to retrieve explicit metric names
-    includes = "events;lineups.player;statistics.type;odds"
-    
-    params = {"include": includes}
-    if competition:
-        params["competition"] = competition
-        
+# Platform Internal Notifications Routing 
+NOTIFICATION_MANAGER_WEBHOOK = "https://yourdomain.com"
+INTERNAL_AUTH_SECRET = os.getenv("INTERNAL_WEBHOOK_SECRET", "super-secure-token")
+
+# Local application state cache to prevent duplicate alerts
+MATCH_STATE_CACHE = {}
+
+async def dispatch_to_notification_manager(payload: dict):
+    """Dispatches a clean event payload directly to your Notification Manager."""
+    headers = {
+        "Content-Type": "application/json",
+        "X-Internal-Secret": INTERNAL_AUTH_SECRET
+    }
     async with httpx.AsyncClient() as client:
         try:
-            resp = await client.get(url, headers=headers, params=params, timeout=12)
+            # Pushing instant JSON payload to your platform layer
+            response = await client.post(NOTIFICATION_MANAGER_WEBHOOK, json=payload, headers=headers, timeout=5)
+            print(f"[{datetime.now()}] Webhook routed status: {response.status_code}")
+        except Exception as e:
+            print(f"[{datetime.now()}] Failed routing to notification manager: {str(e)}")
+
+async def check_live_updates():
+    """Polls Sportmonks inplay, filters state deltas, and synthesizes push packets."""
+    if not API_KEY:
+        return
+
+    # Use explicit includes to keep payload efficient
+    params = {
+        "api_token": API_KEY,
+        "include": "events;scores"
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(LIVESCORE_URL, params=params, timeout=8)
             if resp.status_code != 200:
-                return []
-                
-            data = resp.json()
-            matches = data.get("data", [])
-            result_payload = []
-            
+                return
+
+            matches = resp.json().get("data", [])
+
             for m in matches:
-                # 1. Map Core Match Data & Score
+                match_id = str(m.get("id"))
+                home_team = m.get("home_team", {}).get("name", "Home Team")
+                away_team = m.get("away_team", {}).get("name", "Away Team")
+                
+                # Dynamic Score Parsing
                 scores = m.get("score", {})
                 current_score = f"{scores.get('localteam_score', 0)} - {scores.get('visitorteam_score', 0)}"
                 
-                # 2. Extract and Process Events
-                events = sorted(m.get("events", []), key=lambda x: x.get("sort_order", 0))
-                timeline = []
-                yellow_cards = 0
-                red_cards = 0
+                # Fetch raw events
+                events = m.get("events", [])
                 
-                for e in events:
-                    event_type = e.get("type", "").upper()
-                    if event_type == "YELLOWCARD":
-                        yellow_cards += 1
-                    elif event_type == "REDCARD":
-                        red_cards += 1
-                        
-                    timeline.append({
-                        "type": event_type,
-                        "minute": e.get("minute"),
-                        "description": e.get("info", "")
-                    })
-                
-                # 3. Extract Lineups (Differentiating starters from substitutes)
-                lineup_data = m.get("lineups", [])
-                lineups = {"home": {"starting": [], "bench": []}, "away": {"starting": [], "bench": []}}
-                
-                for player_entry in lineup_data:
-                    # Determine team orientation
-                    team_side = "home" if player_entry.get("team_id") == m.get("localteam_id") else "away"
-                    
-                    player_info = {
-                        "name": player_entry.get("player", {}).get("name", "Unknown Player"),
-                        "jersey_number": player_entry.get("jersey_number"),
-                        "position": player_entry.get("position", {}).get("name", "N/A")
+                # Initialize caching context if match is newly live
+                if match_id not in MATCH_STATE_CACHE:
+                    MATCH_STATE_CACHE[match_id] = {
+                        "processed_event_ids": set(),
+                        "last_score": "0 - 0"
                     }
+
+                cache = MATCH_STATE_CACHE[match_id]
+
+                # Trace timeline anomalies chronologically
+                for event in sorted(events, key=lambda x: x.get("sort_order", 0)):
+                    event_id = str(event.get("id"))
                     
-                    # Sportmonks v3 typically exposes a 'formation_position' or 'is_starter' boolean
-                    if player_entry.get("formation_position") is not None:
-                        lineups[team_side]["starting"].append(player_info)
-                    else:
-                        lineups[team_side]["bench"].append(player_info)
+                    # If this event id hasn't been cached yet, trigger notification push
+                    if event_id not in cache["processed_event_ids"]:
+                        event_type = event.get("type", "").upper()
+                        minute = event.get("minute")
+                        info = event.get("info", "")
 
-                # 4. Extract In-Play Live Match Statistics
-                stats_entries = m.get("statistics", [])
-                match_stats = {"home": {}, "away": {}}
+                        # Construct a normalized payload for your notification manager
+                        if event_type in ["GOAL", "YELLOWCARD", "REDCARD"]:
+                            webhook_payload = {
+                                "event_channel": "live_football_feed",
+                                "match_id": match_id,
+                                "match_title": f"{home_team} vs {away_team}",
+                                "current_score": current_score,
+                                "update_type": event_type,
+                                "timeline_minute": minute,
+                                "display_text": info or f"{event_type.replace('_', ' ').title()} at {minute}'"
+                            }
+                            
+                            # Fire-and-forget payload handling to your notification service
+                            asyncio.create_task(dispatch_to_notification_manager(webhook_payload))
+                        
+                        # Add to processed ledger
+                        cache["processed_event_ids"].add(event_id)
                 
-                for stat in stats_entries:
-                    team_side = "home" if stat.get("team_id") == m.get("localteam_id") else "away"
-                    # Using statistics.type nested mapping for metric identity
-                    stat_name = stat.get("type", {}).get("name", "unknown").lower().replace(" ", "_")
-                    stat_value = stat.get("value")
-                    
-                    if stat_name != "unknown":
-                        match_stats[team_side][stat_name] = stat_value
+                # Update cached score state
+                cache["last_score"] = current_score
 
-                # 5. Extract Dynamic Odds Marketplace Data
-                odds_entries = m.get("odds", [])
-                market_odds = []
-                
-                for odd in odds_entries:
-                    market_odds.append({
-                        "market_name": odd.get("market_name", "Match Winner"),
-                        "label": odd.get("label"), # e.g. "1", "X", "2", "Over 2.5"
-                        "value": odd.get("value")  # Decimal Odds
-                    })
+        except Exception as e:
+            print(f"Error handling proxy iteration loop: {str(e)}")
 
-                # Consolidated Match Node
-                result_payload.append({
-                    "id": m.get("id"),
-                    "home_team": m.get("home_team", {}).get("name", "Home Team"),
-                    "away_team": m.get("away_team", {}).get("name", "Away Team"),
-                    "score": current_score,
-                    "status": m.get("status", "SCHEDULED"),
-                    "yellow_cards_total": yellow_cards,
-                    "red_cards_total": red_cards,
-                    "events_timeline": timeline,
-                    "lineups": lineups,
-                    "live_statistics": match_stats,
-                    "odds": market_odds
-                })
-                
-            return result_payload
-        except Exception:
-            pass
-            
-    return []
+async def start_webhook_proxy_loop():
+    """Runs continuous rapid inplay polling loops safely."""
+    print("Proxy Webhook system ignited. Pushing to Platform Notification Manager...")
+    while True:
+        await check_live_updates()
+        # Inplay metrics are optimized at 10-15s windows safely staying within rate limits
+        await asyncio.sleep(12) 
