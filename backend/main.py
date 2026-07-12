@@ -12,7 +12,7 @@ from apps.lominii.games.router import router as games_router
 from apps.lominii.social.router import router as social_router
 from apps.lominii.auth.router import router as auth_router
 from apps.lominii.admin.router import router as admin_router
-from platform.sportmonks_proxy import start_webhook_proxy_loop 
+from platform.sportmonk_service import start_webhook_proxy_loop 
 import asyncio
 from platform.database import engine, Base
 
