@@ -66,7 +66,7 @@ async def send_message(
     )
     db.add(msg)
     await db.commit()
-
+    await db.refresh(msg)
     return {
         "message_id": str(msg.id),
         "sender_cell": sender_cell_str,
