@@ -20,7 +20,16 @@ import json
 
 router = APIRouter(prefix="/api/games", tags=["Games"])
 
-# ── List available games ──────────────────────────────
+# ── List available games
+
+VALID_GAMES = {
+    "ludo",
+    "chess",
+    "draft",
+    "snooker",
+
+} 
+──────────────────────────────
 @router.get("/")
 async def list_games():
     return [
@@ -89,6 +98,9 @@ async def send_game_invitation(
     receiver_id = data.get("receiver_id")
     game_id = data.get("game_id")
 
+if game_id not in VALID_GAMES:
+    raise HTTPException(status_code=400, detail="Invalid game")
+
     if not receiver_id:
         raise HTTPException(status_code=400, detail="receiver_id is required")
 
@@ -128,25 +140,46 @@ async def invitation_details(
 @router.post("/invite/{invitation_id}/accept")
 async def accept_game_invitation(
     invitation_id: str,
+    email: str = Depends(get_current_user),
 ):
-    invitation = await accept_invitation(invitation_id)
+    invitation = await get_invitation(invitation_id)
 
     if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
 
-    return invitation
+    if invitation["receiver_id"] != email:
+        raise HTTPException(status_code=403, detail="Not your invitation")
+
+    await accept_invitation(invitation_id)
+
+    room_id = await create_room(
+        invitation["destination"],
+        invitation["sender_id"]
+    )
+
+    await join_room(room_id, invitation["receiver_id"])
+
+    return {
+        "status": "accepted",
+        "room_id": room_id,
+        "game_id": invitation["destination"],
+    }
 
 
 @router.post("/invite/{invitation_id}/decline")
 async def decline_game_invitation(
     invitation_id: str,
+    email: str = Depends(get_current_user),
 ):
-    invitation = await decline_invitation(invitation_id)
+    invitation = await get_invitation(invitation_id)
 
     if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
 
-    return invitation
+    if invitation["receiver_id"] != email:
+        raise HTTPException(status_code=403, detail="Not your invitation")
+
+    return await decline_invitation(invitation_id)
 
 # ── Leaderboard ───────────────────────────────────────
 @router.get("/{game_id}/leaderboard")
