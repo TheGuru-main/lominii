@@ -31,6 +31,21 @@ async def startup():
 async def health():
     return {"status": "ok", "app": "LOMINII"}
 
+from fastapi import WebSocket, WebSocketDisconnect
+
+@app.websocket("/ws/game/{room_id}")
+async def game_websocket(websocket: WebSocket, room_id: str):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            msg = json.loads(data)
+            # Here you would validate moves and broadcast to other players in the room
+            # For now, we just echo back for testing
+            await websocket.send_text(json.dumps({"echo": msg}))
+    except WebSocketDisconnect:
+        pass
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
