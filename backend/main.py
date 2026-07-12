@@ -38,26 +38,43 @@ import json
 # room_id -> connected websockets
 game_rooms = defaultdict(set)
 
-@app.websocket("/ws/games/{game_id}/{room_id}")
+from fastapi import WebSocket, WebSocketDisconnect
+from platform.game_engine import active_sessions
+import json
+
+@app.websocket("/ws/games/{room_id}")
 async def game_websocket(websocket: WebSocket, room_id: str):
+    session = active_sessions.get(room_id)
+
+    if session is None:
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
 
-    game_rooms[room_id].add(websocket)
+    # Create socket list if it doesn't exist
+    session.setdefault("connections", [])
+    session["connections"].append(websocket)
 
     try:
         while True:
             data = await websocket.receive_text()
 
-            # Broadcast to every player in the room except the sender
-            for client in list(game_rooms[room_id]):
-                if client != websocket:
-                    await client.send_text(data)
+            # Broadcast to every connected player in this room
+            for connection in list(session["connections"]):
+                if connection != websocket:
+                    try:
+                        await connection.send_text(data)
+                    except Exception:
+                        session["connections"].remove(connection)
 
     except WebSocketDisconnect:
-        game_rooms[room_id].discard(websocket)
+        if websocket in session["connections"]:
+            session["connections"].remove(websocket)
 
-        if not game_rooms[room_id]:
-            del game_rooms[room_id]
+        # Clean up if nobody is connected anymore
+        if not session["connections"]:
+            session.pop("connections", None)
 
 if __name__ == "__main__":
     import uvicorn
