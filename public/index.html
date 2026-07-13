@@ -89,50 +89,26 @@
 
 <!-- SOCIAL WORKSPACE -->
 <div id="socialView" style="display: none;">
-  <!-- Toggle between Friends and News -->
+  <h2>👥 Social</h2>
   <div class="social-tabs">
-    <button class="social-tab active" data-tab="friends">👥 Friends</button>
-    <button class="social-tab" data-tab="news">📰 News</button>
+    <div class="social-tab active" id="tabFriends">Friends</div>
+    <div class="social-tab" id="tabNews">News</div>
   </div>
-
-  <!-- Friends Feed -->
-  <div id="friendsFeed" class="social-feed">
-    <div class="post-composer">
-      <textarea id="newPostContent" placeholder="What's on your mind?"></textarea>
-      <button id="btnPost" class="btn">Post</button>
-    </div>
-    <div id="friendsPosts" class="post-list">
-      <!-- posts will appear here -->
-    </div>
+  <div id="friendsFeed">
+    <div id="friendsPosts"></div>
   </div>
-
-  <!-- News Feed -->
-  <div id="newsFeed" class="social-feed" style="display: none;">
-    <div class="news-filters">
-      <select id="newsCategoryFilter">
-        <option value="">All Categories</option>
-        <option value="politics">Politics⚖️</option>
-        <option value="sports">Sports⚽</option>
-        <option value="education">Education🎓</option>
-        <option value="technology">Technology🧑‍💻</option>
-      </select>
-    </div>
-    <div id="newsPosts" class="post-list">
-      <!-- news posts will appear here -->
-    </div>
+  <div id="newsFeed" style="display:none;">
+    <div id="newsPosts"></div>
+    <input id="newPostContent" placeholder="What's on your mind?"><button id="btnPost">Post</button>
+    <!-- news category filter (optional) -->
+    <select id="newsCategoryFilter"><option value="">All</option><option value="sports">Sports⚽</option><option value="education">Education🎓</option></select>
   </div>
-
-  <!-- Messaging Panel (hidden by default) -->
-  <div id="messagingPanel" style="display: none;">
-    <div class="msg-header">
-      <button id="btnBackFromChat">← Back</button>
-      <span id="chatPartnerName"></span>
-    </div>
-    <div id="chatMessages" class="chat-messages"></div>
-    <div class="chat-input-area">
-      <input type="text" id="messageInput" placeholder="Type a message…">
-      <button id="btnSend">Send</button>
-    </div>
+  <!-- Messaging panel (hidden) -->
+  <div id="messagingPanel" style="display:none; flex-direction:column;">
+    <div id="chatPartnerName"></div>
+    <div id="chatMessages"></div>
+    <input id="messageInput"><button id="btnSend">Send</button>
+    <button id="btnBackFromChat">Back</button>
   </div>
 </div>
 
