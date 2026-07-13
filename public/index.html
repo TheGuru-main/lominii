@@ -156,17 +156,85 @@
 </div>
 
       <!-- EDU WORKSPACE -->
-      <div id="eduView" style="display: none;">
-        <h2>🎓 EDU</h2>
-        <div class="edu-grid">
-          <div class="card"><div class="icon">📚</div><h3>Curriculum</h3></div>
-          <div class="edu-card"><div class="icon">🏫</div><h3>Classroom</h3></div>
-          <div class="edu-card"><div class="icon">📊</div><h3>Progress</h3></div>
-        </div>
-        <div class="edu-placeholder">Your educational dashboard will appear here.</div>
+
+   <div id="eduView" style="display: none;">
+  <h2>🎓 EDU</h2>
+
+  <!-- Sub-tabs: Student | Teacher -->
+  <div class="edu-toggle">
+    <button class="toggle-btn active" id="toggleStudent" onclick="switchEduTab('student')">
+      🎓 Student
+    </button>
+
+    <button class="toggle-btn" id="toggleTeacher" onclick="switchEduTab('teacher')">
+      🏫 Teacher
+    </button>
+  </div>
+
+  <!-- STUDENT TAB -->
+  <div id="studentTab" class="edu-tab active">
+
+    <!-- Curriculum Browser -->
+    <div id="curriculumBrowser" class="curriculum-browser">
+      <h3>📚 Curriculum</h3>
+
+      <div class="subject-grid" id="subjectGrid">
+        <p class="loading-text">Loading subjects…</p>
       </div>
+    </div>
+
+    <!-- Daily Lesson -->
+    <div class="daily-card">
+      <h3>📝 Today's Lesson</h3>
+
+      <div id="dailyLesson">
+        <p class="loading-text">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Practice Quiz -->
+    <div class="quiz-card">
+      <h3>❓ Quick Practice</h3>
+
+      <div id="quizContainer">
+        <button class="btn" onclick="startPracticeQuiz()">
+          Start Practice Quiz
+        </button>
+      </div>
+    </div>
+
+    <!-- Mastery Progress -->
+    <div class="mastery-card">
+      <h3>📊 Your Progress</h3>
+
+      <div id="masteryBars">
+        <p class="loading-text">Loading mastery data...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TEACHER TAB -->
+  <div id="teacherTab" class="edu-tab" style="display:none;">
+
+    <div class="placeholder">
+      <h3>🏫 Teacher Portal</h3>
+
+      <p>Create classrooms.</p>
+      <p>Upload lessons.</p>
+      <p>Assign coursework.</p>
+      <p>Track student progress.</p>
+
+      <br>
+
+      <strong>Coming Soon.</strong>
+    </div>
+
+  </div>
+</div>
 
       <!-- QURAN WORKSPACE -->
+
       <div id="quranView" style="display: none;">
         <h2>📖 Quran</h2>
         <div class="placeholder">Quran reader and prayer times will appear here.</div>
