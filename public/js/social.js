@@ -1,32 +1,37 @@
-// ---------- Tab Switching ----------
+// ===== SOCIAL WORKSPACE LOGIC (REAL API) =====
 let currentSocialTab = 'friends';
+let currentChatFriend = null;
+let chatInterval = null;
 
 function switchSocialTab(tab) {
   currentSocialTab = tab;
-  document.getElementById('friendsFeed').style.display = tab === 'friends' ? 'block' : 'none';
-  document.getElementById('newsFeed').style.display = tab === 'news' ? 'block' : 'none';
-  document.getElementById('messagingPanel').style.display = 'none'; // close messaging
-  document.getElementById('tabFriends').classList.toggle('active', tab === 'friends');
-  document.getElementById('tabNews').classList.toggle('active', tab === 'news');
+  document.getElementById('toggleFriends').classList.toggle('active', tab === 'friends');
+  document.getElementById('toggleNews').classList.toggle('active', tab === 'news');
+  document.getElementById('friendsTab').style.display = tab === 'friends' ? 'block' : 'none';
+  document.getElementById('newsTab').style.display = tab === 'news' ? 'block' : 'none';
+  document.getElementById('messagingPanel').style.display = 'none';
   if (tab === 'friends') loadFriendsFeed();
   else loadNewsFeed();
 }
 
-// ---------- Friends Feed ----------
+// --- Friends Feed (real API) ---
 async function loadFriendsFeed() {
   const container = document.getElementById('friendsPosts');
   const loading = document.getElementById('friendsLoading');
+  loading.style.display = 'block';
   try {
-    const resp = await apiFetch('/api/social/feed');
-    if (!resp.ok) throw new Error('Failed to load feed');
+    const resp = await apiFetch('/api/social/feed', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Failed');
     const posts = await resp.json();
     if (posts.length === 0) {
       container.innerHTML = '<div class="placeholder">No posts from friends yet. Follow someone to see their updates!</div>';
     } else {
       container.innerHTML = posts.map(p => `
-        <div class="card">
+        <div class="post-card">
           <div class="post-author">${p.author_name || 'Unknown'}</div>
-          <p>${p.content}</p>
+          <div class="post-content">${p.content}</div>
           <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
           <div class="post-actions">
             <button onclick="likePost('${p.id}')">❤️ Like</button>
@@ -36,28 +41,33 @@ async function loadFriendsFeed() {
         </div>
       `).join('');
     }
-    loading.style.display = 'none';
   } catch (e) {
     container.innerHTML = '<div class="placeholder">⚠️ Could not load posts. Please try again.</div>';
+  } finally {
     loading.style.display = 'none';
   }
 }
 
-// ---------- lomiNews Feed ----------
+// --- News Feed (lomiNews, real API) ---
 async function loadNewsFeed() {
   const container = document.getElementById('newsPosts');
   const loading = document.getElementById('newsLoading');
+  const category = document.getElementById('newsCategory').value;
+  loading.style.display = 'block';
   try {
-    const resp = await apiFetch('/api/social/news');
-    if (!resp.ok) throw new Error('Failed to load news');
+    const url = category ? `/api/social/news?category=${encodeURIComponent(category)}` : '/api/social/news';
+    const resp = await apiFetch(url, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Failed');
     const posts = await resp.json();
     if (posts.length === 0) {
-      container.innerHTML = '<div class="placeholder">No news posts yet. Subscribe to categories or follow newscasters!</div>';
+      container.innerHTML = '<div class="placeholder">No news posts yet.</div>';
     } else {
       container.innerHTML = posts.map(p => `
-        <div class="card">
+        <div class="post-card">
           <div class="post-author">${p.author_name || 'Newscaster'} <span class="badge-newscaster">Newscaster</span></div>
-          <p>${p.content}</p>
+          <div class="post-content">${p.content}</div>
           <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
           <div class="post-actions">
             <button onclick="likePost('${p.id}')">❤️ Like</button>
@@ -67,67 +77,35 @@ async function loadNewsFeed() {
         </div>
       `).join('');
     }
-    loading.style.display = 'none';
   } catch (e) {
     container.innerHTML = '<div class="placeholder">⚠️ Could not load news. Please try again.</div>';
+  } finally {
     loading.style.display = 'none';
   }
 }
 
-// ---------- Messaging ----------
-let currentChatPartner = null;
-
-function openChat(partnerId, partnerName) {
-  currentChatPartner = partnerId;
-  document.getElementById('friendsFeed').style.display = 'none';
-  document.getElementById('newsFeed').style.display = 'none';
-  document.getElementById('messagingPanel').style.display = 'flex';
-  document.getElementById('chatPartnerName').textContent = partnerName;
-  loadChatMessages();
-}
-
-async function loadChatMessages() {
-  const container = document.getElementById('chatMessages');
-  container.innerHTML = '<p>Loading…</p>';
+// --- Create Post ---
+async function createPost() {
+  const content = document.getElementById('postContent').value.trim();
+  if (!content) return;
   try {
-    const resp = await apiFetch('/api/social/messages/inbox', {
-      headers: { 'Authorization': `Bearer ${getToken()}` }
+    const resp = await apiFetch('/api/social/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+      body: JSON.stringify({ content })
     });
-    const msgs = await resp.json();
-    const partnerMsgs = msgs.filter(m => m.sender_uid === currentChatPartner || m.recipient_uid === currentChatPartner);
-    container.innerHTML = partnerMsgs.map(m => `
-      <div class="msg-bubble ${m.sender_uid === getCurrentUserId() ? 'sent' : 'received'}">
-        <div>${m.body}</div>
-        <div class="time">${new Date(m.created_at).toLocaleString()}</div>
-      </div>
-    `).join('');
+    if (resp.ok) {
+      document.getElementById('postContent').value = '';
+      loadFriendsFeed();
+    } else {
+      alert('Failed to post');
+    }
   } catch (e) {
-    container.innerHTML = '<p>Could not load messages.</p>';
+    alert('Network error');
   }
 }
 
-document.getElementById('btnChatSend').addEventListener('click', async () => {
-  const body = document.getElementById('chatInput').value.trim();
-  if (!body || !currentChatPartner) return;
-  await apiFetch('/api/social/messages/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-    body: JSON.stringify({ recipient_uid: currentChatPartner, body })
-  });
-  document.getElementById('chatInput').value = '';
-  await loadChatMessages();
-});
-
-document.getElementById('btnBackFromChat').addEventListener('click', () => {
-  document.getElementById('messagingPanel').style.display = 'none';
-  if (currentSocialTab === 'friends') {
-    document.getElementById('friendsFeed').style.display = 'block';
-  } else {
-    document.getElementById('newsFeed').style.display = 'block';
-  }
-});
-
-// ---------- Actions ----------
+// --- Like & Comment ---
 async function likePost(postId) {
   await apiFetch('/api/social/like', {
     method: 'POST',
@@ -148,36 +126,109 @@ async function commentPost(postId) {
   loadFriendsFeed();
 }
 
+// --- View Profile ---
 async function viewProfile(uid) {
   try {
-    const r = await apiFetch(`/api/social/profile/${uid}`);
+    const r = await apiFetch(`/api/social/profile/${uid}`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
     const profile = await r.json();
     document.getElementById('profileName').textContent = profile.full_name;
     document.getElementById('profileRole').textContent = profile.creator_role === 'newscaster' ? `Newscaster (${profile.news_category})` : 'Content Creator';
-    document.getElementById('profilePosts').innerHTML = profile.posts.map(p => `<p>${p.content}</p>`).join('');
+    document.getElementById('profilePosts').innerHTML = profile.posts ? profile.posts.map(p => `<p>${p.content}</p>`).join('') : '';
     document.getElementById('profileModal').style.display = 'flex';
   } catch (e) {
     alert('Could not load profile');
   }
 }
-document.getElementById('closeProfile').addEventListener('click', () => {
+document.getElementById('closeProfile')?.addEventListener('click', () => {
   document.getElementById('profileModal').style.display = 'none';
 });
 
-// ---------- New Post ----------
-document.getElementById('btnPost').addEventListener('click', async () => {
-  const content = document.getElementById('postContent').value.trim();
-  if (!content) return;
-  await apiFetch('/api/social/post', {
+// --- Friends Panel (open from FAB) ---
+function openFriendsPanel() {
+  document.getElementById('friendsPanel').classList.add('open');
+  loadFriendsList();
+}
+function closeFriendsPanel() {
+  document.getElementById('friendsPanel').classList.remove('open');
+}
+
+async function loadFriendsList() {
+  const container = document.getElementById('friendsListContainer');
+  container.innerHTML = '<p class="loading-text">Loading…</p>';
+  try {
+    const resp = await apiFetch('/api/social/friends', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (!resp.ok) throw new Error('Failed');
+    const friends = await resp.json();
+    container.innerHTML = friends.map(f => `
+      <div class="friend-item" onclick="openChat('${f.uid}', '${f.name}')">👤 ${f.name}</div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = '<p>Could not load friends.</p>';
+  }
+}
+
+// --- Messaging (real API) ---
+function openChat(uid, name) {
+  currentChatFriend = { uid, name };
+  document.getElementById('chatPartnerName').textContent = name;
+  document.getElementById('friendsTab').style.display = 'none';
+  document.getElementById('newsTab').style.display = 'none';
+  document.getElementById('messagingPanel').style.display = 'flex';
+  document.getElementById('chatMessages').innerHTML = '';
+  if (chatInterval) clearInterval(chatInterval);
+  chatInterval = setInterval(loadChatMessages, 3000);
+  loadChatMessages();
+}
+
+function closeChat() {
+  currentChatFriend = null;
+  document.getElementById('messagingPanel').style.display = 'none';
+  if (currentSocialTab === 'friends') {
+    document.getElementById('friendsTab').style.display = 'block';
+  } else {
+    document.getElementById('newsTab').style.display = 'block';
+  }
+  if (chatInterval) clearInterval(chatInterval);
+}
+
+async function loadChatMessages() {
+  if (!currentChatFriend) return;
+  const container = document.getElementById('chatMessages');
+  try {
+    const resp = await apiFetch('/api/social/messages/inbox', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    const msgs = await resp.json();
+    const partnerMsgs = msgs.filter(m => m.from_uid === currentChatFriend.uid || m.to_uid === currentChatFriend.uid);
+    container.innerHTML = partnerMsgs.map(m => `
+      <div class="msg ${m.from_uid === getCurrentUserId() ? 'sent' : 'received'}">
+        <div>${m.text}</div>
+        <div class="time">${new Date(m.created_at).toLocaleString()}</div>
+      </div>
+    `).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch (e) {
+    container.innerHTML = '<p>Could not load messages.</p>';
+  }
+}
+
+document.getElementById('btnChatSend').addEventListener('click', async () => {
+  const body = document.getElementById('chatInput').value.trim();
+  if (!body || !currentChatFriend) return;
+  await apiFetch('/api/social/messages/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-    body: JSON.stringify({ content })
+    body: JSON.stringify({ target_uid: currentChatFriend.uid, text: body })
   });
-  document.getElementById('postContent').value = '';
-  loadFriendsFeed();
+  document.getElementById('chatInput').value = '';
+  await loadChatMessages();
 });
 
-// ---------- Category Subscription (lomiNews) ----------
+// --- Category Subscribe (News) ---
 async function subscribeCategory(category) {
   try {
     const resp = await apiFetch('/api/social/news/subscribe', {
@@ -197,5 +248,23 @@ async function subscribeCategory(category) {
   }
 }
 
-// Initial load
+// Helper: get current user ID (from JWT or stored)
+function getCurrentUserId() {
+  // Parse the JWT token (if stored) or return a placeholder
+  const token = getToken();
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub || 'me';
+    } catch (e) {}
+  }
+  return 'me';
+}
+
+// Helper: get token (from localStorage)
+function getToken() {
+  return localStorage.getItem('lominii_token') || '';
+}
+
+// Initialise social on first load
 switchSocialTab('friends');
