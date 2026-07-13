@@ -1,6 +1,6 @@
 """Pydantic schemas for request/response validation"""
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict
 from uuid import UUID
 from datetime import datetime
 
@@ -38,19 +38,16 @@ class MessageOut(BaseModel):
 # ==========================================================
 
 class SubjectOut(BaseModel):
-    id: UUID
+    id: int
     name: str
-    icon: str
 
     class Config:
         orm_mode = True
 
 
 class CurriculumOut(BaseModel):
-    id: UUID
-    subject_id: UUID
-    title: str
-    description: Optional[str] = None
+    id: int
+    name: str
 
     class Config:
         orm_mode = True
@@ -58,33 +55,29 @@ class CurriculumOut(BaseModel):
 
 class LessonOut(BaseModel):
     id: UUID
-    subject_id: UUID
     title: str
-    content: str
-    lesson_date: datetime
+    content: Optional[str]
+    created_at: datetime
 
     class Config:
         orm_mode = True
 
 
 class QuizQuestionOut(BaseModel):
-    id: UUID
-    question: str
-    option_a: str
-    option_b: str
-    option_c: str
-    option_d: str
+    id: int
+    question_text: str
+    options: dict
+
+    class Config:
+        orm_mode = True
 
 
 class QuizOut(BaseModel):
-    id: UUID
-    title: str
     questions: list[QuizQuestionOut]
 
 
 class QuizSubmitCreate(BaseModel):
-    quiz_id: UUID
-    answers: dict
+    answers: dict[int, str]
 
 
 class QuizSubmitOut(BaseModel):
@@ -94,8 +87,8 @@ class QuizSubmitOut(BaseModel):
 
 
 class MasteryOut(BaseModel):
-    subject: str
-    percentage: float
+    concept: str
+    mastery: float
 
 
 class ProgressOut(BaseModel):
@@ -108,8 +101,8 @@ class ProgressOut(BaseModel):
 class AssignmentOut(BaseModel):
     id: UUID
     title: str
-    description: str
-    due_date: datetime
+    description: Optional[str]
+    due_date: Optional[datetime]
 
     class Config:
         orm_mode = True
@@ -117,7 +110,7 @@ class AssignmentOut(BaseModel):
 
 class AssignmentSubmitCreate(BaseModel):
     assignment_id: UUID
-    answer: str
+    content: str
 
 
 class AssignmentSubmitOut(BaseModel):
@@ -127,14 +120,15 @@ class AssignmentSubmitOut(BaseModel):
 
 
 class ClassroomCreate(BaseModel):
+    subject_id: int
     name: str
-    description: Optional[str] = None
 
 
 class ClassroomOut(BaseModel):
     id: UUID
+    subject_id: int
     name: str
-    description: Optional[str]
+    created_at: datetime
 
     class Config:
         orm_mode = True
