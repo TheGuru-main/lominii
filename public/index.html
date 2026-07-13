@@ -86,54 +86,52 @@
       </div>
 
       <!-- SOCIAL WORKSPACE -->
+
+<!-- SOCIAL WORKSPACE -->
 <div id="socialView" style="display: none;">
+  <!-- Toggle between Friends and News -->
   <div class="social-tabs">
-    <button class="social-tab active" id="tabFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
-    <button class="social-tab" id="tabNews" onclick="switchSocialTab('news')">📰 lomiNews</button>
+    <button class="social-tab active" data-tab="friends">👥 Friends</button>
+    <button class="social-tab" data-tab="news">📰 News</button>
   </div>
-<div id="socialView" style="display: none;">
-  <div class="social-tabs">
-    <button class="social-tab active" id="tabFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
-    <button class="social-tab" id="tabNews" onclick="switchSocialTab('news')">📰 lomiNews</button>
-    </div>
-
-    <div class="placeholder">Your personalized news feed will appear here.</div>
-
-        <!-- Post creation -->
-        <div id="postBox" style="display:none;">
-          <textarea id="postContent" rows="2" placeholder="What's on your mind?"></textarea>
-          <button class="btn" id="btnPost">Post</button>
-        </div>
-
-        <!-- Feed / News / Chat containers -->
-        <div id="feedContainer"></div>
-        <div id="newsContainer" style="display:none;"></div>
-        <div id="chatContainer" style="display:none;">
 
   <!-- Friends Feed -->
   <div id="friendsFeed" class="social-feed">
-    <div class="placeholder" id="friendsLoading">Loading posts from friends…</div>
-    <div id="friendsPosts"></div>
-  </div>
-
-  <!-- lomiNews Feed -->
-  <div id="newsFeed" class="social-feed" style="display: none;">
-    <div class="news-categories">
-      <span class="news-chip" onclick="subscribeCategory('sports')">⚽ Sports</span>
-      <span class="news-chip" onclick="subscribeCategory('business')">💼 Business</span>
-      <span class="news-chip" onclick="subscribeCategory('finance')">📈 Finance</span>
-      <span class="news-chip" onclick="subscribeCategory('tech')">💻 Tech</span>
-      <span class="news-chip" onclick="subscribeCategory('education')">📚 Education</span>
+    <div class="post-composer">
+      <textarea id="newPostContent" placeholder="What's on your mind?"></textarea>
+      <button id="btnPost" class="btn">Post</button>
     </div>
-    <div class="placeholder" id="newsLoading">Loading news…</div>
-    <div id="newsPosts"></div>
+    <div id="friendsPosts" class="post-list">
+      <!-- posts will appear here -->
+    </div>
   </div>
 
-  <!-- Messages -->
-  <div class="social-messages">
-    <h3>💬 Messages</h3>
-    <div id="messagesList">
-      <div class="placeholder">Open a conversation to start chatting.</div>
+  <!-- News Feed -->
+  <div id="newsFeed" class="social-feed" style="display: none;">
+    <div class="news-filters">
+      <select id="newsCategoryFilter">
+        <option value="">All Categories</option>
+        <option value="politics">Politics⚖️</option>
+        <option value="sports">Sports⚽</option>
+        <option value="education">Education🎓</option>
+        <option value="technology">Technology🧑‍💻</option>
+      </select>
+    </div>
+    <div id="newsPosts" class="post-list">
+      <!-- news posts will appear here -->
+    </div>
+  </div>
+
+  <!-- Messaging Panel (hidden by default) -->
+  <div id="messagingPanel" style="display: none;">
+    <div class="msg-header">
+      <button id="btnBackFromChat">← Back</button>
+      <span id="chatPartnerName"></span>
+    </div>
+    <div id="chatMessages" class="chat-messages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="messageInput" placeholder="Type a message…">
+      <button id="btnSend">Send</button>
     </div>
   </div>
 </div>
