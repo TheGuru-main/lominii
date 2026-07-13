@@ -1,77 +1,65 @@
 """
 LOMINII EDU Router
-Curriculum • Lessons • Quizzes • Mastery • Assignments • Teacher Portal
+
+Main router for the EDU workspace.
+All EDU modules are registered here.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from fastapi import APIRouter
 
-from platform.database import get_db
-from platform.auth import get_current_user
-from platform.nsid import NSID
-
-from platform.models import (
-    User,
-    Subject,
-    Topic,
-    Subtopic,
-    Concept,
-    Question,
-    Lesson,
-    Assignment,
-    Submission,
-    Class,
-    ClassEnrollment,
-    ConceptMastery,
-    QuestionLog
-)
-
-from platform.schemas import (
-    SubjectOut,
-    CurriculumOut,
-    LessonOut,
-    QuizOut,
-    QuizSubmitCreate,
-    QuizSubmitOut,
-    MasteryOut,
-    ProgressOut,
-    AssignmentOut,
-    AssignmentSubmitCreate,
-    AssignmentSubmitOut,
-    ClassroomCreate,
-    ClassroomOut
+from . import (
+    onboarding,
+    dashboard,
+    curriculum,
+    classroom,
+    practice,
+    exams,
+    mastery,
+    analytics,
+    ai,
+    institutions,
+    notifications,
+    library,
+    bookshop,
+    settings,
+    profile,
 )
 
 router = APIRouter(
     prefix="/api/edu",
-    tags=["Education"]
+    tags=["LOMINII EDU"],
 )
 
 # ==========================================================
-# SUBJECTS
+# EDU MODULES
 # ==========================================================
 
-@router.get("/subjects", response_model=list[SubjectOut])
-async def get_subjects(
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Return all curriculum subjects.
-    """
+router.include_router(onboarding.router, prefix="/onboarding", tags=["Onboarding"])
 
-    subjects = (
-        await db.execute(
-            select(Subject)
-            .order_by(Subject.name.asc())
-        )
-    ).scalars().all()
+router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 
-    return [
-        SubjectOut(
-            id=s.id,
-            name=s.name,
-            icon="📘"     # temporary default icon
-        )
-        for s in subjects
-    ]
+router.include_router(curriculum.router, prefix="/curriculum", tags=["Curriculum"])
+
+router.include_router(classroom.router, prefix="/classroom", tags=["Classroom"])
+
+router.include_router(practice.router, prefix="/practice", tags=["Practice"])
+
+router.include_router(exams.router, prefix="/exams", tags=["Exams"])
+
+router.include_router(mastery.router, prefix="/mastery", tags=["Mastery"])
+
+router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+
+router.include_router(ai.router, prefix="/ai", tags=["AI Tutor"])
+
+router.include_router(institutions.router, prefix="/institutions", tags=["Institutions"])
+
+router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+
+router.include_router(library.router, prefix="/library", tags=["Library"])
+
+router.include_router(bookshop.router, prefix="/bookshop", tags=["Bookshop"])
+
+router.include_router(settings.router, prefix="/settings", tags=["Settings"])
+
+router.include_router(profile.router, prefix="/profile", tags=["Profile"])
