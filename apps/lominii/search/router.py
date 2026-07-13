@@ -66,7 +66,7 @@ async def unified_search(
     )).scalar_one_or_none()
 
     ttl = CACHE_TTL_AUTHENTICATED if user else CACHE_TTL_ANONYMOUS
-    if cached and (datetime.utcnow() - cached.cached_at) < timedelta(minutes=ttl):
+    if cached and cached.cached_at and (datetime.utcnow() - cached.cached_at) < timedelta(minutes=ttl):
         # Serve from cache
         return cached.result
 
@@ -146,14 +146,6 @@ async def unified_search(
         "related_questions": [],
         "gsg_cell": gsg_data
     }
-
-    # inside unified_search, when saving a search
-    new_search = Search(
-        user_id=user.id if user else None,
-        query=query,
-        gsp_cell=f"{primary['col']},{primary['row']}",
-        nsid=NSID.SEARCH
-    )
 
     # 11. Persist search and update cache
     if user:
