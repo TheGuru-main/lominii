@@ -1,5 +1,5 @@
 // LOMINII Service Worker – Offline caching, push notifications, and PWA support
-const CACHE_NAME = 'lominii-v1';
+const CACHE_NAME = 'lominii-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -47,23 +47,56 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// ---------- Push Notifications (premium news alerts, game invites) ----------
+// ---------- Push Notifications (now with type‑aware handling) ----------
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'LOMINII';
+
+  // Default values
+  let title = 'LOMINII';
+  let body = '';
+  let icon = '/icons/icon-192.png';
+  let badge = '/icons/badge-72.png';
+  let targetUrl = '/';
+  const type = data.type || '';
+
+  switch (type) {
+    case 'news':
+      title = '📰 LOMINII News';
+      icon = '/icons/news-icon-192.png';   // you can create a dedicated news icon
+      badge = '/icons/news-badge-72.png';
+      body = data.body || 'Breaking news from LOMINII';
+      targetUrl = data.url || '/?tab=news';
+      break;
+    case 'game_invite':
+      title = '🎮 LOMINII Play';
+      body = data.body || 'You have been invited to a game!';
+      targetUrl = data.url || '/?tab=games';
+      break;
+    case 'message':
+      title = '💬 New message';
+      body = data.body || 'You received a new message';
+      targetUrl = data.url || '/?tab=social';
+      break;
+    default:
+      // generic notification
+      body = data.body || '';
+      targetUrl = data.url || '/';
+  }
+
   const options = {
-    body: data.body || '',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/badge-72.png',
-    data: data.url || '/'
+    body,
+    icon,
+    badge,
+    data: { url: targetUrl, type }
   };
+
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // ---------- Notification click (open the app) ----------
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data;
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((clientList) => {
       for (const client of clientList) {
@@ -75,5 +108,13 @@ self.addEventListener('notificationclick', (event) => {
         return clients.openWindow(url);
       }
     })
+  );
+});
+
+// ---------- (Optional) Subscription change handling ----------
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    // You can later implement logic to send the new subscription to your backend
+    Promise.resolve()
   );
 });
