@@ -1,0 +1,95 @@
+/* ===== RESET & BASE ===== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  background: #0a0f1a;
+  overflow-x: hidden;
+}
+
+/* ===== BUTTONS ===== */
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 0.9rem;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid #3b82f6;
+  color: #3b82f6;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #4a6578;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* ===== COMMON CARDS ===== */
+
+.card {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.card:active {
+  transform: scale(0.97);
+}
+
+.card .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+.card p {
+  font-size: 0.85rem;
+  color: #4a6578;
+}
+
+/* ===== PLACEHOLDER ===== */
+
+.placeholder {
+  background: #fff;
+  border: 1px dashed #d0dce4;
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  color: #4a6578;
+  margin-bottom: 1.5rem;
+}
