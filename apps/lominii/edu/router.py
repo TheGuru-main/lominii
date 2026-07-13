@@ -9,23 +9,22 @@ from fastapi import APIRouter
 
 from . import lessons
 from . import progress
+from . import onboarding
+from . import practice
+from . import mastery
 
-from . import (
-    onboarding,
-    dashboard,
-    curriculum,
-    classroom,
-    practice,
-    exams,
-    mastery,
-    analytics,
-    ai,
-    institutions,
-    notifications,
-    library,
-    bookshop,
-    settings,
-    profile,
+dashboard
+    curriculum
+    classroom
+    analytics
+    ai
+    institutions
+    notifications
+    library
+    bookshop
+exams
+    settings
+    profile
 )
 
 router = APIRouter(
