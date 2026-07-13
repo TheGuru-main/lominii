@@ -115,22 +115,19 @@ async def unified_search(
     ai_summary = None
     if not is_ai_blocked(query):
         prompt_template = get_prompt(tier)
-        sources = f"Dictionary: {definition or 'None'}\nNews: {news_articles}" 
-"news": news_articles,
-"football_scores": football_scores
-"ai_summary": ai_summary,
+        sources = f"Dictionary: {definition or 'None'}\nNews: {news_articles}"
         prompt = prompt_template.format(query=norm_query, sources=sources, country=country, language=lang)
         ai_summary = prompt   # placeholder until real AI call
 
-# 8b. Fetch live football scores if the query is sports‑related
-football_scores = []
-if ctx["domain"] == "sports" or any(
-    word in query.lower() for word in ["football", "soccer", "live score", "premier league", "champions league"]
-):
-    try:
-        football_scores = await get_live_scores()
-    except Exception:
-        football_scores = []
+    # 8b. Fetch live football scores if the query is sports‑related
+    football_scores = []
+    if ctx["domain"] == "sports" or any(
+        word in query.lower() for word in ["football", "soccer", "live score", "premier league", "champions league"]
+    ):
+        try:
+            football_scores = await get_live_scores()
+        except Exception:
+            football_scores = []
 
     # 10. Build response
     response = {
@@ -143,19 +140,20 @@ if ctx["domain"] == "sports" or any(
         "elastic_cloud_size": len(cloud),
         "definition": definition,
         "news": news_articles,
+        "football_scores": football_scores,
         "ai_summary": ai_summary,
         "did_you_mean": None,
         "related_questions": [],
         "gsg_cell": gsg_data
     }
 
-# inside unified_search, when saving a search
-new_search = Search(
-    user_id=user.id,
-    query=query,
-    gsp_cell=f"{primary['col']},{primary['row']}",
-    nsid=NSID.SEARCH
-)
+    # inside unified_search, when saving a search
+    new_search = Search(
+        user_id=user.id if user else None,
+        query=query,
+        gsp_cell=f"{primary['col']},{primary['row']}",
+        nsid=NSID.SEARCH
+    )
 
     # 11. Persist search and update cache
     if user:
