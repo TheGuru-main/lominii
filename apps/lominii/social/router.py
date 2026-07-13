@@ -287,7 +287,7 @@ async def get_profile(uid: str, db: AsyncSession = Depends(get_db)):
         "posts": [{"id": str(p.id), "content": p.content, "created_at": p.created_at.isoformat()} for p in posts]
     }
 
-# ═══════════════════════════════════════════════════════════
+# ═══⚪⚪⚪⚪⚪⚪⚪⚪🚫🚫🚫🚫🚫🚫🚫════════════════════════════════════════════════════════
 # return post 
 # ═══════════════════════════════════════════════════════════
 @router.get("/feed")
@@ -372,33 +372,30 @@ async def my_subscriptions(email: str = Depends(get_current_user), db: AsyncSess
     return [s.category for s in subs]
 
 # ═══════════════════════════════════════════════════════════
-# lomiNews FEED (unchanged)
+# lomiNews FEED (uses Newscaster role)
 # ═══════════════════════════════════════════════════════════
-@router.get("/news")
-async def news_feed(request: Request, email: str = Depends(get_current_user), category: str = None, country: str = None, db: AsyncSession = Depends(get_db)):
-    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if category:
-        query = select(Post).join(User, Post.author_id == User.id).where(
-            User.creator_role == "newscaster", User.news_category == category
-        ).order_by(Post.created_at.desc()).limit(50)
-        posts = (await db.execute(query)).scalars().all()
-        return [{"id": str(p.id), "content": p.content, "author_id": str(p.author_id), "created_at": p.created_at.isoformat()} for p in posts]
-    followed_query = select(Follow.followee_id).where(Follow.follower_id == user.id)
-    followed_newscasters = (await db.execute(select(User.id).where(User.id.in_(followed_query), User.creator_role == "newscaster"))).scalars().all()
-    subscribed_categories = (await db.execute(select(NewsSubscription.category).where(NewsSubscription.user_id == user.id))).scalars().all()
-    conditions = []
-    if followed_newscasters:
-        conditions.append(Post.author_id.in_(followed_newscasters))
-    if subscribed_categories:
-        conditions.append(Post.author_id.in_(select(User.id).where(User.creator_role == "newscaster", User.news_category.in_(subscribed_categories))))
-    if not conditions:
-        return []
-    query = select(Post).where(or_(*conditions)).order_by(Post.created_at.desc()).limit(50)
-    posts = (await db.execute(query)).scalars().all()
-    return [{"id": str(p.id), "content": p.content, "author_id": str(p.author_id), "created_at": p.created_at.isoformat()} for p in posts]
 
+@router.get("/news")
+async def news_feed(
+    category: str = None,
+    country: str = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Return posts from newscasters, optionally filtered by category."""
+    query = select(Post).join(User, Post.author_id == User.id).where(User.creator_role == "newscaster")
+    if category:
+        query = query.where(User.news_category == category)
+    query = query.order_by(Post.created_at.desc()).limit(50)
+    posts = (await db.execute(query)).scalars().all()
+    return [
+        {
+            "id": str(p.id),
+            "content": p.content,
+            "author_id": str(p.author_id),
+            "created_at": p.created_at.isoformat()
+        }
+        for p in posts
+    ]
 
 # ═══════════════════════════════════════════════════════════
 #  FEED orch)
