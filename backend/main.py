@@ -14,6 +14,7 @@ from apps.lominii.auth.router import router as auth_router
 from apps.lominii.admin.router import router as admin_router
 from platform.sportmonk_service import start_webhook_proxy_loop 
 import asyncio
+from apps.lominii.chat.router import router as chat_router
 from platform.database import engine, Base
 
 app = FastAPI(title="LOMINII Platform", version="1.0.0")
@@ -24,6 +25,7 @@ app.include_router(games_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(football_router)
+app.include_router(chat_router)
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
 @app.on_event("startup")
