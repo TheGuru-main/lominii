@@ -1,0 +1,146 @@
+/* ===== SEARCH SECTION ===== */
+
+.search-section {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #d0dce4;
+  border-radius: 25px;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.search-results {
+  margin-bottom: 1.5rem;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.2rem;
+}
+
+/* ===== SEARCH HOME CARDS ===== */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* ===== SEARCH RESULTS ===== */
+
+.ai-summary-card {
+  background: #fff;
+  border-left: 4px solid #8b5cf6;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.ai-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8b5cf6;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.definition-card {
+  background: #fff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.def-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cell-info {
+  font-size: 0.8rem;
+  color: #6b7f8e;
+  margin-bottom: 1rem;
+  text-align: right;
+}
+
+.did-you-mean {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.did-you-mean span {
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.news-item {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.related-q {
+  background: #f0f4ff;
+  border: 1px solid #d0dce4;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.loading-pulse {
+  text-align: center;
+  padding: 2rem;
+  color: #3b82f6;
+  font-weight: 600;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.btn-sm {
+  display: inline-block;
+  width: auto;
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  border-radius: 20px;
+  margin-top: 0.5rem;
+}
