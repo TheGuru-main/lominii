@@ -86,29 +86,71 @@
       </div>
 
       <!-- SOCIAL WORKSPACE -->
-
-<!-- SOCIAL WORKSPACE -->
 <div id="socialView" style="display: none;">
-  <h2>👥 Social</h2>
-  <div class="social-tabs">
-    <div class="social-tab active" id="tabFriends">Friends</div>
-    <div class="social-tab" id="tabNews">News</div>
+  <!-- Top Toggle: Friends | News -->
+  <div class="social-toggle">
+    <button class="toggle-btn active" id="toggleFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
+    <button class="toggle-btn" id="toggleNews" onclick="switchSocialTab('news')">📰 News</button>
   </div>
-  <div id="friendsFeed">
-    <div id="friendsPosts"></div>
+
+  <!-- FRIENDS TAB -->
+  <div id="friendsTab" class="social-tab active">
+    <!-- Create Post -->
+    <div class="create-post">
+      <textarea id="postContent" placeholder="What's on your mind?" rows="2"></textarea>
+      <button class="btn" onclick="createPost()">Post</button>
+    </div>
+
+    <!-- Friends Feed -->
+    <div class="feed" id="friendsFeed">
+      <p class="loading-text">Loading posts…</p>
+    </div>
   </div>
-  <div id="newsFeed" style="display:none;">
-    <div id="newsPosts"></div>
-    <input id="newPostContent" placeholder="What's on your mind?"><button id="btnPost">Post</button>
-    <!-- news category filter (optional) -->
-    <select id="newsCategoryFilter"><option value="">All</option><option value="sports">Sports⚽</option><option value="education">Education🎓</option></select>
+
+  <!-- NEWS TAB (lomiNews) -->
+  <div id="newsTab" class="social-tab">
+    <!-- Category Filter -->
+    <div class="news-filters">
+      <select id="newsCategory" onchange="loadNewsFeed()">
+        <option value="">All Categories</option>
+        <option value="politics">Politics⚖️</option>
+        <option value="sports">Sports⚽</option>
+        <option value="education">Education🎓</option>
+        <option value="technology">Technology🧑‍💻</option>
+        <option value="entertainment">Entertainment🤡</option>
+      </select>
+    </div>
+
+    <!-- News Feed -->
+    <div class="feed" id="newsFeed">
+      <p class="loading-text">Loading news…</p>
+    </div>
   </div>
-  <!-- Messaging panel (hidden) -->
-  <div id="messagingPanel" style="display:none; flex-direction:column;">
-    <div id="chatPartnerName"></div>
-    <div id="chatMessages"></div>
-    <input id="messageInput"><button id="btnSend">Send</button>
-    <button id="btnBackFromChat">Back</button>
+
+  <!-- FLOATING ACTION BUTTON – opens Friends List & Chat -->
+  <button class="fab" onclick="openFriendsPanel()">💬</button>
+
+  <!-- FRIENDS LIST PANEL (hidden by default) -->
+  <div id="friendsPanel" class="friends-panel">
+    <div class="panel-header">
+      <h3>Friends</h3>
+      <button class="close-btn" onclick="closeFriendsPanel()">✕</button>
+    </div>
+    <div class="friends-list" id="friendsListContainer">
+      <p class="loading-text">Loading friends…</p>
+    </div>
+    <!-- Chat area (hidden initially, shown when a friend is selected) -->
+    <div id="chatArea" class="chat-area" style="display:none;">
+      <div class="chat-header">
+        <button onclick="closeChat()">← Back</button>
+        <span id="chatPartnerName">Chat</span>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area">
+        <input type="text" id="messageInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMessage()">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
   </div>
 </div>
 
