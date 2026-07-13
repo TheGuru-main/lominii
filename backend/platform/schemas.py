@@ -1,7 +1,7 @@
 """Pydantic schemas for request/response validation"""
 from pydantic import BaseModel
-from uuid import UUID
 from typing import Optional, List, Dict
+from uuid import UUID
 from datetime import datetime
 
 
@@ -32,10 +32,9 @@ class MessageOut(BaseModel):
     class Config:
         orm_mode = True
 
-
 # ===========================================================================
 # EDU SCHEMAS
-# =========================================================================== ---------------------------------------------------------------------------
+# ========================================================================== ---------------------------------------------------------------------------
 # CURRICULUM
 # ---------------------------------------------------------------------------
 
@@ -74,7 +73,10 @@ class SubjectOut(BaseModel):
         orm_mode = True
 
 
-# Returned by GET /api/edu/curriculum
+class SubjectListOut(BaseModel):
+    subjects: List[SubjectOut]
+
+
 class CurriculumOut(BaseModel):
     subjects: List[SubjectOut]
 
@@ -85,12 +87,18 @@ class CurriculumOut(BaseModel):
 
 class LessonOut(BaseModel):
     id: UUID
+    class_id: UUID
+    concept_id: int
     title: str
-    content: Optional[str]
+    content: Optional[str] = None
     created_at: datetime
 
     class Config:
         orm_mode = True
+
+
+class TodayLessonOut(BaseModel):
+    lesson: LessonOut
 
 
 # ---------------------------------------------------------------------------
@@ -99,12 +107,12 @@ class LessonOut(BaseModel):
 
 class QuizQuestionOut(BaseModel):
     id: int
-    question: str
-    options: list[str]
+    question_text: str
+    options: List[str]
 
 
 class QuizOut(BaseModel):
-    questions: list[QuizQuestionOut]
+    questions: List[QuizQuestionOut]
 
 
 class QuizSubmitCreate(BaseModel):
@@ -140,9 +148,11 @@ class ProgressOut(BaseModel):
 
 class AssignmentOut(BaseModel):
     id: UUID
+    lesson_id: UUID
     title: str
-    description: Optional[str]
-    due_date: Optional[datetime]
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+    created_at: datetime
 
     class Config:
         orm_mode = True
@@ -171,9 +181,18 @@ class ClassCreate(BaseModel):
 class ClassOut(BaseModel):
     id: UUID
     subject_id: int
-    name: str
     teacher_id: UUID
+    name: str
     created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class EnrollmentOut(BaseModel):
+    class_id: UUID
+    student_id: UUID
+    joined_at: datetime
 
     class Config:
         orm_mode = True
