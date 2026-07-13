@@ -28,8 +28,8 @@ VALID_GAMES = {
     "draft",
     "snooker",
 
-} 
-──────────────────────────────
+}
+
 @router.get("/")
 async def list_games():
     return [
@@ -98,8 +98,8 @@ async def send_game_invitation(
     receiver_id = data.get("receiver_id")
     game_id = data.get("game_id")
 
-if game_id not in VALID_GAMES:
-    raise HTTPException(status_code=400, detail="Invalid game")
+    if game_id not in VALID_GAMES:
+        raise HTTPException(status_code=400, detail="Invalid game")
 
     if not receiver_id:
         raise HTTPException(status_code=400, detail="receiver_id is required")
