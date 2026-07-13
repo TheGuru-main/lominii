@@ -331,6 +331,13 @@ class Lesson(Base):
     nsid = Column(SmallInteger, default=NSID.EDU)
     created_at = Column(DateTime, server_default="now()")
 
+class LessonProgress(Base):
+    student_id
+    lesson_id
+    completed
+    completed_at
+    time_spent
+
 class Assignment(Base):
     __tablename__ = "assignments"
     __table_args__ = {"schema": "classroom"}
