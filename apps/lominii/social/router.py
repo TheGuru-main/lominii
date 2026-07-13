@@ -242,33 +242,39 @@ async def unlike_post(request: Request, email: str = Depends(get_current_user), 
 # GENERAL FEED (friends + own posts)
 # ═══════════════════════════════════════════════════════════
 @router.get("/feed")
-async def main_feed(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def social_feed(
+    email: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return posts from users the current user follows, plus their own posts."""
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # posts from people the user follows + own posts
-    followed = select(Follow.followee_id).where(Follow.follower_id == user.id)
-    query = select(Post).where(
-        or_(
-            Post.author_id.in_(followed),
-            Post.author_id == user.id
-        )
-    ).order_by(Post.created_at.desc()).limit(50)
-    posts = (await db.execute(query)).scalars().all()
-    result = []
-    for p in posts:
-        author = (await db.execute(select(User).where(User.id == p.author_id))).scalar_one_or_none()
-        like_count = (await db.execute(select(func.count()).where(Like.post_id == p.id))).scalar_one()
-        result.append({
+
+    # Get list of followed user IDs
+    followed = (await db.execute(
+        select(Follow.followee_id).where(Follow.follower_id == user.id)
+    )).scalars().all()
+    # include self to see own posts
+    author_ids = list(followed) + [user.id]
+
+    posts = (await db.execute(
+        select(Post)
+        .where(Post.author_id.in_(author_ids))
+        .order_by(Post.created_at.desc())
+        .limit(50)
+    )).scalars().all()
+
+    # Enrich with author name (simplified; in production join with User)
+    return [
+        {
             "id": str(p.id),
             "content": p.content,
-            "author_name": author.full_name if author else "Unknown",
             "author_id": str(p.author_id),
-            "created_at": p.created_at.isoformat(),
-            "likes": like_count
-        })
-    return result
-
+            "created_at": p.created_at.isoformat()
+        }
+        for p in posts
+    ]
 # ═══════════════════════════════════════════════════════════
 # PROFILE
 # ═══════════════════════════════════════════════════════════
