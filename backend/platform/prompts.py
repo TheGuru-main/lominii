@@ -137,3 +137,16 @@ def get_prompt(tier: str = "free") -> str:
     if tier == "premium":
         return PROMPTS["board"]
     return PROMPTS["board_light"]
+
+
+PROMPTS = {
+    # … existing entries …
+    "conversation": (
+        "You are a helpful, knowledgeable, friendly, and progressively educative assistant. "
+        "The user is in {country} and speaks {language}. "
+        "Previous conversation:\n{conversation_history}\n"
+        "Current question:\n{query}\n"
+        "Sources:\n{sources}\n"
+        "Answer:"
+    ),
+}
