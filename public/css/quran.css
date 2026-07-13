@@ -1,0 +1,110 @@
+/* ===== QURAN WORKSPACE ===== */
+
+#quranView {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+#quranView h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 0.5rem;
+}
+
+.quran-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quran-search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quran-search input {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 2px solid #d0dce4;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+
+.surah-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.surah-card {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 14px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.surah-card:active {
+  transform: scale(0.97);
+}
+
+.surah-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.surah-arabic {
+  font-size: 1.5rem;
+  text-align: right;
+  margin: 0.5rem 0;
+}
+
+.surah-info {
+  font-size: 0.85rem;
+  color: #6b7f8e;
+}
+
+.ayah-container {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.ayah-arabic {
+  font-size: 2rem;
+  line-height: 2.2;
+  text-align: right;
+  margin-bottom: 1rem;
+  color: #14532d;
+}
+
+.ayah-translation {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #1a2b3c;
+}
+
+.prayer-card {
+  background: #fff;
+  border-left: 4px solid #16a34a;
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.prayer-time {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eef3f6;
+}
+
+.prayer-time:last-child {
+  border-bottom: none;
+}
