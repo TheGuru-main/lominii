@@ -7,6 +7,9 @@ All EDU modules are registered here.
 
 from fastapi import APIRouter
 
+from . import lessons
+
+)
 from . import (
     onboarding,
     dashboard,
@@ -63,3 +66,5 @@ router.include_router(bookshop.router, prefix="/bookshop", tags=["Bookshop"])
 router.include_router(settings.router, prefix="/settings", tags=["Settings"])
 
 router.include_router(profile.router, prefix="/profile", tags=["Profile"])
+
+router.include_router(lessons.router,prefix="/lesson", tags=["Lessons"],
