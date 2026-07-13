@@ -1,7 +1,7 @@
 """Pydantic schemas for request/response validation"""
 from pydantic import BaseModel
-from typing import Optional, List, Dict
 from uuid import UUID
+from typing import Optional, List, Dict
 from datetime import datetime
 
 
@@ -33,25 +33,55 @@ class MessageOut(BaseModel):
         orm_mode = True
 
 
-# ==========================================================
-# EDU
-# ==========================================================
+# ===========================================================================
+# EDU SCHEMAS
+# =========================================================================== ---------------------------------------------------------------------------
+# CURRICULUM
+# ---------------------------------------------------------------------------
+
+class ConceptOut(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+
+class SubtopicOut(BaseModel):
+    id: int
+    name: str
+    concepts: List[ConceptOut] = []
+
+    class Config:
+        orm_mode = True
+
+
+class TopicOut(BaseModel):
+    id: int
+    name: str
+    subtopics: List[SubtopicOut] = []
+
+    class Config:
+        orm_mode = True
+
 
 class SubjectOut(BaseModel):
     id: int
     name: str
+    topics: List[TopicOut] = []
 
     class Config:
         orm_mode = True
 
 
+# Returned by GET /api/edu/curriculum
 class CurriculumOut(BaseModel):
-    id: int
-    name: str
+    subjects: List[SubjectOut]
 
-    class Config:
-        orm_mode = True
 
+# ---------------------------------------------------------------------------
+# LESSONS
+# ---------------------------------------------------------------------------
 
 class LessonOut(BaseModel):
     id: UUID
@@ -63,13 +93,14 @@ class LessonOut(BaseModel):
         orm_mode = True
 
 
+# ---------------------------------------------------------------------------
+# QUIZZES
+# ---------------------------------------------------------------------------
+
 class QuizQuestionOut(BaseModel):
     id: int
-    question_text: str
-    options: dict
-
-    class Config:
-        orm_mode = True
+    question: str
+    options: list[str]
 
 
 class QuizOut(BaseModel):
@@ -86,8 +117,13 @@ class QuizSubmitOut(BaseModel):
     percentage: float
 
 
+# ---------------------------------------------------------------------------
+# MASTERY
+# ---------------------------------------------------------------------------
+
 class MasteryOut(BaseModel):
-    concept: str
+    concept_id: int
+    concept_name: str
     mastery: float
 
 
@@ -97,6 +133,10 @@ class ProgressOut(BaseModel):
     completed_assignments: int
     total_assignments: int
 
+
+# ---------------------------------------------------------------------------
+# ASSIGNMENTS
+# ---------------------------------------------------------------------------
 
 class AssignmentOut(BaseModel):
     id: UUID
@@ -119,15 +159,20 @@ class AssignmentSubmitOut(BaseModel):
     status: str
 
 
-class ClassroomCreate(BaseModel):
+# ---------------------------------------------------------------------------
+# CLASSROOMS
+# ---------------------------------------------------------------------------
+
+class ClassCreate(BaseModel):
     subject_id: int
     name: str
 
 
-class ClassroomOut(BaseModel):
+class ClassOut(BaseModel):
     id: UUID
     subject_id: int
     name: str
+    teacher_id: UUID
     created_at: datetime
 
     class Config:
