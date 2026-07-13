@@ -47,3 +47,31 @@ router = APIRouter(
     prefix="/api/edu",
     tags=["Education"]
 )
+
+# ==========================================================
+# SUBJECTS
+# ==========================================================
+
+@router.get("/subjects", response_model=list[SubjectOut])
+async def get_subjects(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Return all curriculum subjects.
+    """
+
+    subjects = (
+        await db.execute(
+            select(Subject)
+            .order_by(Subject.name.asc())
+        )
+    ).scalars().all()
+
+    return [
+        SubjectOut(
+            id=s.id,
+            name=s.name,
+            icon="📘"     # temporary default icon
+        )
+        for s in subjects
+    ]
