@@ -1,5 +1,6 @@
-"""LOMINII Chat Room – Conversational AI with real external sources"""
+"""LOMINII Chat Room – Conversational AI with real external sources + Hugging Face"""
 import asyncio
+import os
 import uuid
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -12,10 +13,13 @@ from platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter
 from platform.prompts import PROMPTS
 from platform.gsg import gps_to_gsg
 from platform.intent_analyzer import analyze
+from platform.models import User
 from schemas import ChatResponse, GSPCellOut, NewsItem
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
+HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+HF_MODEL = "facebook/bart-large-cnn"   # free, fast summarisation model
 
 @router.post("/", response_model=ChatResponse)
 async def chat(
@@ -30,6 +34,12 @@ async def chat(
     if is_blocked(query):
         raise HTTPException(status_code=400, detail="Blocked query")
 
+    # ---------- Real user context ----------
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    lang = user.language if user and user.language else "en"
+    country = "Nigeria"   # you can later add a country column to User
+    tier = user.subscription_status if user else "free"
+
     # ---------- Conversation history ----------
     history_list = data.get("history", [])
     history_str = ""
@@ -37,10 +47,6 @@ async def chat(
         role = msg.get("role", "user")
         content = msg.get("content", "")
         history_str += f"{role.capitalize()}: {content}\n"
-
-    # ---------- User context (simplified, extend with DB later) ----------
-    lang = "en"
-    country = "Nigeria"
 
     # ---------- Normalisation & intent ----------
     norm_query = normalise(query, lang)
@@ -107,8 +113,31 @@ async def chat(
         language=lang
     )
 
-    # ---------- AI call placeholder (replace with real AI call) ----------
-    ai_answer = prompt   # TODO: replace with actual Hugging Face inference
+    # ---------- Real Hugging Face inference ----------
+    ai_answer = None
+    if HF_API_KEY and not is_ai_blocked(query):
+        try:
+            async with httpx.AsyncClient() as client:
+                hf_response = await client.post(
+                    f"https://api-inference.huggingface.co/models/{HF_MODEL}",
+                    headers={"Authorization": f"Bearer {HF_API_KEY&&$$$&&###}"},
+                    json={"inputs": prompt},
+                    timeout=15.0
+                )
+                if hf_response.status_code == 200:
+                    result = hf_response.json()
+                    # The model returns a list of dicts with "summary_text"
+                    if isinstance(result, list) and len(result) > 0:
+                        ai_answer = result[0].get("summary_text", "")
+                else:
+                    # If model is still loading, Hugging Face returns 503 with estimated time
+                    ai_answer = "The AI is warming up. Please try again in a few seconds."
+        except Exception:
+            ai_answer = "I’m having trouble thinking right now. Please try again."
+
+    # Fallback if no AI answer was generated
+    if not ai_answer:
+        ai_answer = "I couldn’t generate a summary right now. Here’s what I found from the dictionary and news."
 
     # ---------- Build response ----------
     response = ChatResponse(
