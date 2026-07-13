@@ -196,3 +196,33 @@ class EnrollmentOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+# schemas.py (new models for chat)
+
+class ChatMessage(BaseModel):
+    role: str          # "user" or "assistant"
+    content: str
+
+class ChatRequest(BaseModel):
+    query: str
+    history: List[ChatMessage] = []
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+
+class GSPCellOut(BaseModel):
+    col: int
+    row: int
+    cell_id: str
+
+class NewsItem(BaseModel):
+    title: str
+    url: str
+
+class ChatResponse(BaseModel):
+    query: str
+    answer: str
+    gsp_cell: Optional[GSPCellOut] = None
+    definition: Optional[str] = None
+    news: List[NewsItem] = []
+    did_you_mean: Optional[str] = None
+    conversation_id: str
