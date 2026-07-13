@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/search", tags=["Search"])
 
 # Cache TTLs (in minutes)
 CACHE_TTL_ANONYMOUS = 5
-CACHE_TTL_AUTHENTICATED = 30
+CACHE_TTL_AUTHENTICATED = 300
 
 
 def build_cache_key(query: str, lang: str, domain: str) -> str:
