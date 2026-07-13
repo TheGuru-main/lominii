@@ -1,0 +1,67 @@
+/* ===== EDU WORKSPACE ===== */
+
+#eduView {
+  display: none;
+}
+
+.edu-header {
+  margin-bottom: 1.5rem;
+}
+
+.edu-header h2 {
+  font-size: 1.8rem;
+  color: #1a2b3c;
+  margin-bottom: 0.3rem;
+}
+
+.edu-header p {
+  color: #6b7f8e;
+  font-size: 0.95rem;
+}
+
+.edu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.edu-card {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.edu-card:active {
+  transform: scale(0.97);
+}
+
+.edu-card .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.edu-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+  color: #1a2b3c;
+}
+
+.edu-card p {
+  font-size: 0.85rem;
+  color: #6b7f8e;
+}
+
+.edu-placeholder {
+  background: #fff;
+  border: 1px dashed #d0dce4;
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  color: #4a6578;
+}
