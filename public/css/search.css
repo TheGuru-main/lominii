@@ -1,4 +1,4 @@
-/* ===== SEARCH SECTION ===== */
+/* ===== SEARCH ===== */
 
 .search-section {
   margin-bottom: 2rem;
@@ -23,8 +23,6 @@
   padding: 1.2rem;
 }
 
-/* ===== SEARCH HOME CARDS ===== */
-
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -32,7 +30,45 @@
   margin-bottom: 2rem;
 }
 
-/* ===== SEARCH RESULTS ===== */
+.card {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.card:active {
+  transform: scale(0.97);
+}
+
+.card .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+.card p {
+  font-size: 0.85rem;
+  color: #4a6578;
+}
+
+.placeholder {
+  background: #fff;
+  border: 1px dashed #d0dce4;
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  color: #4a6578;
+  margin-bottom: 1.5rem;
+}
 
 .ai-summary-card {
   background: #fff;
@@ -120,15 +156,6 @@
   animation: pulse 1.2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%,100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .5;
-  }
-}
-
 .error-state {
   text-align: center;
   padding: 2rem;
@@ -136,11 +163,11 @@
   font-weight: 600;
 }
 
-.btn-sm {
-  display: inline-block;
-  width: auto;
-  padding: 0.4rem 1rem;
-  font-size: 0.8rem;
-  border-radius: 20px;
-  margin-top: 0.5rem;
+@keyframes pulse {
+  0%,100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
 }
