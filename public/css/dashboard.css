@@ -1,0 +1,138 @@
+/* ===== DASHBOARD HEADER ===== */
+
+.header {
+  background: #fff;
+  border-bottom: 1px solid #d0dce4;
+  padding: 0.8rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.user-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  position: relative;
+}
+
+.dropdown {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  min-width: 180px;
+  display: none;
+  z-index: 200;
+}
+
+.dropdown a {
+  display: block;
+  padding: 0.8rem 1.2rem;
+  color: #1a2b3c;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.dropdown a:hover {
+  background: #f0f4f8;
+}
+
+.show {
+  display: block;
+}
+
+/* ===== MAIN CONTENT ===== */
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1rem;
+  background: #e8f4f8;
+}
+
+/* ===== FOOTER NAVIGATION ===== */
+
+.footer-nav {
+  background: #fff;
+  border-top: 1px solid #d0dce4;
+  padding: 0.6rem 1rem;
+  display: none;
+  justify-content: space-around;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.search-home .footer-nav {
+  display: flex;
+}
+
+.footer-nav .nav-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 1.5rem;
+  color: #4a6578;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.footer-nav .nav-icon.active {
+  color: #3b82f6;
+}
+
+.footer-nav .nav-icon span {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* ===== BACK BUTTON ===== */
+
+.back-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 25px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 150;
+  display: none;
+}
+
+.workspace-view .back-toggle {
+  display: block;
+}
