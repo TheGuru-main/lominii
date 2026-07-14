@@ -7,8 +7,9 @@ from platform.database import get_db
 from platform.auth import get_current_user
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
 from platform.nsid import NSID
-from models import Message, User
-from schemas import MessageOut, MessageCreate
+from platform.models import Message, User
+from platform.schemas import MessageCreate, MessageOut
+
 
 router = APIRouter(
     prefix="/api/social/messages",
