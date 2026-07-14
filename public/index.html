@@ -53,6 +53,7 @@
     </header>
 
     <div class="main-content" id="mainContent">
+
       <!-- SEARCH HOME -->
       <div id="homeView">
         <div class="search-section">
@@ -77,7 +78,10 @@
         <div class="placeholder">📰 Latest News (loading…)</div>
       </div>
 
-      <!-- GAMES WORKSPACE -->
+<!-- ========================================================= -->
+<!-- !-- GAMES WORKSPACE -->>
+<!-- ========================================================= --><
+
       <div id="gamesView" style="display: none;">
         <h2>🎮 Games</h2>
         <div class="game-carousel" id="gameCarousel">
@@ -85,6 +89,8 @@
 </div>
         <div class="placeholder">More games coming soon!</div>
       </div>
+
+
 <!-- ========================================================= -->
 <!-- SOCIAL WORKSPACE -->
 <!-- ========================================================= -->
@@ -307,9 +313,275 @@
                 </div>
 
             </div>
+<!-- =============================================== -->
+            <!-- CHAT AREA -->
+            <!-- =============================================== -->
+
+            <section
+                id="chatArea"
+                class="chat-area"
+                style="display:none;">
+
+                <div class="chat-header">
+
+                    <button
+                        class="back-btn"
+                        onclick="closeChat()">
+
+                        ←
+
+                    </button>
+
+                    <span id="chatPartnerName">
+
+                        Conversation
+
+                    </span>
+
+                </div>
+
+                <div
+                    id="chatMessages"
+                    class="chat-messages">
+
+                    <div class="loading-text">
+
+                        Select a friend to start chatting.
+
+                    </div>
+
+                </div>
+
+                <div class="chat-input-area">
+
+                    <input
+                        id="messageInput"
+                        type="text"
+                        maxlength="4000"
+                        placeholder="Type a message..."
+                        onkeydown="if(event.key==='Enter'){sendMessage();}">
+
+                    <button
+                        class="btn btn-primary"
+                        onclick="sendMessage()">
+
+                        Send
+
+                    </button>
+
+                </div>
+
+            </section>
+
+        </aside>
 
 
-      <!-- EDU WORKSPACE -->
+        <!-- =============================================== -->
+        <!-- WATCH MODE -->
+        <!-- =============================================== -->
+
+        <section
+            id="watchMode"
+            class="watch-mode"
+            style="display:none;">
+
+            <div
+                id="watchFriendName"
+                class="watch-friend-name">
+
+            </div>
+
+            <div
+                id="watchPosts"
+                class="watch-posts">
+
+                <div class="loading-text">
+
+                    No stories available.
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- QUICK MESSAGE BOX -->
+        <!-- =============================================== -->
+
+        <section
+            id="messageBox"
+            class="message-box">
+
+            <div class="message-header">
+
+                <span id="messageFriendName">
+
+                    Friend
+
+                </span>
+
+                <button
+                    class="msg-close"
+                    onclick="closeMessage()">
+
+                    ✕
+
+                </button>
+
+            </div>
+
+            <div
+                id="messageHistory"
+                class="message-history">
+
+            </div>
+
+            <div class="message-input-area">
+
+                <input
+                    id="messageInputSocial"
+                    type="text"
+                    maxlength="4000"
+                    placeholder="Reply..."
+                    onkeydown="if(event.key==='Enter'){sendSocialMessage();}">
+
+                <button
+                    class="btn btn-primary"
+                    onclick="sendSocialMessage()">
+
+                    Send
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- STATUS VIEWER -->
+        <!-- =============================================== -->
+
+        <section
+            id="statusViewer"
+            class="status-viewer">
+
+            <div
+                id="viewerContent"
+                class="viewer-content">
+
+            </div>
+
+            <div class="viewer-controls">
+
+                <button
+                    class="btn btn-primary"
+                    onclick="closeStatusViewer()">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- CREATE STATUS -->
+        <!-- =============================================== -->
+
+        <section
+            id="statusCreator"
+            class="status-creator">
+
+            <div class="creator-panel">
+
+                <h3>Create Status</h3>
+
+                <textarea
+                    id="statusText"
+                    maxlength="500"
+                    placeholder="Share something with your friends...">
+                </textarea>
+
+                <div class="lifespan-slider">
+
+                    <input
+                        id="lifespanSlider"
+                        type="range"
+                        min="0"
+                        max="3"
+                        step="1"
+                        value="1">
+
+                    <div class="lifespan-labels">
+
+                        <span>2h</span>
+
+                        <span>24h</span>
+
+                        <span>7d</span>
+
+                        <span>30d</span>
+
+                    </div>
+
+                </div>
+
+                <button
+                    class="btn btn-primary"
+                    onclick="createStatus()">
+
+                    Publish Status
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- FLOATING CHAT BUTTON -->
+        <!-- =============================================== -->
+
+        <button
+            class="fab"
+            id="socialFab"
+            onclick="openFriendsPanel()">
+
+            💬
+
+        </button>
+
+
+        <!-- =============================================== -->
+        <!-- WATCH / FEED SWITCH -->
+        <!-- =============================================== -->
+
+        <button
+            id="switchBtn"
+            class="switch-btn"
+            onclick="toggleSocialMode()">
+
+            <span id="switchLabel">
+
+                Watch
+
+            </span>
+
+        </button>
+
+    </div>
+
+</div>
+
+           <!-- =============================================== -->
+        <!-- <!-- EDU WORKSPACE -->>
+        <!-- =============================================== -->
 
    <div id="eduView">
 <div id="teacherTab" class="edu-tab">
