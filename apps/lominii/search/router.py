@@ -13,7 +13,11 @@ from platform.auth import get_current_user
 from platform.database import get_db
 from platform.gsg import gps_to_gsg
 from platform.intent_analyzer import analyze
-from platform.models import User, Search, SearchCache
+from platform.models.public import User
+from platform.models.search import (
+    Search,
+    SearchCache,
+)
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
 
