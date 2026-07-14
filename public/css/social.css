@@ -315,8 +315,7 @@
   font-size: 0.9rem;
 }
 
-/* ── Status Circle ── */
-
+/* ===== EPHEMERAL STATUS CIRCLE ===== */
 .status-circle-container {
   position: absolute;
   top: 1rem;
@@ -341,18 +340,18 @@
 
 .status-circle:active { transform: scale(0.95); }
 
-/* pulsating ring when friends have active statuses */
+/* Pulsating ring when friends have active statuses */
 .status-circle.has-active {
   box-shadow: 0 0 0 4px rgba(59,130,246,0.3);
   animation: pulse-ring 2s infinite;
 }
+
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 4px rgba(59,130,246,0.3); }
   50% { box-shadow: 0 0 0 12px rgba(59,130,246,0); }
   100% { box-shadow: 0 0 0 4px rgba(59,130,246,0.3); }
 }
 
-/* badge for active count */
 .status-badge {
   position: absolute;
   top: -4px;
@@ -369,7 +368,7 @@
   font-weight: 700;
 }
 
-/* ── Friends Dropdown ── */
+/* ===== FRIENDS DROPDOWN ===== */
 .status-dropdown {
   position: absolute;
   top: 80px;
@@ -417,9 +416,11 @@
   background: #10b981;
 }
 .dot.voice { background: #f59e0b; }
-.dot.text { background: #3b82f6; }
+.dot.text  { background: #3b82f6; }
+.dot.video { background: #ef4444; }
 
-/* ── Status Viewer (full screen) ── */
+/* ===== STATUS VIEWER (full‑screen) ===== */
+
 .status-viewer {
   position: fixed;
   top: 0; left: 0;
@@ -439,10 +440,16 @@
   padding: 2rem;
 }
 .viewer-content video,
-.viewer-content img {
+.viewer-content audio {
   max-width: 100%;
   max-height: 70vh;
   border-radius: 12px;
+}
+.viewer-text {
+  color: #fff;
+  font-size: 1.8rem;
+  text-align: center;
+  padding: 2rem;
 }
 
 .viewer-controls {
@@ -452,7 +459,7 @@
   gap: 1rem;
 }
 
-/* ── Status Creator ── */
+/* ===== STATUS CREATOR ===== */
 .status-creator {
   position: fixed;
   top: 0; left: 0;
