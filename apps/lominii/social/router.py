@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
 from platform.database import get_db
 from platform.auth import get_current_user
+from platform.models import Status
 from platform.schemas import MessageCreate, MessageOut
 from platform.content_filter import is_blocked
 from platform.nsid import NSID
@@ -370,8 +371,6 @@ async def news_feed(
 # ═══════════════════════════════════════════════════════════
 # STATUS UPDATE 
 # ═══════════════════════════════════════════════════════════
-
-from platform.models import Status   # add to imports
 
 @router.get("/status/friends")
 async def status_friends(
