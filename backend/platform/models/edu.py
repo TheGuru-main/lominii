@@ -121,3 +121,62 @@ class Concept(Base):
         back_populates="concept",
         cascade="all, delete-orphan",
     )
+
+class Question(Base):
+    __tablename__ = "questions"
+    __table_args__ = {"schema": "curriculum"}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    concept_id = Column(
+        Integer,
+        ForeignKey("curriculum.concepts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    question_text = Column(Text, nullable=False)
+    options = Column(JSONB)
+    correct_answer = Column(Text)
+    difficulty = Column(String(20))
+    exam_type = Column(String(20))
+    year = Column(Integer)
+    tags = Column(JSONB)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+
+    concept = relationship(
+        "Concept",
+        back_populates="questions",
+    )
+
+
+class KnowledgeLink(Base):
+    __tablename__ = "knowledge_links"
+    __table_args__ = {"schema": "curriculum"}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    concept_id_1 = Column(
+        Integer,
+        ForeignKey("curriculum.concepts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    concept_id_2 = Column(
+        Integer,
+        ForeignKey("curriculum.concepts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    relationship = Column(String(50))
+    nsid = Column(SmallInteger, default=NSID.EDU)
+
+    concept_one = relationship(
+        "Concept",
+        foreign_keys=[concept_id_1],
+    )
+
+    concept_two = relationship(
+        "Concept",
+        foreign_keys=[concept_id_2],
+    )
