@@ -113,38 +113,6 @@ class VideoCache(Base):
 # ===========================================================================
 # SOCIAL
 # ===========================================================================
-class SocialProfile(Base):
-    __tablename__ = "profiles"
-    __table_args__ = {"schema": "social"}
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    core_user_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
-    social_uid = Column(String(20), unique=True, nullable=False)
-    full_name = Column(String(255), nullable=False)
-    bio = Column(Text)
-    avatar_url = Column(Text)
-    location = Column(String)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
-
-class Follow(Base):
-    __tablename__ = "follows"
-    __table_args__ = {"schema": "social"}
-    follower_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), primary_key=True)
-    followee_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), primary_key=True)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
-
-class Post(Base):
-    __tablename__ = "posts"
-    __table_args__ = {"schema": "social"}
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    author_id = Column(UUID(as_uuid=True), ForeignKey("social.profiles.id"), nullable=False)
-    content = Column(Text, nullable=False)
-    media_urls = Column(JSONB)
-    visibility = Column(String(20), default="public")
-    location = Column(String)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
 
 class Status(Base):
     __tablename__ = "statuses"
