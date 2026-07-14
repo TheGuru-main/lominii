@@ -268,3 +268,143 @@ function getToken() {
 
 // Initialise social on first load
 switchSocialTab('friends');
+
+/* ===== EPHEMERAL STATUS SYSTEM ===== */
+
+// Load active friends' statuses and update the circle badge
+async function loadStatusCircle() {
+  try {
+    const resp = await apiFetch('/api/social/status/friends');
+    const data = await resp.json();
+    const friends = data.friends;   // [{uid, name, media_type, expires_at}, ...]
+    const badge = document.getElementById('statusBadge');
+    const circle = document.getElementById('statusCircle');
+
+    if (friends.length > 0) {
+      badge.style.display = 'flex';
+      badge.textContent = friends.length;
+      circle.classList.add('has-active');
+      buildStatusDropdown(friends);
+    } else {
+      badge.style.display = 'none';
+      circle.classList.remove('has-active');
+    }
+  } catch (err) {
+    // silently ignore – no connection or no friends
+  }
+}
+
+// Build the dropdown list of friends with active statuses
+function buildStatusDropdown(friends) {
+  const dropdown = document.getElementById('statusDropdown');
+  dropdown.innerHTML = friends.map(f => {
+    const initials = f.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    return `
+      <div class="status-friend" onclick="watchFriendStatus('${f.uid}')">
+        <div class="avatar">${initials}</div>
+        <div class="name">${f.name}</div>
+        <div class="dot ${f.media_type}"></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Toggle the dropdown
+function openStatusDropdown() {
+  document.getElementById('statusDropdown').classList.toggle('open');
+}
+
+// Watch a specific friend's statuses
+async function watchFriendStatus(uid) {
+  try {
+    const resp = await apiFetch(`/api/social/status/friend/${uid}`);
+    const data = await resp.json();
+    const statuses = data.statuses;
+    const viewer = document.getElementById('statusViewer');
+    const content = document.getElementById('viewerContent');
+    viewer.classList.add('open');
+    playStatuses(statuses, content);
+  } catch (err) {
+    alert('Could not load statuses.');
+  }
+}
+
+// Play statuses sequentially (simple version – you can enhance with swipe)
+function playStatuses(statuses, container) {
+  let index = 0;
+  function showNext() {
+    if (index >= statuses.length) {
+      closeStatusViewer();
+      return;
+    }
+    const s = statuses[index];
+    if (s.media_type === 'text') {
+      container.innerHTML = `<div class="viewer-text">${s.content}</div>`;
+    } else if (s.media_type === 'voice') {
+      container.innerHTML = `<audio controls src="${s.content}" style="width:100%"></audio>`;
+    } else if (s.media_type === 'video') {
+      container.innerHTML = `<video controls src="${s.content}" style="width:100%"></video>`;
+    }
+    index++;
+    // auto‑advance after 5 seconds (adjust as needed)
+    setTimeout(showNext, 5000);
+  }
+  showNext();
+}
+
+// Close the status viewer
+function closeStatusViewer() {
+  document.getElementById('statusViewer').classList.remove('open');
+}
+
+// Create a new status (triggered by the creator panel)
+function createStatus() {
+  const text = document.getElementById('statusText').value.trim();
+  if (!text) return alert('Please write something.');
+  const lifespanValues = [2, 24, 168, 720]; // hours
+  const slider = document.getElementById('lifespanSlider');
+  const hours = lifespanValues[slider.value];
+
+  apiFetch('/api/social/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ media_type: 'text', content: text, lifespan_hours: hours })
+  }).then(() => {
+    document.getElementById('statusCreator').classList.remove('open');
+    loadStatusCircle();   // refresh the circle badge
+  }).catch(() => alert('Failed to create status.'));
+}
+
+// Open creator on long‑press of the circle
+let longPressTimer;
+document.getElementById('statusCircle').addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  longPressTimer = setTimeout(() => {
+    document.getElementById('statusCreator').classList.add('open');
+  }, 600);  // 600ms long‑press
+});
+document.getElementById('statusCircle').addEventListener('touchend', () => {
+  clearTimeout(longPressTimer);
+});
+// Also support mouse long‑press for desktop testing
+document.getElementById('statusCircle').addEventListener('mousedown', (e) => {
+  longPressTimer = setTimeout(() => {
+    document.getElementById('statusCreator').classList.add('open');
+  }, 600);
+});
+document.getElementById('statusCircle').addEventListener('mouseup', () => {
+  clearTimeout(longPressTimer);
+});
+
+// Load the circle when the social tab becomes active
+// (triggered from your tab switching logic – you can also call loadStatusCircle() when the social view is shown)
+document.addEventListener('DOMContentLoaded', () => {
+  // Initial load when page first opens (if social is default? No, but we can listen for tab switch)
+  // We'll assume your dashboard.js calls a function when switching to social.
+  // For now, we'll just load once after 2 seconds to give the app time to render.
+  setTimeout(loadStatusCircle, 2000);
+});
+
+// If you have a function that's called whenever the social tab is activated, add loadStatusCircle() there.
+// Example: if your dashboard.js has a switchToWorkspace function, add:
+// if (workspace === 'social') loadStatusCircle();
