@@ -13,7 +13,7 @@ from platform.gsp import (
     first_letter_index,
     gsp_place,
 )
-from platform.models import User
+from platform.models.public import User
 from platform.models.messages import Message
 from platform.nsid import NSID
 from platform.schemas import MessageCreate, MessageOut
