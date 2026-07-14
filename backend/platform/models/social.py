@@ -253,3 +253,22 @@ class CommunityMember(Base):
         "SocialProfile",
     )
 
+
+class PrivacySettings(Base):
+    __tablename__ = "privacy_settings"
+    __table_args__ = {"schema": "social"}
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    profile_visibility = Column(String(20), default="public")
+    search_visibility = Column(String(20), default="public")
+    friend_request_permission = Column(String(20), default="everyone")
+    last_seen_visibility = Column(String(20), default="friends")
+
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
+    updated_at = Column(DateTime, server_default="now()")
