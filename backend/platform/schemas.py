@@ -227,3 +227,54 @@ class ChatResponse(BaseModel):
     news: List[NewsItem] = []
     did_you_mean: Optional[str] = None
     conversation_id: str
+
+
+# ==========================================================
+# SOCIAL
+# ==========================================================
+
+class PostCreate(BaseModel):
+    content: str
+    media_urls: Optional[List[str]] = None
+    visibility: str = "public"
+    location: Optional[str] = None
+
+
+class PostOut(BaseModel):
+    id: UUID
+    author_id: UUID
+    content: str
+    media_urls: Optional[List[str]] = None
+    visibility: str
+    location: Optional[str]
+    nsid: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class CommentCreate(BaseModel):
+    content: str
+
+
+class CommentOut(BaseModel):
+    id: UUID
+    post_id: UUID
+    author_id: UUID
+    content: str
+    nsid: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class LikeOut(BaseModel):
+    post_id: UUID
+    user_id: UUID
+    nsid: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
