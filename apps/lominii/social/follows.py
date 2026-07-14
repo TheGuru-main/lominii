@@ -5,7 +5,8 @@ from sqlalchemy import select
 
 from platform.auth import get_current_user
 from platform.database import get_db
-from platform.models import User, Follow
+from platform.models.public import User
+from platform.models.social import Follow
 from platform.nsid import NSID
 
 router = APIRouter(
