@@ -14,7 +14,7 @@ router = APIRouter(
 # FOLLOWS
 # ═══════════════════════════════════════════════════════════
 
-@router.post("/follow")
+@router.post("/")
 async def follow_user(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
     target_uid = data.get("target_uid")
@@ -39,7 +39,7 @@ async def follow_user(request: Request, email: str = Depends(get_current_user), 
     await db.commit()
     return {"status": "following"}
 
-@router.delete("follow")
+@router.delete("")
 async def unfollow_user(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
     target_uid = data.get("target_uid")
