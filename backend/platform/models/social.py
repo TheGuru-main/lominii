@@ -15,6 +15,7 @@ from sqlalchemy.orm import relationship
 from platform.database import Base
 from platform.nsid import NSID
 
+
 class SocialProfile(Base):
     __tablename__ = "profiles"
     __table_args__ = {"schema": "social"}
