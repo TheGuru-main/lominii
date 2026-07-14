@@ -1,4 +1,5 @@
 """SQLAlchemy ORM Models – all LOMINII schemas"""
+
 import uuid
 from sqlalchemy import (
     Column, Integer, SmallInteger, String, Float, DateTime,
@@ -40,27 +41,6 @@ class Search(Base):
     gsp_cell = Column(String(10))
     nsid = Column(SmallInteger, default=NSID.SEARCH)
     created_at = Column(DateTime, server_default="now()")
-
-class Message(Base):
-    __tablename__ = "messages"
-    __table_args__ = {"schema": "search"}
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    sender_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False)
-    recipient_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False)
-    sender_cell = Column(String(10), nullable=False)
-    conversation_cell = Column(String(10), nullable=False)
-    body = Column(Text)
-    media_url = Column(Text)
-    reply_to_id = Column(UUID(as_uuid=True), ForeignKey("search.messages.id"), nullable=True)
-    is_edited = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default="now()")
-    updated_at = Column(DateTime(timezone=True), onupdate="now()")
-    deleted_at = Column(DateTime(timezone=True), nullable=True)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-
-    sender = relationship("User", foreign_keys=[sender_id])
-    recipient = relationship("User", foreign_keys=[recipient_id])
 
 class Trending(Base):
     __tablename__ = "trending"
