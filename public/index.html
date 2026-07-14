@@ -189,6 +189,31 @@
   </div>
 </div>
 
+<!-- WATCH MODE (hidden by default) -->
+
+<div class="watch-mode" id="watchMode" style="display:none;">
+  <div class="watch-friend-name" id="watchFriendName"></div>
+  <div class="watch-posts" id="watchPosts"></div>
+</div>
+
+<!-- MESSAGE BOX (floating, for quick reply) -->
+<div class="message-box" id="messageBox" style="display:none;">
+  <div class="message-header">
+    <span id="messageFriendName"></span>
+    <button class="msg-close" onclick="closeMessage()">✕</button>
+  </div>
+  <div class="message-history" id="messageHistory"></div>
+  <div class="message-input-area">
+    <input type="text" id="messageInputSocial" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendSocialMessage()">
+    <button onclick="sendSocialMessage()">Send</button>
+  </div>
+</div>
+
+<!-- SWITCH BUTTON (Feed / Watch) -->
+<div class="switch-btn" id="switchBtn" onclick="toggleSocialMode()">
+  <span id="switchLabel">Watch</span>
+</div>
+
       <!-- EDU WORKSPACE -->
 
    <div id="eduView">
