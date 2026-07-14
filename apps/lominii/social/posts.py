@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from platform.auth import get_current_user
 from platform.content_filter import is_blocked
 from platform.database import get_db
-from platform.models import (
-    User,
+from platform.models.public import User
+from platform.models.social import (
     Follow,
     Post,
     Comment,
