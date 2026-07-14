@@ -297,3 +297,21 @@ class FriendRequest(Base):
     updated_at = Column(DateTime, server_default="now()")
 
 
+class BlockedUser(Base):
+    __tablename__ = "blocked_users"
+    __table_args__ = {"schema": "social"}
+
+    blocker_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    blocked_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
