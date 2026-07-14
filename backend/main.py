@@ -10,7 +10,6 @@ from apps.lominii.search.router import router as search_router
 from apps.lominii.football.router import router as football_router
 from apps.lominii.games.router import router as games_router
 from apps.lominii.social.router import router as social_router
-from .messages import router as messages_router
 from apps.lominii.auth.router import router as auth_router
 from apps.lominii.admin.router import router as admin_router
 from platform.sportmonk_service import start_webhook_proxy_loop 
@@ -26,7 +25,6 @@ app.include_router(games_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(football_router)
-social_router.include_router(messages_router)
 app.include_router(chat_router)
 app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
