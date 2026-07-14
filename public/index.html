@@ -88,6 +88,40 @@
 
       <!-- SOCIAL WORKSPACE -->
 <div id="socialView" style="display: none;">
+<!-- STATUS CIRCLE (top‑right) -->
+<div class="status-circle-container">
+  <div class="status-circle" id="statusCircle" onclick="openStatusDropdown()">
+    <span id="statusInitial">A</span>
+    <span class="status-badge" id="statusBadge" style="display:none">0</span>
+  </div>
+
+  <!-- Friends Dropdown -->
+  <div class="status-dropdown" id="statusDropdown"></div>
+</div>
+
+<!-- STATUS VIEWER (full‑screen) -->
+<div class="status-viewer" id="statusViewer">
+  <div class="viewer-content" id="viewerContent"></div>
+  <div class="viewer-controls">
+    <button class="btn btn-sm" onclick="closeStatusViewer()">✕ Close</button>
+  </div>
+</div>
+
+<!-- STATUS CREATOR (opens on long‑press) -->
+<div class="status-creator" id="statusCreator">
+  <div class="creator-panel">
+    <h3>Create Status</h3>
+    <textarea id="statusText" placeholder="What's on your mind?"></textarea>
+    <div class="lifespan-slider">
+      <input type="range" id="lifespanSlider" min="0" max="3" value="1" step="1">
+      <div class="lifespan-labels">
+        <span>2h</span><span>24h</span><span>7d</span><span>30d</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="createStatus()">Share</button>
+  </div>
+</div>
+
   <!-- Top Toggle: Friends | News -->
   <div class="social-toggle">
     <button class="toggle-btn active" id="toggleFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
