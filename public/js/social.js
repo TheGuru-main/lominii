@@ -408,3 +408,101 @@ document.addEventListener('DOMContentLoaded', () => {
 // If you have a function that's called whenever the social tab is activated, add loadStatusCircle() there.
 // Example: if your dashboard.js has a switchToWorkspace function, add:
 // if (workspace === 'social') loadStatusCircle();
+
+/* ===== SOCIAL WORKSPACE LOGIC ===== */
+let socialMode = 'feed'; // 'feed' or 'watch'
+let currentFriendUid = null;
+let friends = []; // fetched from API
+
+// Toggle status circle dropdown
+document.getElementById('statusCircle').addEventListener('click', async () => {
+  const dropdown = document.getElementById('friendDropdown');
+  if (dropdown.style.display === 'block') {
+    dropdown.style.display = 'none';
+    return;
+  }
+  // Fetch friends (mock for now, replace with real API call)
+  // In production: fetch('/api/social/friends') etc.
+  friends = [
+    { uid: '12345', name: 'Alice', online: true },
+    { uid: '67890', name: 'Bob', online: false },
+    { uid: '11111', name: 'Charlie', online: true },
+  ];
+  renderFriendDropdown();
+  dropdown.style.display = 'block';
+});
+
+function renderFriendDropdown() {
+  const list = document.getElementById('friendList');
+  list.innerHTML = friends.map(f => `
+    <div class="friend-item" data-uid="${f.uid}">
+      <span class="dot ${f.online ? 'online' : 'offline'}"></span>
+      <span>${f.name}</span>
+      <button class="btn-msg" onclick="event.stopPropagation(); openMessage('${f.uid}','${f.name}')">💬</button>
+    </div>
+  `).join('');
+  // Attach click to each friend item for Watch mode
+  list.querySelectorAll('.friend-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      const uid = item.dataset.uid;
+      enterWatchMode(uid);
+      document.getElementById('friendDropdown').style.display = 'none';
+    });
+  });
+}
+
+function enterWatchMode(uid) {
+  currentFriendUid = uid;
+  const friend = friends.find(f => f.uid === uid);
+  document.getElementById('watchFriendName').textContent = friend ? friend.name : 'Friend';
+  document.getElementById('socialFeed').style.display = 'none';
+  document.getElementById('watchMode').style.display = 'block';
+  document.getElementById('statusCircle').style.transform = 'scale(0.5)';
+  document.getElementById('statusCircle').style.top = '10px';
+  document.getElementById('statusCircle').style.right = 'auto';
+  document.getElementById('statusCircle').style.left = '10px';
+  document.getElementById('switchLabel').textContent = 'Feed';
+  socialMode = 'watch';
+  // Fetch friend's posts (mock)
+  document.getElementById('watchPosts').innerHTML = '<div class="post-card">Friend post content…</div>';
+}
+
+function toggleSocialMode() {
+  if (socialMode === 'feed') {
+    // Switch to watch mode (requires a friend selected first)
+    if (friends.length === 0) return;
+    enterWatchMode(friends[0].uid);
+  } else {
+    // Switch back to feed
+    document.getElementById('watchMode').style.display = 'none';
+    document.getElementById('socialFeed').style.display = 'block';
+    document.getElementById('statusCircle').style.transform = '';
+    document.getElementById('statusCircle').style.top = '';
+    document.getElementById('statusCircle').style.right = '';
+    document.getElementById('statusCircle').style.left = '';
+    document.getElementById('switchLabel').textContent = 'Watch';
+    socialMode = 'feed';
+  }
+}
+
+// Simple inline message box
+function openMessage(uid, name) {
+  document.getElementById('messageFriendName').textContent = name;
+  document.getElementById('messageBox').style.display = 'flex';
+  currentFriendUid = uid;
+  // Load message history (mock)
+  document.getElementById('messageHistory').innerHTML = '<p>Chat history loading…</p>';
+}
+function closeMessage() {
+  document.getElementById('messageBox').style.display = 'none';
+}
+function sendSocialMessage() {
+  const input = document.getElementById('messageInputSocial');
+  const text = input.value.trim();
+  if (!text) return;
+  // Call backend: POST /api/social/messages/send
+  // For now, just append locally
+  const history = document.getElementById('messageHistory');
+  history.innerHTML += `<p><strong>You:</strong> ${text}</p>`;
+  input.value = '';
+}
