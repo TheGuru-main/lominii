@@ -12,10 +12,8 @@ from platform.models.social import (
     Post,
 )
 
-from platform.schemas import (
-    SocialProfileOut,
-    PostOut,
-)
+from platform.schemas import PostOut
+
 
 router = APIRouter(
     prefix="/profiles",
