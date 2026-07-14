@@ -11,11 +11,18 @@ from platform.content_filter import is_blocked
 from platform.models.messages import Message
 from platform.models.public import User, OTP
 from platform.models.social import (
+    SocialProfile,
     Follow,
     Post,
+    Status,
     Comment,
     Like,
-    Status,
+    Community,
+    CommunityMember,
+    PrivacySettings,
+    FriendRequest,
+    BlockedUser,
+    MutedUser,
 )
 
 from platform.models.news import NewsSubscription
