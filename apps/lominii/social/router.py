@@ -19,118 +19,11 @@ router = APIRouter(prefix="/api/social", tags=["Social"])
 
 router.include_router(messages_router)
 
-# ═══════════════════════════════════════════════════════════
-# MESSAGING (aligned with real Message model)
-# ═══════════════════════════════════════════════════════════
-
-@router.post("/messages/send", response_model=MessageOut)
-async def send_message(
-    payload: MessageCreate,   # FastAPI validates the incoming JSON automatically
-    email: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-
-):
-    data = await request.json()
-    recipient_uid = data.get("recipient_uid")    # core UID of the recipient
-    body = data.get("body", "").strip()
-    if not recipient_uid or not body:
-        raise HTTPException(status_code=400, detail="Missing recipient_uid or body")
-    if is_blocked(body):
-        raise HTTPException(status_code=400, detail="Blocked content")
-
-    # Look up both users
-    sender = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    recipient = (await db.execute(select(User).where(User.id == payload.recipient_uid))).scalar_one_or_none()
-    if not sender or not recipient:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Compute GSP cells (sender's point‑node and a deterministic conversation cell)
-    sender_L = calculate_lsum(sender.full_name)
-    sender_S = calculate_ssum(sender.full_name)
-    sender_c = first_letter_index(sender.full_name)
-    sender_primary = gsp_place(sender_L, sender_S, sender_c, K=1)["primary_cell"]
-    sender_cell_str = f"{sender_primary['col']},{sender_primary['row']}"
-
-    # Conversation cell = a cell derived from both users (deterministic for the pair)
-    conv_L = calculate_lsum(f"{sender.id}{recipient.id}")
-    conv_S = calculate_ssum(f"{sender.id}{recipient.id}")
-    conv_c = first_letter_index(f"{sender.id}{recipient.id}")
-    conv_primary = gsp_place(conv_L, conv_S, conv_c, K=1)["primary_cell"]
-    conv_cell_str = f"{conv_primary['col']},{conv_primary['row']}"
-
-    # Create the message
-    from platform.models import NSID   # we'll define NSID next
-    msg = Message(
-        sender_id=sender.id,
-        recipient_id=recipient.id,
-        body=body,
-        sender_cell=sender_cell_str,
-        conversation_cell=conv_cell_str,
-        nsid=NSID.SOCIAL
-    )
-    db.add(msg)
-    await db.commit()
-    await db.refresh(msg)
-    return {
-        "message_id": str(msg.id),
-        "sender_cell": sender_cell_str,
-        "conversation_cell": conv_cell_str,
-        "created_at": msg.created_at.isoformat()
-    }
 
 
-@router.get("/messages/inbox", response_model=list[MessageOut])
-async def inbox(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
-    
-    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Get all messages where the user is the recipient, ordered by newest first
-    messages = (await db.execute(
-        select(Message)
-        .where(Message.recipient_id == user.id)
-        .order_by(Message.created_at.desc())
-        .limit(50)
-    )).scalars().all()
-
-    return [
-        {
-            "id": str(m.id),
-            "sender_uid": str(m.sender_id),
-            "body": m.body,
-            "media_url": m.media_url,
-            "created_at": m.created_at.isoformat(),
-            "is_edited": m.is_edited,
-            "sender_cell": m.sender_cell,
-            "conversation_cell": m.conversation_cell,
-        }
-        for m in messages
-    ]
-
-
-@router.delete("/messages/{message_id}")
-async def delete_message(
-    message_id: str,
-    email: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    msg = (await db.execute(select(Message).where(Message.id == message_id))).scalar_one_or_none()
-    if not msg or msg.recipient_id != user.id:
-        raise HTTPException(status_code=404, detail="Message not found")
-
-    await db.delete(msg)
-    await db.commit()
-    return {"status": "deleted"}
-
-# ═══════════════════════════════════════════════════════════
 # FOLLOWS
 # ═══════════════════════════════════════════════════════════
+
 @router.post("/follow")
 async def follow_user(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
