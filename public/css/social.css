@@ -868,3 +868,514 @@
     font-size:1.2rem;
 
 }
+
+/* ==========================================================
+   LOMINII SOCIAL
+   PART 3
+   Status • Story Viewer • Responsive • Animations
+========================================================== */
+
+
+/* ==========================================================
+   STATUS CIRCLE
+========================================================== */
+
+.status-circle-container{
+
+    position:relative;
+
+}
+
+.status-circle{
+
+    width:64px;
+    height:64px;
+
+    border-radius:50%;
+
+    background:#ffffff;
+
+    border:3px solid #2f80ed;
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    cursor:pointer;
+
+    position:relative;
+
+    font-weight:700;
+
+    font-size:1.3rem;
+
+    transition:.25s;
+
+}
+
+.status-circle:hover{
+
+    transform:scale(1.05);
+
+}
+
+.status-circle.has-active{
+
+    border-color:#10b981;
+
+}
+
+.status-circle.watching{
+
+    transform:scale(.65);
+
+}
+
+
+/* ==========================================================
+   STATUS BADGE
+========================================================== */
+
+.status-badge{
+
+    position:absolute;
+
+    top:-4px;
+    right:-4px;
+
+    width:22px;
+    height:22px;
+
+    border-radius:50%;
+
+    background:#ef4444;
+
+    color:#ffffff;
+
+    font-size:.75rem;
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    font-weight:700;
+
+}
+
+
+/* ==========================================================
+   STATUS DROPDOWN
+========================================================== */
+
+.status-dropdown{
+
+    position:absolute;
+
+    top:76px;
+    right:0;
+
+    width:280px;
+
+    background:#ffffff;
+
+    border-radius:18px;
+
+    overflow:hidden;
+
+    display:none;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.18);
+
+    z-index:300;
+
+}
+
+.status-dropdown.open{
+
+    display:block;
+
+}
+
+.status-friend{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    padding:14px;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.status-friend:hover{
+
+    background:#f7fbff;
+
+}
+
+.status-friend .avatar{
+
+    width:42px;
+    height:42px;
+
+    border-radius:50%;
+
+    background:#2f80ed;
+
+    color:#ffffff;
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    font-weight:700;
+
+}
+
+.status-friend .name{
+
+    flex:1;
+
+    font-weight:600;
+
+}
+
+.status-friend .dot{
+
+    width:10px;
+    height:10px;
+
+    border-radius:50%;
+
+    background:#10b981;
+
+}
+
+
+/* ==========================================================
+   STORY VIEWER
+========================================================== */
+
+.status-viewer{
+
+    position:fixed;
+
+    inset:0;
+
+    display:none;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    background:#000000;
+
+    z-index:999;
+
+}
+
+.status-viewer.open{
+
+    display:flex;
+
+}
+
+.viewer-content{
+
+    width:100%;
+
+    max-width:700px;
+
+    padding:30px;
+
+    color:#ffffff;
+
+    text-align:center;
+
+}
+
+.viewer-controls{
+
+    margin-top:20px;
+
+}
+
+.viewer-controls button{
+
+    min-width:130px;
+
+}
+
+
+/* ==========================================================
+   STATUS CREATOR
+========================================================== */
+
+.status-creator{
+
+    position:fixed;
+
+    inset:0;
+
+    display:none;
+
+    justify-content:center;
+
+    align-items:center;
+
+    background:rgba(0,0,0,.75);
+
+    z-index:1000;
+
+}
+
+.status-creator.open{
+
+    display:flex;
+
+}
+
+.creator-panel{
+
+    width:92%;
+
+    max-width:420px;
+
+    background:#ffffff;
+
+    border-radius:20px;
+
+    padding:24px;
+
+}
+
+.creator-panel h3{
+
+    margin-top:0;
+
+}
+
+.creator-panel textarea{
+
+    width:100%;
+
+    min-height:120px;
+
+    resize:none;
+
+    border:1px solid #d9e4ee;
+
+    border-radius:12px;
+
+    padding:14px;
+
+    margin:16px 0;
+
+    outline:none;
+
+}
+
+.creator-panel textarea:focus{
+
+    border-color:#2f80ed;
+
+}
+
+
+/* ==========================================================
+   LIFESPAN SLIDER
+========================================================== */
+
+.lifespan-slider{
+
+    margin-bottom:20px;
+
+}
+
+.lifespan-slider input{
+
+    width:100%;
+
+}
+
+.lifespan-labels{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    font-size:.8rem;
+
+    color:#7d8fa1;
+
+    margin-top:8px;
+
+}
+
+
+/* ==========================================================
+   WATCH BUTTON
+========================================================== */
+
+.switch-btn{
+
+    position:fixed;
+
+    bottom:84px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    background:#2f80ed;
+
+    color:#ffffff;
+
+    border:none;
+
+    border-radius:30px;
+
+    padding:12px 24px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 24px rgba(47,128,237,.35);
+
+    z-index:150;
+
+}
+
+.switch-btn:hover{
+
+    background:#196fd8;
+
+}
+
+
+/* ==========================================================
+   SCROLLBAR
+========================================================== */
+
+.feed::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.friends-list::-webkit-scrollbar,
+.watch-mode::-webkit-scrollbar,
+.message-history::-webkit-scrollbar{
+
+    width:6px;
+
+}
+
+.feed::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.friends-list::-webkit-scrollbar-thumb,
+.watch-mode::-webkit-scrollbar-thumb,
+.message-history::-webkit-scrollbar-thumb{
+
+    background:#d6dee8;
+
+    border-radius:10px;
+
+}
+
+
+/* ==========================================================
+   ANIMATIONS
+========================================================== */
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(10px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:none;
+
+    }
+
+}
+
+.post-card,
+.news-card,
+.friend-item{
+
+    animation:fadeIn .25s ease;
+
+}
+
+
+/* ==========================================================
+   MOBILE
+========================================================== */
+
+@media (max-width:768px){
+
+    .social-header{
+
+        padding:14px;
+
+    }
+
+    .friends-panel{
+
+        width:100%;
+        max-width:none;
+
+    }
+
+    .status-dropdown{
+
+        width:100%;
+        right:0;
+
+    }
+
+    .fab{
+
+        width:54px;
+        height:54px;
+
+        bottom:82px;
+
+    }
+
+    .switch-btn{
+
+        width:160px;
+
+    }
+
+    .creator-panel{
+
+        width:95%;
+
+    }
+
+    .chat-input-area input,
+    .message-input-area input{
+
+        font-size:16px;
+
+    }
+
+}
