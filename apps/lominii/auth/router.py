@@ -12,9 +12,8 @@ from platform.bubblejumbo import (
 )
 from platform.content_filter import is_blocked
 from platform.database import get_db
-from platform.models import User
+from platform.models.public import User, OTP
 from platform.otp_service import generate_otp, send_otp
-from platform.models import OTP
 import re
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
