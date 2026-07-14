@@ -198,3 +198,28 @@ class Like(Base):
     user = relationship(
         "SocialProfile",
     )
+
+
+
+class Community(Base):
+    __tablename__ = "communities"
+    __table_args__ = {"schema": "social"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        nullable=False,
+    )
+
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
+
+    members = relationship(
+        "CommunityMember",
+        back_populates="community",
+        cascade="all, delete-orphan",
+    )
