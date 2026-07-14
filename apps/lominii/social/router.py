@@ -6,12 +6,11 @@ from sqlalchemy import select
 from platform.database import get_db
 from platform.auth import get_current_user
 from datetime import datetime, timedelta
-from .messages import router as messages_router
 from platform.content_filter import is_blocked
 from platform.models import (
     User, Follow, Post, Comment, Like, NewsSubscription, Status
 )
-
+from .messages import router as messages_router
 router = APIRouter(prefix="/api/social", tags=["Social"])
 
 router.include_router(messages_router)
