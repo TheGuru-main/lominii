@@ -1,6 +1,6 @@
 """LOMINII Social Room – Router (complete: feed, likes, profile, news, chat)"""
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from platform.database import get_db
