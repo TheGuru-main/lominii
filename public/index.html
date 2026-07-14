@@ -85,128 +85,229 @@
 </div>
         <div class="placeholder">More games coming soon!</div>
       </div>
+<!-- ========================================================= -->
 <!-- SOCIAL WORKSPACE -->
-<div id="socialView" style="display: none;">
+<!-- ========================================================= -->
+<div id="socialView" class="workspace-view" style="display:none;">
 
-  <!-- STATUS CIRCLE (top‑right) -->
-  <div class="status-circle-container">
-    <div class="status-circle" id="statusCircle" onclick="openStatusDropdown()">
-      <span id="statusInitial">A</span>
-      <span class="status-badge" id="statusBadge" style="display:none">0</span>
-    </div>
-    <!-- Friends Dropdown -->
-    <div class="status-dropdown" id="statusDropdown"></div>
-  </div>
+    <div class="social-workspace">
 
-  <!-- STATUS VIEWER (full‑screen, for future use) -->
-  <div class="status-viewer" id="statusViewer">
-    <div class="viewer-content" id="viewerContent"></div>
-    <div class="viewer-controls">
-      <button class="btn btn-sm" onclick="closeStatusViewer()">✕ Close</button>
-    </div>
-  </div>
+        <!-- =============================================== -->
+        <!-- HEADER -->
+        <!-- =============================================== -->
+        <header class="social-header">
 
-  <!-- STATUS CREATOR (opens on long‑press, for future use) -->
-  <div class="status-creator" id="statusCreator">
-    <div class="creator-panel">
-      <h3>Create Status</h3>
-      <textarea id="statusText" placeholder="What's on your mind?"></textarea>
-      <div class="lifespan-slider">
-        <input type="range" id="lifespanSlider" min="0" max="3" value="1" step="1">
-        <div class="lifespan-labels">
-          <span>2h</span><span>24h</span><span>7d</span><span>30d</span>
+            <div class="social-title">
+                <h2>LOMINII Social</h2>
+                <small>Friends • News • Conversations</small>
+            </div>
+
+            <div class="status-circle-container">
+
+                <div
+                    class="status-circle"
+                    id="statusCircle"
+                    onclick="openStatusDropdown()">
+
+                    <span id="statusInitial">A</span>
+
+                    <span
+                        id="statusBadge"
+                        class="status-badge"
+                        style="display:none;">
+                        0
+                    </span>
+
+                </div>
+
+                <!-- Friends Status Dropdown -->
+                <div
+                    id="statusDropdown"
+                    class="status-dropdown">
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =============================================== -->
+        <!-- FRIENDS | NEWS -->
+        <!-- =============================================== -->
+
+        <div class="social-toggle">
+
+            <button
+                id="toggleFriends"
+                class="toggle-btn active"
+                onclick="switchSocialTab('friends')">
+
+                👥 Friends
+
+            </button>
+
+            <button
+                id="toggleNews"
+                class="toggle-btn"
+                onclick="switchSocialTab('news')">
+
+                📰 News
+
+            </button>
+
         </div>
-      </div>
-      <button class="btn btn-primary" onclick="createStatus()">Share</button>
-    </div>
-  </div>
 
-  <!-- Top Toggle: Friends | News -->
-  <div class="social-toggle">
-    <button class="toggle-btn active" id="toggleFriends" onclick="switchSocialTab('friends')">👥 Friends</button>
-    <button class="toggle-btn" id="toggleNews" onclick="switchSocialTab('news')">📰 News</button>
-  </div>
 
-  <!-- FRIENDS TAB -->
-  <div id="friendsTab" class="social-tab active">
-    <!-- Create Post -->
-    <div class="create-post">
-      <textarea id="postContent" placeholder="What's on your mind?" rows="2"></textarea>
-      <button class="btn" onclick="createPost()">Post</button>
-    </div>
-    <!-- Friends Feed -->
-    <div class="feed" id="friendsFeed">
-      <p class="loading-text">Loading posts…</p>
-    </div>
-  </div>
+        <!-- =============================================== -->
+        <!-- FRIENDS TAB -->
+        <!-- =============================================== -->
 
-  <!-- NEWS TAB (lomiNews) -->
-  <div id="newsTab" class="social-tab" style="display:none;">
-    <div class="news-filters">
-      <select id="newsCategory" onchange="loadNewsFeed()">
-        <option value="">All Categories</option>
-        <option value="politics">Politics⚖️</option>
-        <option value="sports">Sports⚽</option>
-        <option value="education">Education🎓</option>
-        <option value="technology">Technology🧑‍💻</option>
-        <option value="entertainment">Entertainment🤡</option>
-      </select>
-    </div>
-    <div class="feed" id="newsFeed">
-      <p class="loading-text">Loading news…</p>
-    </div>
-  </div>
+        <section
+            id="friendsTab"
+            class="social-tab active">
 
-  <!-- FLOATING ACTION BUTTON – opens Friends List & Chat -->
-  <button class="fab" onclick="openFriendsPanel()">💬</button>
+            <div class="create-post">
 
-  <!-- FRIENDS LIST PANEL (hidden by default) -->
-  <div id="friendsPanel" class="friends-panel">
-    <div class="panel-header">
-      <h3>Friends</h3>
-      <button class="close-btn" onclick="closeFriendsPanel()">✕</button>
-    </div>
-    <div class="friends-list" id="friendsListContainer">
-      <p class="loading-text">Loading friends…</p>
-    </div>
-    <!-- Chat area (hidden initially, shown when a friend is selected) -->
-    <div id="chatArea" class="chat-area" style="display:none;">
-      <div class="chat-header">
-        <button onclick="closeChat()">← Back</button>
-        <span id="chatPartnerName">Chat</span>
-      </div>
-      <div class="chat-messages" id="chatMessages"></div>
-      <div class="chat-input-area">
-        <input type="text" id="messageInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMessage()">
-        <button onclick="sendMessage()">Send</button>
-      </div>
-    </div>
-  </div>
+                <textarea
+                    id="postContent"
+                    rows="3"
+                    maxlength="3000"
+                    placeholder="What's happening?">
+                </textarea>
 
-  <!-- WATCH MODE (hidden by default) -->
-  <div class="watch-mode" id="watchMode" style="display:none;">
-    <div class="watch-friend-name" id="watchFriendName"></div>
-    <div class="watch-posts" id="watchPosts"></div>
-  </div>
+                <div class="create-post-actions">
 
-  <!-- MESSAGE BOX (floating, for quick reply) -->
-  <div class="message-box" id="messageBox" style="display:none;">
-    <div class="message-header">
-      <span id="messageFriendName"></span>
-      <button class="msg-close" onclick="closeMessage()">✕</button>
-    </div>
-    <div class="message-history" id="messageHistory"></div>
-    <div class="message-input-area">
-      <input type="text" id="messageInputSocial" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendSocialMessage()">
-      <button onclick="sendSocialMessage()">Send</button>
-    </div>
-  </div>
+                    <button
+                        class="btn btn-primary"
+                        onclick="createPost()">
 
-  <!-- SWITCH BUTTON (Feed / Watch) -->
-  <div class="switch-btn" id="switchBtn" onclick="toggleSocialMode()">
-    <span id="switchLabel">Watch</span>
-  </div>
-</div>
+                        Publish
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- Friends Feed -->
+
+            <div
+                id="friendsFeed"
+                class="feed">
+
+                <div class="loading-text">
+
+                    Loading feed...
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- NEWS TAB -->
+        <!-- =============================================== -->
+
+        <section
+            id="newsTab"
+            class="social-tab">
+
+            <div class="news-filters">
+
+                <select
+                    id="newsCategory"
+                    onchange="loadNewsFeed()">
+
+                    <option value="">All Categories</option>
+
+                    <option value="politics">
+                        Politics ⚖️
+                    </option>
+
+                    <option value="technology">
+                        Technology 🧑‍💻
+                    </option>
+
+                    <option value="education">
+                        Education 🎓
+                    </option>
+
+                    <option value="sports">
+                        Sports ⚽
+                    </option>
+
+                    <option value="business">
+                        Business 💰
+                    </option>
+
+                    <option value="health">
+                        Health 🏥
+                    </option>
+
+                    <option value="science">
+                        Science ⚗️
+                    </option>
+
+                    <option value="entertainment">
+                        Entertainment🤡
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div
+                id="newsFeed"
+                class="feed">
+
+                <div class="loading-text">
+
+                    Loading news...
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- FRIENDS PANEL -->
+        <!-- =============================================== -->
+
+        <aside
+            id="friendsPanel"
+            class="friends-panel">
+
+            <div class="panel-header">
+
+                <h3>Friends</h3>
+
+                <button
+                    class="close-btn"
+                    onclick="closeFriendsPanel()">
+
+                    ✕
+
+                </button>
+
+            </div>
+
+            <div
+                id="friendsListContainer"
+                class="friends-list">
+
+                <div class="loading-text">
+
+                    Loading friends...
+
+                </div>
+
+            </div>
+
 
       <!-- EDU WORKSPACE -->
 
