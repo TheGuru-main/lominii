@@ -223,3 +223,33 @@ class Community(Base):
         back_populates="community",
         cascade="all, delete-orphan",
     )
+
+class CommunityMember(Base):
+    __tablename__ = "community_members"
+    __table_args__ = {"schema": "social"}
+
+    community_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.communities.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        primary_key=True,
+    )
+
+    role = Column(String(20), default="member")
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    joined_at = Column(DateTime, server_default="now()")
+
+    community = relationship(
+        "Community",
+        back_populates="members",
+    )
+
+    user = relationship(
+        "SocialProfile",
+    )
+
