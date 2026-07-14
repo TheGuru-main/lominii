@@ -11,7 +11,8 @@ from platform.invitation_service import (
     user_pending_invitations,
 )
 from platform.auth import get_current_user
-from platform.models import User, GameSession, Leaderboard
+from platform.models.public import User
+from platform.models.games import GameReward, GameAchievement, GameSession, Leaderboard
 from platform.game_engine import (
     create_room, join_room, leave_room, get_session,
     enter_matchmaking, leave_matchmaking
