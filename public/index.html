@@ -85,42 +85,41 @@
 </div>
         <div class="placeholder">More games coming soon!</div>
       </div>
-
-      <!-- SOCIAL WORKSPACE -->
+<!-- SOCIAL WORKSPACE -->
 <div id="socialView" style="display: none;">
-<!-- STATUS CIRCLE (top‑right) -->
-<div class="status-circle-container">
-  <div class="status-circle" id="statusCircle" onclick="openStatusDropdown()">
-    <span id="statusInitial">A</span>
-    <span class="status-badge" id="statusBadge" style="display:none">0</span>
-  </div>
 
-  <!-- Friends Dropdown -->
-  <div class="status-dropdown" id="statusDropdown"></div>
-</div>
-
-<!-- STATUS VIEWER (full‑screen) -->
-<div class="status-viewer" id="statusViewer">
-  <div class="viewer-content" id="viewerContent"></div>
-  <div class="viewer-controls">
-    <button class="btn btn-sm" onclick="closeStatusViewer()">✕ Close</button>
-  </div>
-</div>
-
-<!-- STATUS CREATOR (opens on long‑press) -->
-<div class="status-creator" id="statusCreator">
-  <div class="creator-panel">
-    <h3>Create Status</h3>
-    <textarea id="statusText" placeholder="What's on your mind?"></textarea>
-    <div class="lifespan-slider">
-      <input type="range" id="lifespanSlider" min="0" max="3" value="1" step="1">
-      <div class="lifespan-labels">
-        <span>2h</span><span>24h</span><span>7d</span><span>30d</span>
-      </div>
+  <!-- STATUS CIRCLE (top‑right) -->
+  <div class="status-circle-container">
+    <div class="status-circle" id="statusCircle" onclick="openStatusDropdown()">
+      <span id="statusInitial">A</span>
+      <span class="status-badge" id="statusBadge" style="display:none">0</span>
     </div>
-    <button class="btn btn-primary" onclick="createStatus()">Share</button>
+    <!-- Friends Dropdown -->
+    <div class="status-dropdown" id="statusDropdown"></div>
   </div>
-</div>
+
+  <!-- STATUS VIEWER (full‑screen, for future use) -->
+  <div class="status-viewer" id="statusViewer">
+    <div class="viewer-content" id="viewerContent"></div>
+    <div class="viewer-controls">
+      <button class="btn btn-sm" onclick="closeStatusViewer()">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- STATUS CREATOR (opens on long‑press, for future use) -->
+  <div class="status-creator" id="statusCreator">
+    <div class="creator-panel">
+      <h3>Create Status</h3>
+      <textarea id="statusText" placeholder="What's on your mind?"></textarea>
+      <div class="lifespan-slider">
+        <input type="range" id="lifespanSlider" min="0" max="3" value="1" step="1">
+        <div class="lifespan-labels">
+          <span>2h</span><span>24h</span><span>7d</span><span>30d</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="createStatus()">Share</button>
+    </div>
+  </div>
 
   <!-- Top Toggle: Friends | News -->
   <div class="social-toggle">
@@ -135,7 +134,6 @@
       <textarea id="postContent" placeholder="What's on your mind?" rows="2"></textarea>
       <button class="btn" onclick="createPost()">Post</button>
     </div>
-
     <!-- Friends Feed -->
     <div class="feed" id="friendsFeed">
       <p class="loading-text">Loading posts…</p>
@@ -143,8 +141,7 @@
   </div>
 
   <!-- NEWS TAB (lomiNews) -->
-  <div id="newsTab" class="social-tab">
-    <!-- Category Filter -->
+  <div id="newsTab" class="social-tab" style="display:none;">
     <div class="news-filters">
       <select id="newsCategory" onchange="loadNewsFeed()">
         <option value="">All Categories</option>
@@ -155,8 +152,6 @@
         <option value="entertainment">Entertainment🤡</option>
       </select>
     </div>
-
-    <!-- News Feed -->
     <div class="feed" id="newsFeed">
       <p class="loading-text">Loading news…</p>
     </div>
@@ -187,31 +182,30 @@
       </div>
     </div>
   </div>
-</div>
 
-<!-- WATCH MODE (hidden by default) -->
-
-<div class="watch-mode" id="watchMode" style="display:none;">
-  <div class="watch-friend-name" id="watchFriendName"></div>
-  <div class="watch-posts" id="watchPosts"></div>
-</div>
-
-<!-- MESSAGE BOX (floating, for quick reply) -->
-<div class="message-box" id="messageBox" style="display:none;">
-  <div class="message-header">
-    <span id="messageFriendName"></span>
-    <button class="msg-close" onclick="closeMessage()">✕</button>
+  <!-- WATCH MODE (hidden by default) -->
+  <div class="watch-mode" id="watchMode" style="display:none;">
+    <div class="watch-friend-name" id="watchFriendName"></div>
+    <div class="watch-posts" id="watchPosts"></div>
   </div>
-  <div class="message-history" id="messageHistory"></div>
-  <div class="message-input-area">
-    <input type="text" id="messageInputSocial" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendSocialMessage()">
-    <button onclick="sendSocialMessage()">Send</button>
-  </div>
-</div>
 
-<!-- SWITCH BUTTON (Feed / Watch) -->
-<div class="switch-btn" id="switchBtn" onclick="toggleSocialMode()">
-  <span id="switchLabel">Watch</span>
+  <!-- MESSAGE BOX (floating, for quick reply) -->
+  <div class="message-box" id="messageBox" style="display:none;">
+    <div class="message-header">
+      <span id="messageFriendName"></span>
+      <button class="msg-close" onclick="closeMessage()">✕</button>
+    </div>
+    <div class="message-history" id="messageHistory"></div>
+    <div class="message-input-area">
+      <input type="text" id="messageInputSocial" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendSocialMessage()">
+      <button onclick="sendSocialMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- SWITCH BUTTON (Feed / Watch) -->
+  <div class="switch-btn" id="switchBtn" onclick="toggleSocialMode()">
+    <span id="switchLabel">Watch</span>
+  </div>
 </div>
 
       <!-- EDU WORKSPACE -->
