@@ -11,12 +11,6 @@ router = APIRouter(
     tags=["Social - Follows"]
 )
 
-follow = Follow(
-    follower_id=follower.id,
-    followee_id=target.id,
-    nsid=NSID.SOCIAL
-)
-
 # FOLLOWS
 # ═══════════════════════════════════════════════════════════
 
@@ -35,12 +29,17 @@ async def follow_user(request: Request, email: str = Depends(get_current_user), 
     )).scalar_one_or_none()
     if existing:
         return {"status": "already_following"}
-    follow = Follow(follower_id=follower.id, followee_id=target.id)
+    follow = Follow(
+    follower_id=follower.id,
+    followee_id=target.id,
+    nsid=NSID.SOCIAL
+)
+
     db.add(follow)
     await db.commit()
     return {"status": "following"}
 
-@router.delete("/follow")
+@router.delete("follow")
 async def unfollow_user(request: Request, email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     data = await request.json()
     target_uid = data.get("target_uid")
