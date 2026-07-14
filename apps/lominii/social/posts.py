@@ -1,19 +1,22 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from platform.auth import get_current_user
-from platform.content_filter import is_blocked
 from platform.database import get_db
+from platform.auth import get_current_user
+
 from platform.models.public import User
 from platform.models.social import (
-    Follow,
+    SocialProfile,
     Post,
-    Comment,
-    Like,
 )
+
+from platform.schemas import (
+    PostCreate,
+    PostOut,
+)
+
 from platform.nsid import NSID
 
 router = APIRouter(
