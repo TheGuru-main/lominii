@@ -10,7 +10,10 @@ from platform.nsid import NSID
 from models import Message, User
 from schemas import MessageOut, MessageCreate
 
-router = APIRouter(prefix="/messages", tags=["messages"])
+router = APIRouter(
+    prefix="/api/social/messages",
+    tags=["Social Messages"]
+)
 
 def get_conversation_cell(user1_name: str, user2_name: str) -> str:
     names = sorted([user1_name.strip().lower(), user2_name.strip().lower()])
