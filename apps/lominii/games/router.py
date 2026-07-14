@@ -1,4 +1,5 @@
 """LOMINII Games Room – REST API for game management"""
+import uuid 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
