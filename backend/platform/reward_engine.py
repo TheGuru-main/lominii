@@ -7,7 +7,7 @@ Shared reward service for every workspace and game.
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from platform.models import GameReward, GameAchievement
+from platform.models.games import GameReward, GameAchievement
 
 
 async def grant_reward(
