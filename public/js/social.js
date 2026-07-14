@@ -409,10 +409,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // Example: if your dashboard.js has a switchToWorkspace function, add:
 // if (workspace === 'social') loadStatusCircle();
 
-/* ===== SOCIAL WORKSPACE LOGIC ===== */
-let socialMode = 'feed'; // 'feed' or 'watch'
+/*===== SOCIAL WORKSPACE LOGIC (real API)===== */
+
+let socialMode = 'feed';
 let currentFriendUid = null;
-let friends = []; // fetched from API
+let friends = [];
+
+// Helper: call the social API
+async function socialFetch(path, options = {}) {
+  options.headers = { ...options.headers, 'Content-Type': 'application/json' };
+  return apiFetch('/api/social' + path, options);
+}
 
 // Toggle status circle dropdown
 document.getElementById('statusCircle').addEventListener('click', async () => {
@@ -421,15 +428,15 @@ document.getElementById('statusCircle').addEventListener('click', async () => {
     dropdown.style.display = 'none';
     return;
   }
-  // Fetch friends (mock for now, replace with real API call)
-  // In production: fetch('/api/social/friends') etc.
-  friends = [
-    { uid: '12345', name: 'Alice', online: true },
-    { uid: '67890', name: 'Bob', online: false },
-    { uid: '11111', name: 'Charlie', online: true },
-  ];
-  renderFriendDropdown();
-  dropdown.style.display = 'block';
+  try {
+    const resp = await socialFetch('/follows');
+    const data = await resp.json();
+    friends = data.followees;   // array of { uid, name, online }
+    renderFriendDropdown();
+    dropdown.style.display = 'block';
+  } catch (err) {
+    console.error('Could not load friends', err);
+  }
 });
 
 function renderFriendDropdown() {
@@ -441,9 +448,8 @@ function renderFriendDropdown() {
       <button class="btn-msg" onclick="event.stopPropagation(); openMessage('${f.uid}','${f.name}')">💬</button>
     </div>
   `).join('');
-  // Attach click to each friend item for Watch mode
   list.querySelectorAll('.friend-item').forEach(item => {
-    item.addEventListener('click', (e) => {
+    item.addEventListener('click', () => {
       const uid = item.dataset.uid;
       enterWatchMode(uid);
       document.getElementById('friendDropdown').style.display = 'none';
@@ -451,7 +457,7 @@ function renderFriendDropdown() {
   });
 }
 
-function enterWatchMode(uid) {
+async function enterWatchMode(uid) {
   currentFriendUid = uid;
   const friend = friends.find(f => f.uid === uid);
   document.getElementById('watchFriendName').textContent = friend ? friend.name : 'Friend';
@@ -463,17 +469,26 @@ function enterWatchMode(uid) {
   document.getElementById('statusCircle').style.left = '10px';
   document.getElementById('switchLabel').textContent = 'Feed';
   socialMode = 'watch';
-  // Fetch friend's posts (mock)
-  document.getElementById('watchPosts').innerHTML = '<div class="post-card">Friend post content…</div>';
+  try {
+    const resp = await socialFetch('/posts/' + uid);
+    const data = await resp.json();
+    const posts = data.posts || [];
+    document.getElementById('watchPosts').innerHTML = posts.map(p => `
+      <div class="post-card">
+        <div class="post-author">${p.author_name || friend?.name || 'Friend'}</div>
+        <div class="post-content">${p.content}</div>
+        <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
+      </div>`).join('');
+  } catch (err) {
+    document.getElementById('watchPosts').innerHTML = '<p>Could not load posts.</p>';
+  }
 }
 
 function toggleSocialMode() {
   if (socialMode === 'feed') {
-    // Switch to watch mode (requires a friend selected first)
     if (friends.length === 0) return;
     enterWatchMode(friends[0].uid);
   } else {
-    // Switch back to feed
     document.getElementById('watchMode').style.display = 'none';
     document.getElementById('socialFeed').style.display = 'block';
     document.getElementById('statusCircle').style.transform = '';
@@ -485,24 +500,38 @@ function toggleSocialMode() {
   }
 }
 
-// Simple inline message box
-function openMessage(uid, name) {
+// Inline messaging – real calls
+async function openMessage(uid, name) {
   document.getElementById('messageFriendName').textContent = name;
   document.getElementById('messageBox').style.display = 'flex';
   currentFriendUid = uid;
-  // Load message history (mock)
-  document.getElementById('messageHistory').innerHTML = '<p>Chat history loading…</p>';
+  try {
+    const resp = await socialFetch('/messages/inbox');   // all messages; we'll filter by uid on frontend
+    const data = await resp.json();
+    const msgs = (data.messages || []).filter(m => m.from_uid === uid || m.to_uid === uid);
+    document.getElementById('messageHistory').innerHTML = msgs.map(m => `
+      <div class="msg ${m.from_uid === uid ? 'received' : 'sent'}">${m.text}</div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('messageHistory').innerHTML = '<p>Could not load messages.</p>';
+  }
 }
 function closeMessage() {
   document.getElementById('messageBox').style.display = 'none';
 }
-function sendSocialMessage() {
+async function sendSocialMessage() {
   const input = document.getElementById('messageInputSocial');
   const text = input.value.trim();
   if (!text) return;
-  // Call backend: POST /api/social/messages/send
-  // For now, just append locally
-  const history = document.getElementById('messageHistory');
-  history.innerHTML += `<p><strong>You:</strong> ${text}</p>`;
-  input.value = '';
+  try {
+    await socialFetch('/messages/send', {
+      method: 'POST',
+      body: JSON.stringify({ target_uid: currentFriendUid, text })
+    });
+    const history = document.getElementById('messageHistory');
+    history.innerHTML += `<div class="msg sent">${text}</div>`;
+    input.value = '';
+  } catch (err) {
+    console.error('Send failed', err);
+  }
 }
