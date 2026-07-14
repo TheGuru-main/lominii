@@ -53,3 +53,35 @@ class SocialProfile(Base):
         back_populates="follower",
         cascade="all, delete-orphan",
     )
+
+
+class Follow(Base):
+    __tablename__ = "follows"
+    __table_args__ = {"schema": "social"}
+
+    follower_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        primary_key=True,
+    )
+
+    followee_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        primary_key=True,
+    )
+
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
+
+    follower = relationship(
+        "SocialProfile",
+        foreign_keys=[follower_id],
+        back_populates="following",
+    )
+
+    followee = relationship(
+        "SocialProfile",
+        foreign_keys=[followee_id],
+        back_populates="followers",
+    )
