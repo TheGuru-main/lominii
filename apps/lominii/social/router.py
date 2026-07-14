@@ -12,11 +12,16 @@ from platform.models import (
     User, Follow, Post, Comment, Like, NewsSubscription, Status
 )
 from .messages import router as messages_router
+from .follows import router as follows_router
+
+
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
 
-router.include_router(messages_router)
 
+
+router.include_router(messages_router)
+router.include_router(follows_router)
 
 # ═══════════════════════════════════════════════════════════
 # POSTS & COMMENTS & LIKES
