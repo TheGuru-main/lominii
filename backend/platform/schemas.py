@@ -11,7 +11,7 @@ from datetime import datetime
 
 class MessageCreate(BaseModel):
     recipient_id: UUID
-    body: str
+    body: Optional[str] = None
     media_url: Optional[str] = None
     reply_to_id: Optional[UUID] = None
 
@@ -26,12 +26,13 @@ class MessageOut(BaseModel):
     media_url: Optional[str]
     reply_to_id: Optional[UUID]
     is_edited: bool
+    nsid: int
     created_at: datetime
     updated_at: Optional[datetime]
+    deleted_at: Optional[datetime]
 
     class Config:
         orm_mode = True
-
 # ===========================================================================
 # EDU SCHEMAS
 # ========================================================================== ---------------------------------------------------------------------------
