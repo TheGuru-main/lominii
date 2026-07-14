@@ -17,7 +17,7 @@ from platform.models import (
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
 
-social_router.include_router(messages_router)
+router.include_router(messages_router)
 
 # ═══════════════════════════════════════════════════════════
 # MESSAGING (aligned with real Message model)
