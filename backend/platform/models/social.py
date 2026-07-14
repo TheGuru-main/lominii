@@ -272,3 +272,28 @@ class PrivacySettings(Base):
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
+
+class FriendRequest(Base):
+    __tablename__ = "friend_requests"
+    __table_args__ = {"schema": "social"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    sender_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    receiver_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    status = Column(String(20), default="pending")
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
+    updated_at = Column(DateTime, server_default="now()")
+
+
