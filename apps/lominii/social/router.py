@@ -8,7 +8,6 @@ from platform.database import get_db
 from platform.auth import get_current_user
 from datetime import datetime, timedelta
 from platform.content_filter import is_blocked
-from platform.models.messages import Message
 from platform.models.public import User, OTP
 from platform.models.social import (
     SocialProfile,
