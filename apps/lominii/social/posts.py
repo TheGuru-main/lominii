@@ -166,57 +166,6 @@ async def delete_post(
 
 
 # ═══════════════════════════════════════════════════════════
-# COMMENTS
-# ═══════════════════════════════════════════════════════════
-
-@router.post("/comment")
-async def add_comment(
-    request: Request,
-    email: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    data = await request.json()
-
-    post_id = data.get("post_id")
-    content = data.get("content", "").strip()
-
-    if not post_id or not content or is_blocked(content):
-        raise HTTPException(status_code=400, detail="Invalid input")
-
-    author = (
-        await db.execute(
-            select(User).where(User.email == email)
-        )
-    ).scalar_one_or_none()
-
-    post = (
-        await db.execute(
-            select(Post).where(Post.id == post_id)
-        )
-    ).scalar_one_or_none()
-
-    if not author or not post:
-        raise HTTPException(status_code=404, detail="Not found")
-
-    comment = Comment(
-        post_id=post.id,
-        author_id=author.id,
-        content=content,
-        nsid=NSID.SOCIAL
-    )
-
-    db.add(comment)
-    await db.commit()
-    await db.refresh(comment)
-
-    return {
-        "comment_id": str(comment.id),
-        "author_id": str(author.id),
-        "created_at": comment.created_at.isoformat()
-    }
-
-
-# ═══════════════════════════════════════════════════════════
 # LIKES
 # ═══════════════════════════════════════════════════════════
 
