@@ -171,3 +171,13 @@
     opacity: .5;
   }
 }
+
+/* ── Small button variant (for inline actions) ── */
+.btn-sm {
+  display: inline-block;
+  width: auto;
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  border-radius: 20px;
+  margin-top: 0.5rem;
+}
