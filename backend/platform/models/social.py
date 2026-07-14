@@ -315,3 +315,22 @@ class BlockedUser(Base):
 
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
+
+class MutedUser(Base):
+    __tablename__ = "muted_users"
+    __table_args__ = {"schema": "social"}
+
+    muter_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    muted_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
