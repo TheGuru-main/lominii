@@ -385,3 +385,60 @@ class Submission(Base):
     )
 
     student = relationship("User")
+
+
+# ===========================================================================
+# ASSESSMENT
+# ===========================================================================
+
+class ConceptMastery(Base):
+    __tablename__ = "concept_mastery"
+    __table_args__ = {"schema": "assessment"}
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    concept_id = Column(
+        Integer,
+        ForeignKey("curriculum.concepts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    mastery = Column(Float, default=0.0)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    last_practiced = Column(DateTime)
+
+    student = relationship("User")
+    concept = relationship("Concept")
+
+
+class QuestionLog(Base):
+    __tablename__ = "question_logs"
+    __table_args__ = {"schema": "assessment"}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    question_id = Column(
+        Integer,
+        ForeignKey("curriculum.questions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    chosen_answer = Column(Text)
+    is_correct = Column(Boolean)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    answered_at = Column(DateTime, server_default="now()")
+
+    student = relationship("User")
+    question = relationship("Question")
