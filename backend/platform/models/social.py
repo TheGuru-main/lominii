@@ -169,3 +169,32 @@ class Comment(Base):
     author = relationship(
         "SocialProfile",
     )
+
+
+class Like(Base):
+    __tablename__ = "likes"
+    __table_args__ = {"schema": "social"}
+
+    post_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.posts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        primary_key=True,
+    )
+
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
+
+    post = relationship(
+        "Post",
+        back_populates="likes",
+    )
+
+    user = relationship(
+        "SocialProfile",
+    )
