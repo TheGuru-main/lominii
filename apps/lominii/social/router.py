@@ -8,9 +8,16 @@ from platform.database import get_db
 from platform.auth import get_current_user
 from datetime import datetime, timedelta
 from platform.content_filter import is_blocked
-from platform.models import (
-    User, Follow, Post, Comment, Like, NewsSubscription, Status
+from platform.models.public import User
+from platform.models.social import (
+    Follow,
+    Post,
+    Comment,
+    Like,
+    Status,
 )
+
+from platform.models.news import NewsSubscription
 from .messages import router as messages_router
 from .follows import router as follows_router
 
