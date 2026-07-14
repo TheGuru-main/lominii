@@ -180,3 +180,116 @@ class KnowledgeLink(Base):
         "Concept",
         foreign_keys=[concept_id_2],
     )
+
+# ===========================================================================
+# CLASSROOM
+# ===========================================================================
+
+class Class(Base):
+    __tablename__ = "classes"
+    __table_args__ = {"schema": "classroom"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    teacher_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    subject_id = Column(
+        Integer,
+        ForeignKey("curriculum.subjects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    name = Column(String(255), nullable=False)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    created_at = Column(DateTime, server_default="now()")
+
+    teacher = relationship("User")
+    subject = relationship("Subject")
+
+    enrollments = relationship(
+        "ClassEnrollment",
+        back_populates="classroom",
+        cascade="all, delete-orphan",
+    )
+
+    lessons = relationship(
+        "Lesson",
+        back_populates="classroom",
+        cascade="all, delete-orphan",
+    )
+
+
+class ClassEnrollment(Base):
+    __tablename__ = "class_enrollments"
+    __table_args__ = {"schema": "classroom"}
+
+    class_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom.classes.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    joined_at = Column(DateTime, server_default="now()")
+
+    classroom = relationship(
+        "Class",
+        back_populates="enrollments",
+    )
+
+    student = relationship("User")
+
+
+class Lesson(Base):
+    __tablename__ = "lessons"
+    __table_args__ = {"schema": "classroom"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    class_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom.classes.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    concept_id = Column(
+        Integer,
+        ForeignKey("curriculum.concepts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    title = Column(String(255), nullable=False)
+    content = Column(Text)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    created_at = Column(DateTime, server_default="now()")
+
+    classroom = relationship(
+        "Class",
+        back_populates="lessons",
+    )
+
+    concept = relationship("Concept")
+
+    assignments = relationship(
+        "Assignment",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
+
+    progress = relationship(
+        "LessonProgress",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+    )
