@@ -73,3 +73,63 @@ async def add_comment(
     await db.refresh(comment)
 
     return comment
+
+@router.get("/post/{post_id}", response_model=list[CommentOut])
+async def get_comments(
+    post_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    post = await db.get(Post, post_id)
+
+    if not post:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found.",
+        )
+
+    result = await db.execute(
+        select(Comment)
+        .where(Comment.post_id == post_id)
+        .order_by(Comment.created_at.asc())
+    )
+
+    return result.scalars().all()
+
+@router.delete("/{comment_id}")
+async def delete_comment(
+    comment_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found.",
+        )
+
+    comment = await db.get(Comment, comment_id)
+
+    if not comment:
+        raise HTTPException(
+            status_code=404,
+            detail="Comment not found.",
+        )
+
+    if comment.author_id != profile.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only delete your own comments.",
+        )
+
+    await db.delete(comment)
+    await db.commit()
+
+    return {
+        "message": "Comment deleted successfully."
+    }
