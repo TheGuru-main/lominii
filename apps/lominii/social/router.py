@@ -6,6 +6,7 @@ from sqlalchemy import select, and_, or_, func
 from platform.database import get_db
 from platform.auth import get_current_user
 from platform.models import Status
+from .messages import router as messages_router
 from platform.schemas import MessageCreate, MessageOut
 from platform.content_filter import is_blocked
 from platform.nsid import NSID
