@@ -293,3 +293,95 @@ class Lesson(Base):
         back_populates="lesson",
         cascade="all, delete-orphan",
     )
+
+
+class LessonProgress(Base):
+    __tablename__ = "lesson_progress"
+    __table_args__ = {"schema": "classroom"}
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    lesson_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom.lessons.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime)
+    time_spent = Column(Integer, default=0)  # seconds
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+
+    student = relationship("User")
+
+    lesson = relationship(
+        "Lesson",
+        back_populates="progress",
+    )
+
+
+class Assignment(Base):
+    __tablename__ = "assignments"
+    __table_args__ = {"schema": "classroom"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    lesson_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom.lessons.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    due_date = Column(DateTime)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    created_at = Column(DateTime, server_default="now()")
+
+    lesson = relationship(
+        "Lesson",
+        back_populates="assignments",
+    )
+
+    submissions = relationship(
+        "Submission",
+        back_populates="assignment",
+        cascade="all, delete-orphan",
+    )
+
+
+class Submission(Base):
+    __tablename__ = "submissions"
+    __table_args__ = {"schema": "classroom"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    assignment_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("classroom.assignments.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    student_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    content = Column(Text)
+
+    nsid = Column(SmallInteger, default=NSID.EDU)
+    submitted_at = Column(DateTime, server_default="now()")
+
+    assignment = relationship(
+        "Assignment",
+        back_populates="submissions",
+    )
+
+    student = relationship("User")
