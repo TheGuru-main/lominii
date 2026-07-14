@@ -69,46 +69,32 @@ async def follow_user(
 # UNFOLLOW USER
 # ═══════════════════════════════════════════════════════════
 
-@router.delete("")
+@router.delete("/{profile_id}")
 async def unfollow_user(
-    request: Request,
-    email: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    profile_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    data = await request.json()
-    target_uid = data.get("target_uid")
-
-    if not target_uid:
-        raise HTTPException(status_code=400, detail="Missing target_uid")
-
-    follower = (
-        await db.execute(
-            select(User).where(User.email == email)
+    me = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
         )
-    ).scalar_one_or_none()
+    )
 
-    target = (
-        await db.execute(
-            select(User).where(User.id == target_uid)
+    if not me:
+        raise HTTPException(404, "Social profile not found.")
+
+    follow = await db.scalar(
+        select(Follow).where(
+            Follow.follower_id == me.id,
+            Follow.followee_id == profile_id,
         )
-    ).scalar_one_or_none()
-
-    if not follower or not target:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    follow = (
-        await db.execute(
-            select(Follow).where(
-                Follow.follower_id == follower.id,
-                Follow.followee_id == target.id
-            )
-        )
-    ).scalar_one_or_none()
+    )
 
     if not follow:
-        raise HTTPException(status_code=404, detail="Not following")
+        raise HTTPException(404, "Follow relationship not found.")
 
     await db.delete(follow)
     await db.commit()
 
-    return {"status": "unfollowed"}
+    return {"message": "Unfollowed successfully."}
