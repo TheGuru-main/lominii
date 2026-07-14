@@ -11,7 +11,7 @@ from platform.invitation_service import (
     decline_invitation,
     user_pending_invitations,
 )
-
+from platform.reward_engine import RewardEngine
 from platform.auth import get_current_user
 from platform.models.public import User
 from platform.models.games import GameAchievement, GameSession, Leaderboard
