@@ -137,3 +137,35 @@ class Status(Base):
     content = Column(Text, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, server_default="now()")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+    __table_args__ = {"schema": "social"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    post_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.posts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    author_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        nullable=False,
+    )
+
+    content = Column(Text, nullable=False)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    created_at = Column(DateTime, server_default="now()")
+
+    post = relationship(
+        "Post",
+        back_populates="comments",
+    )
+
+    author = relationship(
+        "SocialProfile",
+    )
