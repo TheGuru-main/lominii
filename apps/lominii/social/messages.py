@@ -1,20 +1,25 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional, Dict
-from datetime import datetime, timedelta
+from typing import List
 
-from platform.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from platform.auth import get_current_user
-from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
-from platform.nsid import NSID
+from platform.database import get_db
+from platform.gsp import (
+    calculate_lsum,
+    calculate_ssum,
+    first_letter_index,
+    gsp_place,
+)
 from platform.models import Message, User
+from platform.nsid import NSID
 from platform.schemas import MessageCreate, MessageOut
 
-
 router = APIRouter(
-    prefix="/api/social/messages",
-    tags=["Social Messages"]
+    prefix="/messages",
+    tags=["Social - Messages"]
 )
 
 def get_conversation_cell(user1_name: str, user2_name: str) -> str:
