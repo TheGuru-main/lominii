@@ -1,73 +1,68 @@
-from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from uuid import UUID
 
-from platform.auth import get_current_user
 from platform.database import get_db
-from platform.models.public import User
-from platform.models.social import Follow
-from platform.nsid import NSID
+from platform.auth import get_current_user
 
-router = APIRouter(
-    prefix="/follow",
-    tags=["Social - Follows"]
+from platform.models.public import User
+from platform.models.social import (
+    SocialProfile,
+    Follow,
 )
 
+router = APIRouter(
+    prefix="/follows",
+    tags=["Social Follows"],
+)
 
 # ═══════════════════════════════════════════════════════════
 # FOLLOW USER
 # ═══════════════════════════════════════════════════════════
 
-@router.post("")
+@router.post("/{profile_id}")
 async def follow_user(
-    request: Request,
-    email: str = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    profile_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    data = await request.json()
-    target_uid = data.get("target_uid")
-
-    if not target_uid:
-        raise HTTPException(status_code=400, detail="Missing target_uid")
-
-    follower = (
-        await db.execute(
-            select(User).where(User.email == email)
+    me = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
         )
-    ).scalar_one_or_none()
+    )
 
-    target = (
-        await db.execute(
-            select(User).where(User.id == target_uid)
+    if not me:
+        raise HTTPException(404, "Social profile not found.")
+
+    if me.id == profile_id:
+        raise HTTPException(400, "You cannot follow yourself.")
+
+    target = await db.get(SocialProfile, profile_id)
+
+    if not target:
+        raise HTTPException(404, "Profile not found.")
+
+    existing = await db.scalar(
+        select(Follow).where(
+            Follow.follower_id == me.id,
+            Follow.followee_id == target.id,
         )
-    ).scalar_one_or_none()
-
-    if not follower or not target:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    existing = (
-        await db.execute(
-            select(Follow).where(
-                Follow.follower_id == follower.id,
-                Follow.followee_id == target.id
-            )
-        )
-    ).scalar_one_or_none()
+    )
 
     if existing:
-        return {"status": "already_following"}
+        return {"message": "Already following."}
 
     follow = Follow(
-        follower_id=follower.id,
+        follower_id=me.id,
         followee_id=target.id,
-        nsid=NSID.SOCIAL
     )
 
     db.add(follow)
     await db.commit()
 
-    return {"status": "following"}
+    return {"message": "Followed successfully."}
 
 
 # ═══════════════════════════════════════════════════════════
