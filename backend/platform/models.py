@@ -166,6 +166,16 @@ class Post(Base):
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
+class Status(Base):
+    __tablename__ = "statuses"
+    __table_args__ = {"schema": "social"}
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    creator_id = Column(UUID(as_uuid=True), ForeignKey("public.users.id", ondelete="CASCADE"), nullable=False)
+    media_type = Column(String(10), nullable=False)   # 'text', 'voice', 'video'
+    content = Column(Text, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, server_default="now()")
+
 class Comment(Base):
     __tablename__ = "comments"
     __table_args__ = {"schema": "social"}
