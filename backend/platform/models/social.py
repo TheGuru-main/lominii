@@ -37,31 +37,30 @@ class SocialProfile(Base):
     created_at = Column(DateTime, server_default="now()")
 
     posts = relationship(
-        "Post",
-        back_populates="author",
-        cascade="all, delete-orphan",
-    )
+    "Post",
+    back_populates="author",
+    cascade="all, delete-orphan",
+)
 
 community_posts = relationship(
     "CommunityPost",
     back_populates="author",
+    cascade="all, delete-orphan",
 )
 
-    followers = relationship(
-        "Follow",
-        foreign_keys="Follow.followee_id",
-        back_populates="followee",
-        cascade="all, delete-orphan",
-    )
+followers = relationship(
+    "Follow",
+    foreign_keys="Follow.followee_id",
+    back_populates="followee",
+    cascade="all, delete-orphan",
+)
 
-    following = relationship(
-        "Follow",
-        foreign_keys="Follow.follower_id",
-        back_populates="follower",
-        cascade="all, delete-orphan",
-    )
-
-
+following = relationship(
+    "Follow",
+    foreign_keys="Follow.follower_id",
+    back_populates="follower",
+    cascade="all, delete-orphan",
+)
 
 class Follow(Base):
     __tablename__ = "follows"
