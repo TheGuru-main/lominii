@@ -524,3 +524,51 @@ async def transfer_ownership(
     return {
         "message": "Community ownership transferred successfully."
     }
+
+
+@router.get("/{community_id}/members")
+async def get_community_members(
+    community_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    community = await db.get(
+        Community,
+        community_id,
+    )
+
+    if not community:
+        raise HTTPException(
+            status_code=404,
+            detail="Community not found.",
+        )
+
+    result = await db.execute(
+        select(
+            CommunityMember,
+            SocialProfile,
+        )
+        .join(
+            SocialProfile,
+            CommunityMember.user_id == SocialProfile.id,
+        )
+        .where(
+            CommunityMember.community_id == community_id,
+        )
+        .order_by(
+            CommunityMember.joined_at.asc(),
+        )
+    )
+
+    members = result.all()
+
+    return [
+        {
+            "profile_id": str(profile.id),
+            "social_uid": profile.social_uid,
+            "full_name": profile.full_name,
+            "avatar_url": profile.avatar_url,
+            "role": member.role,
+            "joined_at": member.joined_at,
+        }
+        for member, profile in members
+    ]
