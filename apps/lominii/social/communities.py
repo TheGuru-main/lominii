@@ -181,3 +181,68 @@ async def leave_community(
     return {
         "message": "Successfully left. You are no longer a member of the community."
     }
+
+
+@router.post("/{community_id}/invite/{profile_id}")
+async def invite_member(
+    community_id: UUID,
+    profile_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found",
+        )
+
+    inviter = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not inviter:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a community member.",
+        )
+
+    if inviter.role not in ("owner", "admin", "moderator"):
+        raise HTTPException(
+            status_code=403,
+            detail="Only owners, admins or moderators can invite members.",
+        )
+
+    existing = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile_id,
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="User is already a member.",
+        )
+
+    member = CommunityMember(
+        community_id=community_id,
+        user_id=profile_id,
+        role="member",
+    )
+
+    db.add(member)
+    await db.commit()
+
+    return {
+        "message": "Member added successfully."
+    }
