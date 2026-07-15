@@ -139,6 +139,7 @@ async def join_community(
         "message": "Joined community successfully."
     }
 
+
 @router.delete("/{community_id}/leave")
 async def leave_community(
     community_id: UUID,
@@ -623,6 +624,7 @@ async def delete_community(
         "message": "Community deleted successfully."
     }
 
+
 @router.post("/{community_id}/posts")
 async def create_community_post(
     community_id: UUID,
@@ -702,6 +704,7 @@ async def get_community_posts(
 
     return posts
 
+
 @router.put("/posts/{post_id}")
 async def edit_community_post(
     post_id: UUID,
@@ -751,6 +754,7 @@ async def edit_community_post(
 
     return post
 
+
 @router.delete("/posts/{post_id}")
 async def delete_community_post(
     post_id: UUID,
@@ -793,6 +797,7 @@ async def delete_community_post(
     return {
         "message": "Community post deleted successfully."
     }
+
 
 @router.patch("/posts/{post_id}/pin")
 async def pin_community_post(
