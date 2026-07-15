@@ -701,3 +701,52 @@ async def get_community_posts(
     posts = result.scalars().all()
 
     return posts
+
+@router.put("/posts/{post_id}")
+async def edit_community_post(
+    post_id: UUID,
+    content: str,
+    media_urls: list[str] | None = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found.",
+        )
+
+    post = await db.get(
+        CommunityPost,
+        post_id,
+    )
+
+    if not post or post.deleted_at is not None:
+        raise HTTPException(
+            status_code=404,
+            detail="Community post not found.",
+        )
+
+    if post.author_id != profile.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only edit your own posts.",
+        )
+
+    post.content = content
+
+    if media_urls is not None:
+        post.media_urls = media_urls
+
+    post.updated_at = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(post)
+
+    return post
