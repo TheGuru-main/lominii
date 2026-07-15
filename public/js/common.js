@@ -49,10 +49,8 @@ function showDashboard() {
 
     if (typeof animId !== "undefined") {
         cancelAnimationFrame(animId);
-    if (typeof loadHomeCards === "function") loadHomeCards();
-}
-
     document.body.classList.add("search-home");
+if (typeof loadHomeCards === "function") loadHomeCards();
 }
 
 
