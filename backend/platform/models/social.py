@@ -40,6 +40,11 @@ class SocialProfile(Base):
         cascade="all, delete-orphan",
     )
 
+community_posts = relationship(
+    "CommunityPost",
+    back_populates="author",
+)
+
     followers = relationship(
         "Follow",
         foreign_keys="Follow.followee_id",
@@ -224,6 +229,12 @@ class Community(Base):
         cascade="all, delete-orphan",
     )
 
+posts = relationship(
+    "CommunityPost",
+    back_populates="community",
+    cascade="all, delete-orphan",
+)
+
      visibility = Column(
     String(20),
     default="public",
@@ -232,7 +243,7 @@ class Community(Base):
 
 max_members = Column(
     Integer,
-    default=100,
+    default=1000,
     nullable=False,
 )
 class CommunityMember(Base):
