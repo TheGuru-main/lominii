@@ -56,6 +56,7 @@ if (typeof loadHomeCards === "function") loadHomeCards();
 
 /* ===== Workspace Switching ===== */
 
+
 function switchToWorkspace(workspace) {
 
     Object.values(views).forEach(view => {
@@ -98,7 +99,11 @@ function switchToWorkspace(workspace) {
             backToggle.style.display = "block";
     }
 
-    switch (workspace) {
+  switch (workspace) {
+    case "home":                                    
+        if (typeof loadHomeCards === "function")
+            loadHomeCards();                        
+        break;                                
 
         case "social":
             if (typeof loadFriendsFeed === "function")
