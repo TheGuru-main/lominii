@@ -5,8 +5,8 @@ from uuid import UUID
 
 from platform.database import get_db
 from platform.auth import get_current_user
-
 from platform.models.public import User
+from platform.models.news import NewsSubscription, NewsNotification, PrivateNewsFollower
 from platform.models.social import (
     SocialProfile,
     Post,
