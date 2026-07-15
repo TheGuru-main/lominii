@@ -321,3 +321,70 @@ async def update_community_settings(
             "max_members": community.max_members,
         },
     }
+
+
+@router.patch("/{community_id}/members/{member_id}/role")
+async def update_member_role(
+    community_id: UUID,
+    member_id: UUID,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found.",
+        )
+
+    actor = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not actor or actor.role != "owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Only the community owner can change member roles.",
+        )
+
+    member = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == member_id,
+        )
+    )
+
+    if not member:
+        raise HTTPException(
+            status_code=404,
+            detail="Member not found.",
+        )
+
+    new_role = data.get("role")
+
+    if new_role not in (
+        "member",
+        "moderator",
+        "admin",
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid role.",
+        )
+
+    member.role = new_role
+
+    await db.commit()
+
+    return {
+        "message": f"Role updated to {new_role}.",
+    }
