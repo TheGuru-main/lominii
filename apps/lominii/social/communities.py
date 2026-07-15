@@ -682,3 +682,35 @@ async def create_community_post(
         "message": "Community post created.",
         "post_id": str(post.id),
     }
+
+
+@router.get("/{community_id}/posts")
+async def get_community_posts(
+    community_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    community = await db.get(
+        Community,
+        community_id,
+    )
+
+    if not community:
+        raise HTTPException(
+            status_code=404,
+            detail="Community not found.",
+        )
+
+    result = await db.execute(
+        select(CommunityPost)
+        .where(
+            CommunityPost.community_id == community_id,
+            CommunityPost.deleted_at == None,
+        )
+        .order_by(
+            CommunityPost.created_at.desc(),
+        )
+    )
+
+    posts = result.scalars().all()
+
+    return posts
