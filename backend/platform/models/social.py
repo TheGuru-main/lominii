@@ -385,7 +385,7 @@ __table_args__ = {"schema": "social"}
 
     author_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("social_profiles.id", ondelete="CASCADE"),
+        ForeignKey("social.profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
