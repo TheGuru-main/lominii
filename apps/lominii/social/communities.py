@@ -623,17 +623,17 @@ async def delete_community(
         "message": "Community deleted successfully."
     }
 
-
 @router.post("/{community_id}/posts")
 async def create_community_post(
     community_id: UUID,
-    data: dict,
+    content: str,
+    media_urls: list[str] | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     profile = await db.scalar(
         select(SocialProfile).where(
-            SocialProfile.core_user_id == current_user.id,
+            SocialProfile.core_user_id == current_user.id
         )
     )
 
@@ -653,35 +653,22 @@ async def create_community_post(
     if not member:
         raise HTTPException(
             status_code=403,
-            detail="Only community members can post.",
-        )
-
-    community = await db.get(
-        Community,
-        community_id,
-    )
-
-    if not community:
-        raise HTTPException(
-            status_code=404,
-            detail="Community not found.",
+            detail="You are not a member of this community.",
         )
 
     post = CommunityPost(
-        community_id=community.id,
+        community_id=community_id,
         author_id=profile.id,
-        content=data.get("content"),
-        media_urls=data.get("media_urls", []),
+        content=content,
+        media_urls=media_urls or [],
+        nsid=NSID.SOCIAL,
     )
 
     db.add(post)
     await db.commit()
     await db.refresh(post)
 
-    return {
-        "message": "Community post created.",
-        "post_id": str(post.id),
-    }
+    return post
 
 
 @router.get("/{community_id}/posts")
