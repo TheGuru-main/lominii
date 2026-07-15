@@ -51,7 +51,6 @@ function switchToWorkspace(workspace) {
 
 
 //<!-- Workspace Initializers -->>
-<!-- ========================================================= --><//
     
 switch (workspace) {
     case "home":                                    
