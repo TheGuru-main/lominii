@@ -49,7 +49,7 @@ function switchToWorkspace(workspace) {
 
     }
 
-<!-- !-- Workspace Initializers -->>
+><!-- Workspace Initializers -->>
 <!-- ========================================================= --><
     
 switch (workspace) {
