@@ -411,16 +411,10 @@ class CommunityPost(Base):
         nullable=False,
     )
 
-    is_pinned = Column(
-        Boolean,
-        default=False,
+        nsid = Column(
+        Integer,
         nullable=False,
-    )
-
-     nsid = Column(
-     Integer,
-     nullable=False,
-     default=NSID.SOCIAL,
+        default=NSID.SOCIAL,
     )
 
     created_at = Column(
@@ -438,6 +432,18 @@ class CommunityPost(Base):
     deleted_at = Column(
         DateTime,
         nullable=True,
+    )
+
+    is_pinned = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    is_announcement = Column(
+       Boolean,
+       default=False,
+       nullable=False,
     )
 
     community = relationship(
