@@ -48,9 +48,20 @@ if (prefsResp.ok) {
     document.getElementById('bjCell').textContent = 'N/A';
   }
 
-  // Failed attempts – stored in memory only, so we can't show persistent value
-  // But we can call an endpoint later. For now, show 0.
-  document.getElementById('bjFails').textContent = '0';
+  // Load failed attempts from backend
+
+try {
+    const resp = await apiFetch('/auth/failure-count', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
+    });
+    if (resp.ok) {
+        const data = await resp.json();
+        document.getElementById('bjFails').textContent = data.failures;
+    } else {
+        document.getElementById('bjFails').textContent = '?';
+    }
+} catch (e) {
+    document.getElementById('bjFails').textContent = '?';
 }
 
 // Reset failure counter (call the backend endpoint)
