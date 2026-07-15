@@ -411,11 +411,17 @@ class CommunityPost(Base):
         nullable=False,
     )
 
-    nsid = Column(
-    Integer,
-    nullable=False,
-    default=NSID.SOCIAL,
-)
+    is_pinned = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+     nsid = Column(
+     Integer,
+     nullable=False,
+     default=NSID.SOCIAL,
+    )
 
     created_at = Column(
         DateTime,
