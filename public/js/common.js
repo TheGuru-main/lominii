@@ -34,7 +34,9 @@ const landingView =
 const dashboardView =
     document.getElementById("dashboardView");
 
+
 function showDashboard() {
+
     landingView.style.display = "none";
     dashboardView.style.display = "block";
 
@@ -47,59 +49,104 @@ function showDashboard() {
 
     document.body.classList.add("search-home");
 
-    if (typeof stopParticles === 'function') stopParticles();
+    if (typeof stopParticles === "function") {
+        stopParticles();
     }
+
+    // Always begin inside Search
+    switchToWorkspace("home");
 }
+
 
 /* ===== Workspace Switching ===== */
 
-
 function switchToWorkspace(workspace) {
+
     // 1. Hide all workspace views
 
     Object.values(views).forEach(view => {
-        if (view) view.style.display = "none";
+
+        if (view)
+            view.style.display = "none";
+
     });
 
-    // 2. Show the selected workspace
+    // 2. Show selected workspace
 
     if (views[workspace]) {
         views[workspace].style.display = "block";
     }
 
-    // 3. Update active state on footer icons
-    footerIcons.forEach(icon => icon.classList.remove("active"));
-    const active = document.querySelector(`.nav-icon[data-workspace="${workspace}"]`);
-    if (active) active.classList.add("active");
+    // 3. Update footer active state
 
-    // 4. Toggle body classes and back toggle
+    footerIcons.forEach(icon =>
+        icon.classList.remove("active")
+    );
+
+    const active = document.querySelector(
+        `.nav-icon[data-workspace="${workspace}"]`
+    );
+
+    if (active)
+        active.classList.add("active");
+
+    // 4. Toggle body classes
+
     if (workspace === "home") {
+
         document.body.classList.add("search-home");
         document.body.classList.remove("workspace-view");
-        if (backToggle) backToggle.style.display = "none";
+
+        if (backToggle)
+            backToggle.style.display = "none";
+
     } else {
+
         document.body.classList.remove("search-home");
         document.body.classList.add("workspace-view");
-        if (backToggle) backToggle.style.display = "block";
+
+        if (backToggle)
+            backToggle.style.display = "block";
+
     }
 
-    // 5. Workspace‑specific initialisation
+    // 5. Workspace initialisation
 
     switch (workspace) {
+
         case "home":
-            if (typeof loadHomeCards === "function") loadHomeCards();
+
+            if (typeof loadHomeCards === "function")
+                loadHomeCards();
+
             break;
+
         case "social":
-            if (typeof loadFriendsFeed === "function") loadFriendsFeed();
+
+            if (typeof loadFriendsFeed === "function")
+                loadFriendsFeed();
+
             break;
+
         case "games":
-            if (typeof loadGames === "function") loadGames();
+
+            if (typeof loadGames === "function")
+                loadGames();
+
             break;
+
         case "edu":
-            if (typeof loadCourses === "function") loadCourses();
+
+            if (typeof loadCourses === "function")
+                loadCourses();
+
             break;
+
         case "quran":
-            if (typeof loadQuran === "function") loadQuran();
+
+            if (typeof loadQuran === "function")
+                loadQuran();
+
             break;
     }
 }
@@ -111,7 +158,9 @@ footerIcons.forEach(icon => {
 
     icon.addEventListener("click", () => {
 
-        switchToWorkspace(icon.dataset.workspace);
+        switchToWorkspace(
+            icon.dataset.workspace
+        );
 
     });
 
@@ -126,7 +175,8 @@ if (userIcon) {
 
         e.stopPropagation();
 
-        userDropdown.classList.toggle("show");
+        if (userDropdown)
+            userDropdown.classList.toggle("show");
 
     });
 
@@ -153,14 +203,17 @@ if (logoutButton) {
 
         authToken = "";
 
-        landingView.style.display = "block";
+        switchToWorkspace("home");
 
+        landingView.style.display = "block";
         dashboardView.style.display = "none";
 
         if (particleCanvas)
             particleCanvas.style.display = "block";
 
-        if (typeof startParticles === 'function') startParticles();
+        if (typeof startParticles === "function") {
+            startParticles();
+        }
 
     });
 
