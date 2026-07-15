@@ -106,3 +106,6 @@ def verify_challenge(identity: str, k: int, col: int, row: int,
         cell = cells[k]
         return cell["col"] == col and cell["row"] == row
     return False
+
+def get_failure_count(identity: str) -> int:
+    return _failure_counts.get(identity, 0)
