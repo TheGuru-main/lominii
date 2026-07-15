@@ -336,7 +336,6 @@ class FriendRequest(Base):
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
 
-
 class BlockedUser(Base):
     __tablename__ = "blocked_users"
     __table_args__ = {"schema": "social"}
@@ -454,4 +453,38 @@ class CommunityPost(Base):
     author = relationship(
         "SocialProfile",
         back_populates="community_posts",
+    )
+
+class CommunityBan(Base):
+    __tablename__ = "community_bans"
+    __table_args__ = {"schema": "social"}
+
+    community_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.communities.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    banned_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id"),
+        nullable=False,
+    )
+
+    reason = Column(Text)
+
+    nsid = Column(
+        SmallInteger,
+        default=NSID.SOCIAL,
+    )
+
+    created_at = Column(
+        DateTime,
+        server_default="now()",
     )
