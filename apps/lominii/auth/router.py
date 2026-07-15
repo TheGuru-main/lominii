@@ -8,7 +8,8 @@ from platform.bubblejumbo import (
     create_token as create_bjt,
     record_failure,
     reset_failures,
-    get_required_copies
+    get_required_copies,
+    get_failure_count
 )
 from platform.content_filter import is_blocked
 from platform.database import get_db
@@ -206,3 +207,13 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
 
     token = create_bjt(full_name)
     return {"access_token": token, "token_type": "bearer", "phone": phone}
+
+
+# ---------------------------------------------------------------------------
+# User setting bubblejumbo
+# ---------------------------------------------------------------------------
+
+@router.get("/auth/failure-count")
+async def failure_count(email: str = Depends(get_current_user)):
+    count = get_failure_count(email)
+    return {"failures": count}
