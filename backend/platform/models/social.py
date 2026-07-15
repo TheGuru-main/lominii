@@ -368,7 +368,7 @@ class MutedUser(Base):
 class CommunityPost(Base):
 
    __tablename__ = "community_posts"
-__table_args__ = {"schema": "social"}
+   __table_args__ = {"schema": "social"}
 
     id = Column(
         UUID(as_uuid=True),
