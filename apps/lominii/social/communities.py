@@ -12,6 +12,7 @@ from platform.models.social import (
     SocialProfile,
     Community,
     CommunityMember,
+    CommunityPost
 )
 
 router = APIRouter(
