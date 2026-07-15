@@ -839,3 +839,45 @@ async def pin_community_post(
     await db.refresh(post)
 
     return post
+
+
+@router.patch("/posts/{post_id}/unpin")
+async def unpin_community_post(
+    post_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    post = await db.get(CommunityPost, post_id)
+
+    if not post:
+        raise HTTPException(404, "Post not found.")
+
+    member = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == post.community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not member or member.role not in [
+        "owner",
+        "admin",
+        "moderator",
+    ]:
+        raise HTTPException(
+            403,
+            "Only community admins can unpin posts.",
+        )
+
+    post.is_pinned = False
+
+    await db.commit()
+    await db.refresh(post)
+
+    return post
