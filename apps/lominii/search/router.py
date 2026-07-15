@@ -120,6 +120,11 @@ async def unified_search(
         news_data = news_resp.json()
         news_articles = [{"title": a["title"], "url": a["url"]} for a in news_data.get("articles", [])[:6]]
 
+# 8.5 Wikipedia (if user enabled it)
+wiki_articles = []
+if user and user.news_preferences and user.news_preferences.get("wikipedia", False):
+    wiki_articles = await search_wikipedia(norm_query, lang=lang, limit=3)
+
     # 9. AI Summary – using Gemini + Hugging Face fallback
     ai_summary = None
     if not is_ai_blocked(query):
