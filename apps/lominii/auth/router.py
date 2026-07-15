@@ -210,10 +210,51 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
-# User setting bubblejumbo
+# Bubblejumbo Box Set-up
 # ---------------------------------------------------------------------------
 
 @router.get("/auth/failure-count")
 async def failure_count(email: str = Depends(get_current_user)):
     count = get_failure_count(email)
     return {"failures": count}
+
+# ---------------------------------------------------------------------------
+# Preference setting.
+# ---------------------------------------------------------------------------
+
+@router.put("/auth/preferences")
+async def save_preferences(request: Request, db: AsyncSession = Depends(get_db), email: str = Depends(get_current_user)):
+    data = await request.json()
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one()
+    # data_sources is part of news_preferences – we merge them
+    current = user.news_preferences or {}
+    current["wikipedia"] = data.get("wikipedia", False)
+    current["banking"] = data.get("banking", False)
+    current["news"] = data.get("news", True)
+    current["dictionary"] = data.get("dictionary", True)
+    user.news_preferences = current
+    # also update language & country if provided
+    if "language" in data:
+        user.language = data["language"]
+    if "country" in data:
+        # You may want to add a country column, but for now we can store in news_preferences
+        current["country"] = data["country"]
+        user.news_preferences = current
+    await db.commit()
+    return {"message": "Preferences saved"}
+
+
+@router.get("/auth/preferences")
+async def get_preferences(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one()
+    prefs = user.news_preferences or {}
+    return {
+        "language": user.language,
+        "country": prefs.get("country", "Nigeria"),
+        "data_sources": {
+            "wikipedia": prefs.get("wikipedia", False),
+            "banking": prefs.get("banking", False),
+            "news": prefs.get("news", True),
+            "dictionary": prefs.get("dictionary", True),
+        }
+    }
