@@ -36,40 +36,37 @@ function switchToWorkspace(workspace) {
     }
 
     if (workspace === "home") {
-
         document.body.classList.add("search-home");
         document.body.classList.remove("workspace-view");
         backToggle.style.display = "none";
-
     } else {
-
         document.body.classList.remove("search-home");
         document.body.classList.add("workspace-view");
         backToggle.style.display = "block";
-
     }
 
-
-//<!-- Workspace Initializers -->>              
-
+    //── Workspace Initializers ────────────────────────────
+    switch (workspace) {
+        case "home":
+            if (typeof loadHomeCards === "function") {
+                loadHomeCards();
+            }
+            break;
         case "social":
             if (typeof initialiseSocial === "function") {
                 initialiseSocial();
             }
             break;
-
         case "edu":
             if (typeof initialiseEdu === "function") {
                 initialiseEdu();
             }
             break;
-
         case "games":
             if (typeof initialiseGames === "function") {
                 initialiseGames();
             }
             break;
-
         case "quran":
             if (typeof initialiseQuran === "function") {
                 initialiseQuran();
@@ -83,15 +80,9 @@ function goHome() {
 }
 
 footerIcons.forEach(icon => {
-
     icon.addEventListener("click", () => {
-
-        switchToWorkspace(
-            icon.dataset.workspace
-        );
-
+        switchToWorkspace(icon.dataset.workspace);
     });
-
 });
 
 // Initial load
