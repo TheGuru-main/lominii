@@ -388,3 +388,84 @@ async def update_member_role(
     return {
         "message": f"Role updated to {new_role}.",
     }
+
+
+@router.delete("/{community_id}/members/{member_id}")
+async def remove_member(
+    community_id: UUID,
+    member_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found.",
+        )
+
+    actor = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not actor:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a community member.",
+        )
+
+    if actor.role not in (
+        "owner",
+        "admin",
+        "moderator",
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Permission denied.",
+        )
+
+    member = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == member_id,
+        )
+    )
+
+    if not member:
+        raise HTTPException(
+            status_code=404,
+            detail="Member not found.",
+        )
+
+    if member.role == "owner":
+        raise HTTPException(
+            status_code=400,
+            detail="Community owner cannot be removed.",
+        )
+
+    if actor.role == "moderator" and member.role != "member":
+        raise HTTPException(
+            status_code=403,
+            detail="Moderators can only remove members.",
+        )
+
+    if actor.role == "admin" and member.role == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admins cannot remove other admins.",
+        )
+
+    await db.delete(member)
+    await db.commit()
+
+    return {
+        "message": "Member removed successfully."
+    }
