@@ -246,3 +246,78 @@ async def invite_member(
     return {
         "message": "Member added successfully."
     }
+
+
+@router.patch("/{community_id}/settings")
+async def update_community_settings(
+    community_id: UUID,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found",
+        )
+
+    membership = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this community.",
+        )
+
+    if membership.role not in ("owner", "admin"):
+        raise HTTPException(
+            status_code=403,
+            detail="Only owners and admins can update settings.",
+        )
+
+    community = await db.get(
+        Community,
+        community_id,
+    )
+
+    if not community:
+        raise HTTPException(
+            status_code=404,
+            detail="Community not found.",
+        )
+
+    if "name" in data:
+        community.name = data["name"]
+
+    if "description" in data:
+        community.description = data["description"]
+
+    if "visibility" in data:
+        community.visibility = data["visibility"]
+
+    if "max_members" in data:
+        community.max_members = data["max_members"]
+
+    await db.commit()
+    await db.refresh(community)
+
+    return {
+        "message": "Community settings updated successfully.",
+        "community": {
+            "id": str(community.id),
+            "name": community.name,
+            "visibility": community.visibility,
+            "max_members": community.max_members,
+        },
+    }
