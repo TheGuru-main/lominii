@@ -34,10 +34,6 @@ const landingView =
 const dashboardView =
     document.getElementById("dashboardView");
 
-const particleCanvas =
-    document.getElementById("particleCanvas");
-
-
 function showDashboard() {
     landingView.style.display = "none";
     dashboardView.style.display = "block";
@@ -51,8 +47,7 @@ function showDashboard() {
 
     document.body.classList.add("search-home");
 
-    if (typeof loadHomeCards === "function") {
-        loadHomeCards();
+    if (typeof stopParticles === 'function') stopParticles();
     }
 }
 
