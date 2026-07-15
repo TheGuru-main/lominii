@@ -927,3 +927,14 @@ async def create_announcement(
     await db.refresh(announcement)
 
     return announcement
+
+
+@router.patch("/{community_id}/members/{member_id}/promote")
+async def promote_member(
+    community_id: UUID,
+    member_id: UUID,
+    role: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    
