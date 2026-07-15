@@ -224,6 +224,17 @@ class Community(Base):
         cascade="all, delete-orphan",
     )
 
+     visibility = Column(
+    String(20),
+    default="public",
+    nullable=False,
+)
+
+max_members = Column(
+    Integer,
+    default=100,
+    nullable=False,
+)
 class CommunityMember(Base):
     __tablename__ = "community_members"
     __table_args__ = {"schema": "social"}
@@ -252,7 +263,6 @@ class CommunityMember(Base):
     user = relationship(
         "SocialProfile",
     )
-
 
 class PrivacySettings(Base):
     __tablename__ = "privacy_settings"
