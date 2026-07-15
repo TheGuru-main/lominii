@@ -2,6 +2,7 @@
 import asyncio
 import hashlib
 import httpx
+import os
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,10 @@ from platform.auth import get_current_user
 from platform.database import get_db
 from platform.gsg import gps_to_gsg
 from platform.intent_analyzer import analyze
-from platform.models.public import User,
+from platform.ai_service import generate   # ← NEW: import the real AI service
+
+# Your custom model imports (public / search schemas)
+from platform.models.public import User
 from platform.models.search import (
     Search,
     Trending,
@@ -30,34 +34,10 @@ router = APIRouter(prefix="/api/search", tags=["Search"])
 CACHE_TTL_ANONYMOUS = 5
 CACHE_TTL_AUTHENTICATED = 300
 
-# Hugging Face free inference endpoint (model for summarization)
-HF_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
-HF_HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_KEY', '***&&&@')}"} if os.getenv('HF_API_KEY') else {}
-
 
 def build_cache_key(query: str, lang: str, domain: str) -> str:
     raw = f"{query}|{lang}|{domain}"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
-
-
-async def call_ai_model(prompt: str) -> str:
-    """Call Hugging Face inference API and return the summary text, or a fallback."""
-    if not HF_HEADERS:
-        return "AI summary unavailable (API key not configured)."
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(HF_API_URL, headers=HF_HEADERS, json={"inputs": prompt})
-            if resp.status_code == 200:
-                data = resp.json()
-                # Response format varies; handle list or dict
-                if isinstance(data, list) and len(data) > 0:
-                    return data[0].get("summary_text", data[0])
-                elif isinstance(data, dict):
-                    return data.get("summary_text", str(data))
-            # Fallback for non‑200 responses
-            return "AI summarization is temporarily unavailable."
-    except Exception:
-        return "AI summarization is temporarily unavailable."
 
 
 @router.post("/")
@@ -139,13 +119,13 @@ async def unified_search(
         news_data = news_resp.json()
         news_articles = [{"title": a["title"], "url": a["url"]} for a in news_data.get("articles", [])[:6]]
 
-    # 9. AI Summary (real model call)
+    # 9. AI Summary – using Gemini + Hugging Face fallback
     ai_summary = None
     if not is_ai_blocked(query):
         prompt_template = get_prompt(tier)
         sources = f"Dictionary: {definition or 'None'}\nNews: {news_articles}"
         prompt = prompt_template.format(query=norm_query, sources=sources, country=country, language=lang)
-        ai_summary = await call_ai_model(prompt)
+        ai_summary = await generate(prompt)   # ← real AI call
     else:
         ai_summary = None
 
