@@ -572,3 +572,52 @@ async def get_community_members(
         }
         for member, profile in members
     ]
+
+@router.delete("/{community_id}")
+async def delete_community(
+    community_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id,
+        )
+    )
+
+    if not profile:
+        raise HTTPException(
+            status_code=404,
+            detail="Social profile not found.",
+        )
+
+    owner = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not owner or owner.role != "owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Only the community owner can delete the community.",
+        )
+
+    community = await db.get(
+        Community,
+        community_id,
+    )
+
+    if not community:
+        raise HTTPException(
+            status_code=404,
+            detail="Community not found.",
+        )
+
+    await db.delete(community)
+    await db.commit()
+
+    return {
+        "message": "Community deleted successfully."
+    }
