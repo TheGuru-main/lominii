@@ -403,6 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // We'll assume your dashboard.js calls a function when switching to social.
   // For now, we'll just load once after 2 seconds to give the app time to render.
   setTimeout(loadStatusCircle, 2000);
+if (workspace === 'social') loadStatusCircle();
+
 });
 
 // If you have a function that's called whenever the social tab is activated, add loadStatusCircle() there.
