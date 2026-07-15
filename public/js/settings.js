@@ -46,7 +46,26 @@ async function resetSecurityCounter() {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
     });
     if (resp.ok) {
-      document.getElementById('bjFails').textContent = '0';
+
+     // Load failed attempts from backend
+async function loadSecurityInfo() {
+  // … existing token/cell parsing …
+
+  // Fetch real failure count
+  try {
+    const resp = await apiFetch('/auth/failure-count', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      document.getElementById('bjFails').textContent = data.failures;
+    } else {
+      document.getElementById('bjFails').textContent = '?';
+    }
+  } catch (e) {
+    document.getElementById('bjFails').textContent = '?';
+  }
+}
       document.getElementById('settingsMsg').textContent = '✅ Security counter reset.';
     } else {
       document.getElementById('settingsMsg').textContent = '❌ Failed to reset.';
