@@ -205,13 +205,13 @@ class Like(Base):
         "SocialProfile",
     )
 
-
-
 class Community(Base):
+
     __tablename__ = "communities"
     __table_args__ = {"schema": "social"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     name = Column(String(255), nullable=False)
     description = Column(Text)
 
@@ -221,8 +221,27 @@ class Community(Base):
         nullable=False,
     )
 
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
+    visibility = Column(
+        String(20),
+        default="public",
+        nullable=False,
+    )
+
+    max_members = Column(
+        Integer,
+        default=1000,
+        nullable=False,
+    )
+
+    nsid = Column(
+        SmallInteger,
+        default=NSID.SOCIAL,
+    )
+
+    created_at = Column(
+        DateTime,
+        server_default="now()",
+    )
 
     members = relationship(
         "CommunityMember",
@@ -230,23 +249,12 @@ class Community(Base):
         cascade="all, delete-orphan",
     )
 
-posts = relationship(
-    "CommunityPost",
-    back_populates="community",
-    cascade="all, delete-orphan",
-)
+    posts = relationship(
+        "CommunityPost",
+        back_populates="community",
+        cascade="all, delete-orphan",
+    )
 
-     visibility = Column(
-    String(20),
-    default="public",
-    nullable=False,
-)
-
-max_members = Column(
-    Integer,
-    default=1000,
-    nullable=False,
-)
 class CommunityMember(Base):
     __tablename__ = "community_members"
     __table_args__ = {"schema": "social"}
