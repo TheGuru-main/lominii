@@ -344,3 +344,70 @@ class MutedUser(Base):
 
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
+
+class CommunityPost(Base):
+    __tablename__ = "community_posts"
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    community_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("communities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    author_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    content = Column(
+        Text,
+        nullable=True,
+    )
+
+    media_urls = Column(
+        JSONB,
+        default=list,
+        nullable=False,
+    )
+
+    nsid = Column(
+    Integer,
+    nullable=False,
+    default=NSID.SOCIAL,
+)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+    deleted_at = Column(
+        DateTime,
+        nullable=True,
+    )
+
+    community = relationship(
+        "Community",
+        back_populates="posts",
+    )
+
+    author = relationship(
+        "SocialProfile",
+        back_populates="community_posts",
+    )
