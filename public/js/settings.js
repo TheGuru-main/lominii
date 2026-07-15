@@ -1,146 +1,164 @@
 /* ==========================================================
    LOMINII SETTINGS
-   Panel control, preferences, BubbleJumbo cell display
+   Panel Control, Preferences & BubbleJumbo Security
 ========================================================== */
 
-const settingsPanel = document.getElementById('settingsPanel');
+const settingsPanel = document.getElementById("settingsPanel");
 
-// Open / close
+
+/* ==========================================================
+   PANEL
+========================================================== */
+
 function openSettings() {
-  settingsPanel.classList.add('open');
-  loadSecurityInfo();
+    settingsPanel.classList.add("open");
+
+    loadPreferences();
+    loadSecurityInfo();
 }
+
 function closeSettings() {
-  settingsPanel.classList.remove('open');
+    settingsPanel.classList.remove("open");
 }
 
-// Load BubbleJumbo info – uses the token already stored
-function loadSecurityInfo() {
-  const token = localStorage.getItem('lominii_token');
-  if (!token) return;
 
-// Fetch saved preferences
+/* ==========================================================
+   PREFERENCES
+========================================================== */
 
-const prefsResp = await apiFetch('/auth/preferences', {
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
-});
-if (prefsResp.ok) {
-    const prefs = await prefsResp.json();
-    document.getElementById('settingLanguage').value = prefs.language || 'en';
-    document.getElementById('settingCountry').value = prefs.country || 'Nigeria';
-    document.getElementById('sourceWikipedia').checked = prefs.data_sources?.wikipedia || false;
-    document.getElementById('sourceBanking').checked = prefs.data_sources?.banking || false;
-    document.getElementById('sourceNews').checked = prefs.data_sources?.news !== false;
-    document.getElementById('sourceDictionary').checked = prefs.data_sources?.dictionary !== false;
-}
+async function loadPreferences() {
 
-  // Decode the JWT payload (without verifying) – the bj claims are inside
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    if (payload.bj) {
-      const col = payload.bj.col;
-      const row = payload.bj.row;
-      const letter = String.fromCharCode(65 + col);
-      document.getElementById('bjCell').textContent = `(${letter}, ${row})`;
-      document.getElementById('bjK').textContent = payload.bj.K || 5;
+    try {
+
+        const resp = await apiFetch("/auth/preferences", {
+            headers: {
+                Authorization:
+                    `Bearer ${localStorage.getItem("lominii_token")}`
+            }
+        });
+
+        if (!resp.ok) return;
+
+        const prefs = await resp.json();
+
+        document.getElementById("settingLanguage").value =
+            prefs.language || "en";
+
+        document.getElementById("settingCountry").value =
+            prefs.country || "Nigeria";
+
+        document.getElementById("sourceWikipedia").checked =
+            prefs.data_sources?.wikipedia || false;
+
+        document.getElementById("sourceBanking").checked =
+            prefs.data_sources?.banking || false;
+
+        document.getElementById("sourceNews").checked =
+            prefs.data_sources?.news !== false;
+
+        document.getElementById("sourceDictionary").checked =
+            prefs.data_sources?.dictionary !== false;
+
+        const challenge =
+            document.getElementById("bjChallenge");
+
+        if (challenge) {
+            challenge.checked =
+                prefs.cell_challenge || false;
+        }
+
+    } catch (err) {
+
+        console.error(
+            "Unable to load preferences",
+            err
+        );
+
     }
-  } catch (e) {
-    document.getElementById('bjCell').textContent = 'N/A';
-  }
 
-  // Load failed attempts from backend
-
-try {
-    const resp = await apiFetch('/auth/failure-count', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
-    });
-    if (resp.ok) {
-        const data = await resp.json();
-        document.getElementById('bjFails').textContent = data.failures;
-    } else {
-        document.getElementById('bjFails').textContent = '?';
-    }
-} catch (e) {
-    document.getElementById('bjFails').textContent = '?';
 }
 
-// Reset failure counter (call the backend endpoint)
-async function resetSecurityCounter() {
-  try {
-    const resp = await apiFetch('/auth/reset-failures', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
-    });
-    if (resp.ok) {
 
-     // Load failed attempts from backend
+/* ==========================================================
+   SECURITY
+========================================================== */
+
 async function loadSecurityInfo() {
-  // … existing token/cell parsing …
 
-  // Fetch real failure count
-  try {
-    const resp = await apiFetch('/auth/failure-count', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      document.getElementById('bjFails').textContent = data.failures;
-    } else {
-      document.getElementById('bjFails').textContent = '?';
+    const token =
+        localStorage.getItem("lominii_token");
+
+    if (!token) return;
+
+
+    /* ---------- BubbleJumbo Cell ---------- */
+
+    try {
+
+        const payload =
+            JSON.parse(atob(token.split(".")[1]));
+
+        if (payload.bj) {
+
+            const col = payload.bj.col;
+            const row = payload.bj.row;
+
+            const letter =
+                String.fromCharCode(65 + col);
+
+            document.getElementById("bjCell")
+                .textContent =
+                `(${letter}, ${row})`;
+
+            document.getElementById("bjK")
+                .textContent =
+                payload.bj.K || 5;
+
+        }
+
+    } catch (err) {
+
+        document.getElementById("bjCell")
+            .textContent = "N/A";
+
     }
-  } catch (e) {
-    document.getElementById('bjFails').textContent = '?';
-  }
-}
-      document.getElementById('settingsMsg').textContent = '✅ Security counter reset.';
-    } else {
-      document.getElementById('settingsMsg').textContent = '❌ Failed to reset.';
+
+
+    /* ---------- Failure Counter ---------- */
+
+    try {
+
+        const resp =
+            await apiFetch("/auth/failure-count", {
+
+                headers: {
+                    Authorization:
+                        `Bearer ${token}`
+                }
+
+            });
+
+        if (resp.ok) {
+
+            const data =
+                await resp.json();
+
+            document.getElementById("bjFails")
+                .textContent =
+                data.failures;
+
+        } else {
+
+            document.getElementById("bjFails")
+                .textContent = "?";
+
+        }
+
+    } catch (err) {
+
+        document.getElementById("bjFails")
+            .textContent = "?";
+
     }
-  } catch (e) {
-    document.getElementById('settingsMsg').textContent = '❌ Network error.';
-  }
+
 }
-
-// Save preferences (language, country, data sources)
-async function saveSettings() {
-  const lang = document.getElementById('settingLanguage').value;
-  const country = document.getElementById('settingCountry').value;
-  const sources = {
-    wikipedia: document.getElementById('sourceWikipedia').checked,
-    banking: document.getElementById('sourceBanking').checked,
-    news: document.getElementById('sourceNews').checked,
-    dictionary: document.getElementById('sourceDictionary').checked
-  };
-  const challenge = document.getElementById('bjChallenge').checked;
-
-  const payload = { language: lang, country, data_sources: sources, cell_challenge: challenge };
-
-  try {
-    const resp = await apiFetch('/auth/preferences', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('lominii_token')}`
-      },
-      body: JSON.stringify(payload)
-    });
-    if (resp.ok) {
-      document.getElementById('settingsMsg').textContent = '✅ Preferences saved.';
-    } else {
-      document.getElementById('settingsMsg').textContent = '❌ Save failed.';
-    }
-  } catch (e) {
-    document.getElementById('settingsMsg').textContent = '❌ Network error.';
-  }
-}
-
-// Hook the existing "Language & Preferences" dropdown link (if present)
-document.addEventListener('DOMContentLoaded', () => {
-  const prefLink = document.querySelector('#userDropdown a[href="#"]:nth-child(4)'); // "Language & Preferences" is the 4th link? Actually it's the 4th link in the dropdown (0:My Profile,1:Privacy & Consent,2:Premium Status,3:Language & Preferences)
-  if (prefLink) {
-    prefLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      openSettings();
-    });
-  }
-});
