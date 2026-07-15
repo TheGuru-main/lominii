@@ -160,8 +160,7 @@ if (logoutButton) {
         if (particleCanvas)
             particleCanvas.style.display = "block";
 
-        if (typeof drawParticles === "function")
-            drawParticles();
+        if (typeof startParticles === 'function') startParticles();
 
     });
 
