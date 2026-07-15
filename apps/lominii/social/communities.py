@@ -43,7 +43,7 @@ async def create_community(
         description=data.get("description"),
         created_by=profile.id,
         visibility=data.get("visibility", "public"),
-        max_members=data.get("max_members", 100),
+        max_members=data.get("max_members", 1000),
     )
 
     db.add(community)
