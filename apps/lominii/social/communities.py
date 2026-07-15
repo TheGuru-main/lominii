@@ -881,3 +881,49 @@ async def unpin_community_post(
     await db.refresh(post)
 
     return post
+
+
+@router.post("/{community_id}/announcement")
+async def create_announcement(
+    community_id: UUID,
+    content: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = await db.scalar(
+        select(SocialProfile).where(
+            SocialProfile.core_user_id == current_user.id
+        )
+    )
+
+    member = await db.scalar(
+        select(CommunityMember).where(
+            CommunityMember.community_id == community_id,
+            CommunityMember.user_id == profile.id,
+        )
+    )
+
+    if not member or member.role not in (
+        "owner",
+        "admin",
+        "moderator",
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Only moderators can create announcements.",
+        )
+
+    announcement = CommunityPost(
+        community_id=community_id,
+        author_id=profile.id,
+        content=content,
+        media_urls=[],
+        is_announcement=True,
+        nsid=NSID.SOCIAL,
+    )
+
+    db.add(announcement)
+    await db.commit()
+    await db.refresh(announcement)
+
+    return announcement
