@@ -162,3 +162,216 @@ async function loadSecurityInfo() {
     }
 
 }
+
+
+/* ==========================================================
+   SAVE SETTINGS
+========================================================== */
+
+async function saveSettings() {
+
+    const lang =
+        document.getElementById("settingLanguage").value;
+
+    const country =
+        document.getElementById("settingCountry").value;
+
+    const sources = {
+
+        wikipedia:
+            document.getElementById("sourceWikipedia").checked,
+
+        banking:
+            document.getElementById("sourceBanking").checked,
+
+        news:
+            document.getElementById("sourceNews").checked,
+
+        dictionary:
+            document.getElementById("sourceDictionary").checked
+
+    };
+
+    const challenge =
+        document.getElementById("bjChallenge").checked;
+
+    const payload = {
+
+        language: lang,
+
+        country: country,
+
+        data_sources: sources,
+
+        cell_challenge: challenge
+
+    };
+
+    try {
+
+        const resp = await apiFetch(
+            "/auth/preferences",
+            {
+
+                method: "PUT",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json",
+
+                    Authorization:
+                        `Bearer ${localStorage.getItem("lominii_token")}`
+
+                },
+
+                body: JSON.stringify(payload)
+
+            }
+        );
+
+        if (resp.ok) {
+
+            document.getElementById("settingsMsg")
+                .textContent =
+                "✅ Preferences saved.";
+
+        } else {
+
+            document.getElementById("settingsMsg")
+                .textContent =
+                "❌ Save failed.";
+
+        }
+
+    } catch (err) {
+
+        document.getElementById("settingsMsg")
+            .textContent =
+            "❌ Network error.";
+
+    }
+
+}
+
+
+/* ==========================================================
+   RESET SECURITY COUNTER
+========================================================== */
+
+async function resetSecurityCounter() {
+
+    try {
+
+        const resp = await apiFetch(
+            "/auth/reset-failures",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    Authorization:
+                        `Bearer ${localStorage.getItem("lominii_token")}`
+
+                }
+
+            }
+        );
+
+        if (resp.ok) {
+
+            document.getElementById("settingsMsg")
+                .textContent =
+                "✅ Security counter reset.";
+
+            await loadSecurityInfo();
+
+        } else {
+
+            document.getElementById("settingsMsg")
+                .textContent =
+                "❌ Failed to reset.";
+
+        }
+
+    } catch (err) {
+
+        document.getElementById("settingsMsg")
+            .textContent =
+            "❌ Network error.";
+
+    }
+
+}
+
+
+/* ==========================================================
+   EVENT LISTENERS
+========================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const prefLink =
+            document.querySelector(
+                '#userDropdown a[href="#"]:nth-child(4)'
+            );
+
+        if (prefLink) {
+
+            prefLink.addEventListener(
+                "click",
+                (e) => {
+
+                    e.preventDefault();
+
+                    openSettings();
+
+                }
+            );
+
+        }
+
+
+        const saveBtn =
+            document.getElementById("btnSaveSettings");
+
+        if (saveBtn) {
+
+            saveBtn.addEventListener(
+                "click",
+                saveSettings
+            );
+
+        }
+
+
+        const resetBtn =
+            document.getElementById("btnResetSecurity");
+
+        if (resetBtn) {
+
+            resetBtn.addEventListener(
+                "click",
+                resetSecurityCounter
+            );
+
+        }
+
+
+        const closeBtn =
+            document.getElementById("btnCloseSettings");
+
+        if (closeBtn) {
+
+            closeBtn.addEventListener(
+                "click",
+                closeSettings
+            );
+
+        }
+
+    }
+);
