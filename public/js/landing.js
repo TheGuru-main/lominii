@@ -1,4 +1,7 @@
-// Particle network (kept from earlier)
+/* ==========================================================
+   LOMINII LANDING – Particle Network (only)
+========================================================== */
+
 const canvas = document.getElementById('particleCanvas');
 const ctx = canvas.getContext('2d');
 let w, h;
@@ -56,18 +59,16 @@ function drawParticles() {
   animationId = requestAnimationFrame(drawParticles);
 }
 
-const landingView = document.getElementById('landingView');
-const dashboardView = document.getElementById('dashboardView');
-const particleCanvasEl = document.getElementById('particleCanvas');
-
-function showDashboard() {
-  landingView.style.display = 'none';
-  dashboardView.style.display = 'block';
-  particleCanvasEl.style.display = 'none';
+// Public helpers for common.js
+function stopParticles() {
   if (animationId) cancelAnimationFrame(animationId);
-  document.body.classList.add('search-home');
+  canvas.style.display = 'none';
 }
 
+function startParticles() {
+  canvas.style.display = 'block';
+  drawParticles();
+}
+
+// Start the show
 drawParticles();
-landingView.style.display = 'block';
-dashboardView.style.display = 'none';
