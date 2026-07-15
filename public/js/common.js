@@ -59,6 +59,7 @@ if (typeof loadHomeCards === "function") loadHomeCards();
 
 function switchToWorkspace(workspace) {
 
+
     Object.values(views).forEach(view => {
 
         if (view)
@@ -99,12 +100,7 @@ function switchToWorkspace(workspace) {
             backToggle.style.display = "block";
     }
 
-  switch (workspace) {
-    case "home":                                    
-        if (typeof loadHomeCards === "function")
-            loadHomeCards();                        
-        break;                                
-
+  
         case "social":
             if (typeof loadFriendsFeed === "function")
                 loadFriendsFeed();
