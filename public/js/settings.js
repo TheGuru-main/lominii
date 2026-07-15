@@ -19,6 +19,21 @@ function loadSecurityInfo() {
   const token = localStorage.getItem('lominii_token');
   if (!token) return;
 
+// Fetch saved preferences
+
+const prefsResp = await apiFetch('/auth/preferences', {
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('lominii_token')}` }
+});
+if (prefsResp.ok) {
+    const prefs = await prefsResp.json();
+    document.getElementById('settingLanguage').value = prefs.language || 'en';
+    document.getElementById('settingCountry').value = prefs.country || 'Nigeria';
+    document.getElementById('sourceWikipedia').checked = prefs.data_sources?.wikipedia || false;
+    document.getElementById('sourceBanking').checked = prefs.data_sources?.banking || false;
+    document.getElementById('sourceNews').checked = prefs.data_sources?.news !== false;
+    document.getElementById('sourceDictionary').checked = prefs.data_sources?.dictionary !== false;
+}
+
   // Decode the JWT payload (without verifying) – the bj claims are inside
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
