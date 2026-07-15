@@ -68,10 +68,6 @@ function showDashboard() {
   document.body.classList.add('search-home');
 }
 
-document.getElementById('btnExplore').addEventListener('click', showDashboard);
-document.getElementById('btnLogin').addEventListener('click', showDashboard);
-document.getElementById('btnSignup').addEventListener('click', () => alert('Signup form coming soon'));
-
 drawParticles();
 landingView.style.display = 'block';
 dashboardView.style.display = 'none';
