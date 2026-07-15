@@ -57,78 +57,53 @@ if (typeof loadHomeCards === "function") loadHomeCards();
 
 
 function switchToWorkspace(workspace) {
-
-switch (workspace) {
-    case "home":                                    
-        if (typeof loadHomeCards === "function")
-            loadHomeCards();                        
-        break;                                
+    // 1. Hide all workspace views
 
     Object.values(views).forEach(view => {
-
-        if (view)
-            view.style.display = "none";
-
+        if (view) view.style.display = "none";
     });
+
+    // 2. Show the selected workspace
 
     if (views[workspace]) {
         views[workspace].style.display = "block";
     }
 
-    footerIcons.forEach(icon =>
-        icon.classList.remove("active")
-    );
+    // 3. Update active state on footer icons
+    footerIcons.forEach(icon => icon.classList.remove("active"));
+    const active = document.querySelector(`.nav-icon[data-workspace="${workspace}"]`);
+    if (active) active.classList.add("active");
 
-    const active =
-        document.querySelector(
-            `.nav-icon[data-workspace="${workspace}"]`
-        );
-
-    if (active)
-        active.classList.add("active");
-
+    // 4. Toggle body classes and back toggle
     if (workspace === "home") {
-
         document.body.classList.add("search-home");
         document.body.classList.remove("workspace-view");
-
-        if (backToggle)
-            backToggle.style.display = "none";
-
+        if (backToggle) backToggle.style.display = "none";
     } else {
-
         document.body.classList.remove("search-home");
         document.body.classList.add("workspace-view");
-
-        if (backToggle)
-            backToggle.style.display = "block";
+        if (backToggle) backToggle.style.display = "block";
     }
 
+    // 5. Workspace‑specific initialisation
+
+    switch (workspace) {
+        case "home":
+            if (typeof loadHomeCards === "function") loadHomeCards();
+            break;
         case "social":
-            if (typeof loadFriendsFeed === "function")
-                loadFriendsFeed();
+            if (typeof loadFriendsFeed === "function") loadFriendsFeed();
             break;
-
         case "games":
-            if (typeof loadGames === "function")
-                loadGames();
+            if (typeof loadGames === "function") loadGames();
             break;
-
         case "edu":
-            if (typeof loadCourses === "function")
-                loadCourses();
+            if (typeof loadCourses === "function") loadCourses();
             break;
-
         case "quran":
-            if (typeof loadQuran === "function")
-                loadQuran();
+            if (typeof loadQuran === "function") loadQuran();
             break;
     }
-}
-
-
-function goHome() {
-    switchToWorkspace("home");
 }
 
 
