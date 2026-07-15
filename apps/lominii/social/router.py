@@ -24,7 +24,7 @@ from platform.models.social import (
     MutedUser,
 )
 
-from platform.models.news import NewsSubscription
+from platform.models.news import NewsSubscription, NewsNotification, PrivateNewsFollower
 from .messages import router as messages_router
 from .follows import router as follows_router
 from .posts import router as posts_router
