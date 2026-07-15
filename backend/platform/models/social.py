@@ -366,7 +366,9 @@ class MutedUser(Base):
     created_at = Column(DateTime, server_default="now()")
 
 class CommunityPost(Base):
-    __tablename__ = "community_posts"
+
+   __tablename__ = "community_posts"
+__table_args__ = {"schema": "social"}
 
     id = Column(
         UUID(as_uuid=True),
@@ -376,7 +378,7 @@ class CommunityPost(Base):
 
     community_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("communities.id", ondelete="CASCADE"),
+        ForeignKey("social.communities.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
