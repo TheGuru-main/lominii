@@ -57,6 +57,74 @@
           <a href="#">Language & Preferences</a>
           <a href="#" id="btnLogout">Logout</a>
         </div>
+<!-- SETTINGS PANEL (slide‑in) -->
+<div id="settingsPanel" class="settings-panel">
+  <div class="panel-header">
+    <h3>⚙️ Settings</h3>
+    <button class="close-btn" onclick="closeSettings()">✕</button>
+  </div>
+
+  <div class="settings-content">
+    <!-- General -->
+    <div class="settings-section">
+      <h4>🌐 General</h4>
+      <label>Language</label>
+      <select id="settingLanguage">
+        <option value="en">English</option>
+        <option value="yo">Yoruba</option>
+        <option value="ha">Hausa</option>
+        <option value="ig">Igbo</option>
+      </select>
+      <label>Country</label>
+      <select id="settingCountry">
+        <option value="Nigeria">Nigeria</option>
+        <option value="Ghana">Ghana</option>
+        <option value="Kenya">Kenya</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- Data Sources -->
+    <div class="settings-section">
+      <h4>📡 Data Sources</h4>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceWikipedia" checked>
+        <span>Wikipedia</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceBanking">
+        <span>Banking / Finance</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceNews" checked>
+        <span>News</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceDictionary" checked>
+        <span>Dictionary</span>
+      </label>
+    </div>
+
+    <!-- BubbleJumbo Security -->
+    <div class="settings-section">
+      <h4>🔐 BubbleJumbo Security</h4>
+      <div class="bj-info">
+        <p><strong>Your Primary Cell:</strong> <span id="bjCell">—</span></p>
+        <p><strong>Current K (replicas):</strong> <span id="bjK">5</span></p>
+        <p><strong>Failed attempts:</strong> <span id="bjFails">0</span></p>
+      </div>
+      <label class="toggle-row">
+        <input type="checkbox" id="bjChallenge">
+        <span>Enable cell‑challenge for sensitive actions</span>
+      </label>
+      <button class="btn btn-outline" onclick="resetSecurityCounter()">Reset failure counter</button>
+    </div>
+
+    <!-- Save button -->
+    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    <div id="settingsMsg" style="margin-top:0.8rem; font-size:0.9rem;"></div>
+  </div>
+</div>
       </div>
     </header>
 
