@@ -146,6 +146,7 @@ if user and user.news_preferences and user.news_preferences.get("wikipedia", Fal
         "elastic_cloud_size": len(cloud),
         "definition": definition,
         "news": news_articles,
+        "wikipedia": wiki_articles,
         "ai_summary": ai_summary,
         "did_you_mean": None,
         "related_questions": [],
