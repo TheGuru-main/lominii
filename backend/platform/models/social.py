@@ -23,44 +23,54 @@ class SocialProfile(Base):
     __table_args__ = {"schema": "social"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     core_user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
+
     social_uid = Column(String(20), unique=True, nullable=False)
     full_name = Column(String(255), nullable=False)
     bio = Column(Text)
     avatar_url = Column(Text)
     location = Column(String)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
+
+    nsid = Column(
+        SmallInteger,
+        default=NSID.SOCIAL,
+    )
+
+    created_at = Column(
+        DateTime,
+        server_default="now()",
+    )
 
     posts = relationship(
-    "Post",
-    back_populates="author",
-    cascade="all, delete-orphan",
-)
+        "Post",
+        back_populates="author",
+        cascade="all, delete-orphan",
+    )
 
-community_posts = relationship(
-    "CommunityPost",
-    back_populates="author",
-    cascade="all, delete-orphan",
-)
+    community_posts = relationship(
+        "CommunityPost",
+        back_populates="author",
+        cascade="all, delete-orphan",
+    )
 
-followers = relationship(
-    "Follow",
-    foreign_keys="Follow.followee_id",
-    back_populates="followee",
-    cascade="all, delete-orphan",
-)
+    followers = relationship(
+        "Follow",
+        foreign_keys="Follow.followee_id",
+        back_populates="followee",
+        cascade="all, delete-orphan",
+    )
 
-following = relationship(
-    "Follow",
-    foreign_keys="Follow.follower_id",
-    back_populates="follower",
-    cascade="all, delete-orphan",
-)
+    following = relationship(
+        "Follow",
+        foreign_keys="Follow.follower_id",
+        back_populates="follower",
+        cascade="all, delete-orphan",
+    )
 
 class Follow(Base):
     __tablename__ = "follows"
@@ -367,8 +377,8 @@ class MutedUser(Base):
 
 class CommunityPost(Base):
 
-   __tablename__ = "community_posts"
-   __table_args__ = {"schema": "social"}
+    __tablename__ = "community_posts"
+    __table_args__ = {"schema": "social"}
 
     id = Column(
         UUID(as_uuid=True),
