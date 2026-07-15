@@ -53,7 +53,12 @@ function switchToWorkspace(workspace) {
     ======================================================
     Workspace Initializers
     ======================================================
-    */
+    
+switch (workspace) {
+    case "home":                                    
+        if (typeof loadHomeCards === "function")
+            loadHomeCards();                        
+        break;                                
 
     switch (workspace) {
 
