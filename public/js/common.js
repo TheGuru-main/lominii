@@ -39,9 +39,7 @@ const particleCanvas =
 
 
 function showDashboard() {
-
     landingView.style.display = "none";
-
     dashboardView.style.display = "block";
 
     if (particleCanvas)
@@ -49,8 +47,13 @@ function showDashboard() {
 
     if (typeof animId !== "undefined") {
         cancelAnimationFrame(animId);
+    }
+
     document.body.classList.add("search-home");
-if (typeof loadHomeCards === "function") loadHomeCards();
+
+    if (typeof loadHomeCards === "function") {
+        loadHomeCards();
+    }
 }
 
 /* ===== Workspace Switching ===== */
