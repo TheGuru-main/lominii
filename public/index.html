@@ -54,31 +54,53 @@
 
     <div class="main-content" id="mainContent">
 
-      <!-- SEARCH HOME -->
-      <div id="homeView">
-        <div class="search-section">
-          <input type="text" class="search-input" placeholder="Search anything…" id="searchInput">
-          <button class="btn" id="btnSearch">Search</button>
-        </div>
-        <div id="searchResults" class="search-results"></div>
-        <div class="card-grid">
-          <div class="card"><div class="icon">🔥</div><h3>Trending</h3></div>
-          <div class="card"><div class="icon">📰</div><h3>News</h3></div>
-          <div class="card"><div class="icon">🗺️</div><h3>Map</h3></div>
-          <div class="card"><div class="icon">🕌</div><h3>Prayer Times</h3></div>
-        </div>
-
-        <div class="game-carousel">
-    <div class="game-card" id="openGames">
-        <div class="icon">🎮</div>
-        <h4>Games</h4>
-        <p>Tap to open</p>
-    </div>
-</div>
-        <div class="placeholder">📰 Latest News (loading…)</div>
-      </div>
-
+ 
 <!-- ========================================================= -->
+<!-- !--  <!-- SEARCH HOME --> -->>
+<!-- ========================================================= -->
+<!--
+<div id="homeView">
+  <div class="search-section">
+    <input type="text" class="search-input" placeholder="Search anything…" id="searchInput">
+    <button class="btn" id="btnSearch">Search</button>
+  </div>
+  <div id="searchResults" class="search-results"></div>
+
+  <!-- Quick‑access cards (Trending, News, Map, Prayer Times) -->
+  <div class="card-grid" id="homeCards">
+    <div class="card" id="cardTrending">
+      <div class="icon">🔥</div>
+      <h3>Trending Now</h3>
+      <div id="trendingList" class="loading-text">Loading…</div>
+    </div>
+    <div class="card" id="cardNews">
+      <div class="icon">📰</div>
+      <h3>Latest News</h3>
+      <div id="newsList" class="loading-text">Loading…</div>
+    </div>
+    <div class="card" id="cardMap">
+      <div class="icon">🗺️</div>
+      <h3>See Map</h3>
+      <p id="mapStatus">Detecting location…</p>
+    </div>
+    <div class="card" id="cardPrayer">
+      <div class="icon">🕌</div>
+      <h3>Prayer Times</h3>
+      <div id="prayerList" class="loading-text">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Game carousel (static for now) -->
+  <div class="game-carousel">
+    <div class="game-card" id="openGames">
+      <div class="icon">🎮</div>
+      <h4>LOMINII Play</h4>
+      <p>Ludo · Chess · Draft · Snooker</p>
+    </div>
+  </div>
+</div>
+
+ ========================================================= -->
 <!-- !-- GAMES WORKSPACE -->>
 <!-- ========================================================= --><
 
