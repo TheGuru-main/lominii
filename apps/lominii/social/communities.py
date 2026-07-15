@@ -937,4 +937,11 @@ async def promote_member(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    
+       ...
+
+@router.patch("/{community_id}/members/{member_id}/demote")
+async def demote_member(...)
+
+
+@router.delete("/{community_id}/members/{member_id}")
+async def remove_member(...)
