@@ -34,7 +34,7 @@ async function loadFriendsFeed() {
           <div class="post-content">${p.content}</div>
           <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
           <div class="post-actions">
-            <button onclick="likePost('${p.id}')">❤️ Like</button>
+            <button onclick="likePost('${p.id}')">👍 Like</button>
             <button onclick="commentPost('${p.id}')">💬 Comment</button>
             <button onclick="viewProfile('${p.author_id}')">👤 Profile</button>
           </div>
@@ -70,7 +70,7 @@ async function loadNewsFeed() {
           <div class="post-content">${p.content}</div>
           <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
           <div class="post-actions">
-            <button onclick="likePost('${p.id}')">❤️ Like</button>
+            <button onclick="likePost('${p.id}')"> Like</button>
             <button onclick="commentPost('${p.id}')">💬 Comment</button>
             <button onclick="viewProfile('${p.author_id}')">👤 Profile</button>
           </div>
