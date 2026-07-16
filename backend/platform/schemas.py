@@ -255,15 +255,21 @@ class PostOut(BaseModel):
 
 
 class CommentCreate(BaseModel):
-    content: str
-
+    content: str | None = None
+    media_type: str | None = None
+    media_url: str | None = None
+    duration: int | None = None
 
 class CommentOut(BaseModel):
     id: UUID
     post_id: UUID
     author_id: UUID
-    content: str
-    nsid: int
+
+    content: str | None = None
+    media_type: str | None = None
+    media_url: str | None = None
+    duration: int | None = None
+
     created_at: datetime
 
     class Config:
