@@ -15,7 +15,7 @@ from platform.models.social import (
     Post,
     Status,
     Comment,
-    Like,
+    Reactions,
     Community,
     CommunityMember,
     PrivacySettings,
