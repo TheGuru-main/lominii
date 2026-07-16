@@ -21,13 +21,6 @@ from platform.schemas import (
 
 from platform.nsid import NSID
 
-
-router = APIRouter(
-    prefix="/comments",
-    tags=["Social Comments"],
-)
-
-
 ALLOWED_COMMENT_MEDIA = {
     "image",
     "gif",
@@ -35,6 +28,12 @@ ALLOWED_COMMENT_MEDIA = {
     "video",
     "file",
 }
+
+router = APIRouter(
+    prefix="/comments",
+    tags=["Social Comments"],
+)
+
 
 @router.post("/{post_id}", response_model=CommentOut)
 async def add_comment(
@@ -89,6 +88,15 @@ async def add_comment(
         author_id=profile.id,
         content=payload.content,
         nsid=NSID.SOCIAL,
+    )
+
+    if (
+        payload.media_type
+        and payload.media_type not in ALLOWED_COMMENT_MEDIA
+):
+    raise HTTPException(
+        status_code=400,
+        detail="Unsupported comment media.",
     )
 
     if (
