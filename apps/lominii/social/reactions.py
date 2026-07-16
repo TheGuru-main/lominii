@@ -24,6 +24,14 @@ router = APIRouter(
 )
 
 
+ALLOWED_REACTIONS = {
+    "😂", "😭", "😡", "🕊️", "🙏", "😕",
+    "💰", "🙌", "🪄", "💀", "🥹", "🥶",
+    "❤️", "👍", "💪", "🩸", "👩‍❤️‍💋‍👩",
+    "🔥", "🌠", "👏", "✌️", "🎓", "🏆",
+    "🎉", "©️",
+}
+
 @router.post("/{post_id}", response_model=ReactionOut)
 async def react_to_post(
     post_id: UUID,
@@ -43,6 +51,12 @@ async def react_to_post(
             detail="Social profile not found.",
         )
 
+    if payload.emoji not in ALLOWED_REACTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid reaction.",
+    )
+
     post = await db.get(Post, post_id)
 
     if not post:
@@ -59,6 +73,7 @@ async def react_to_post(
     )
 
     # User already reacted → update emoji
+
     if reaction:
         reaction.emoji = payload.emoji
 
