@@ -46,27 +46,7 @@ MEDIA_RULES = {
         },
     },
 
-    # Chats (Social, Community, Org AI, Games)
-    "chat": {
-        "image": {
-            "max_size": 10 * MB,
-        },
-        "gif": {
-            "max_size": 10 * MB,
-        },
-        "voice": {
-            "max_size": 10 * MB,
-            "max_duration": 300,
-        },
-        "video": {
-            "max_size": 100 * MB,
-            "max_duration": 900,
-        },
-        "file": {
-            "max_size": 20 * MB,
-        },
-    },
-
+    
     # Status/Stories
     "status": {
         "image": {
