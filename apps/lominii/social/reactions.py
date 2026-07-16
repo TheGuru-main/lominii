@@ -1,3 +1,11 @@
+ALLOWED_REACTIONS = {
+    "😂", "😭", "😡", "🕊️", "🙏", "😕",
+    "💰", "🙌", "🪄", "💀", "🥹", "🥶",
+    "❤️", "👍", "💪", "🩸", "👩‍❤️‍💋‍👩",
+    "🔥", "🌠", "👏", "✌️", "🎓", "🏆",
+    "🎉", "©️",
+}
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,14 +25,6 @@ from platform.schemas import (
     ReactionCreate,
     ReactionOut,
 )
-
-ALLOWED_REACTIONS = {
-    "😂", "😭", "😡", "🕊️", "🙏", "😕",
-    "💰", "🙌", "🪄", "💀", "🥹", "🥶",
-    "❤️", "👍", "💪", "🩸", "👩‍❤️‍💋‍👩",
-    "🔥", "🌠", "👏", "✌️", "🎓", "🏆",
-    "🎉", "©️",
-}
 
 router = APIRouter(
     prefix="/reactions",
