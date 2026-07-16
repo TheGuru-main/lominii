@@ -196,7 +196,8 @@ class Reaction(Base):
         "Post",
         back_populates="reactions",)
     user = relationship(
-        "SocialProfile",)
+    "SocialProfile",
+    back_populates="reactions",)
 
 class Community(Base):
     __tablename__ = "communities"
