@@ -68,6 +68,9 @@ class SocialProfile(Base):
         foreign_keys="Follow.followee_id",
         back_populates="followee",
         cascade="all, delete-orphan",)
+    reactions = relationship(
+        "Reaction",
+        back_populates="user", cascade="all, delete-orphan",)
     following = relationship(
         "Follow",
         foreign_keys="Follow.follower_id",
