@@ -278,7 +278,6 @@ class CommentOut(BaseModel):
 class ReactionCreate(BaseModel):
     emoji: str
 
-
 class ReactionOut(BaseModel):
     post_id: UUID
     user_id: UUID
@@ -287,3 +286,15 @@ class ReactionOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ShareIn(BaseModel):
+    pass
+
+class ShareOut(BaseModel):
+    post_id: UUID
+    user_id: UUID
+    nsid: int
+    created_at: datetime
+
+    class Config:
+        orm mode = True
