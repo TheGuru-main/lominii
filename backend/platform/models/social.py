@@ -423,7 +423,9 @@ author = relationship(
 
 class CommunityBan(Base):
     __tablename__ = "community_bans"
-    __table_args__ = {"schema": "social"}community_id = Column(
+    __table_args__ = {"schema": "social"}
+
+community_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.communities.id", ondelete="CASCADE"),
         primary_key=True,
