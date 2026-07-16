@@ -18,12 +18,6 @@ from platform.schemas import (
     ReactionOut,
 )
 
-router = APIRouter(
-    prefix="/reactions",
-    tags=["Social Reactions"],
-)
-
-
 ALLOWED_REACTIONS = {
     "😂", "😭", "😡", "🕊️", "🙏", "😕",
     "💰", "🙌", "🪄", "💀", "🥹", "🥶",
@@ -31,6 +25,12 @@ ALLOWED_REACTIONS = {
     "🔥", "🌠", "👏", "✌️", "🎓", "🏆",
     "🎉", "©️",
 }
+
+router = APIRouter(
+    prefix="/reactions",
+    tags=["Social Reactions"],
+)
+
 
 @router.post("/{post_id}", response_model=ReactionOut)
 async def react_to_post(
