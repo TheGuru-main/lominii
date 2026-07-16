@@ -29,61 +29,51 @@ class SocialProfile(Base):
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
-
     social_uid = Column(String(20), unique=True, nullable=False)
     full_name = Column(String(255), nullable=False)
     bio = Column(Text)
     avatar_url = Column(Text)
     location = Column(String)
-
-    nsid = Column(
+nsid = Column(
         SmallInteger,
         default=NSID.SOCIAL,
     )
-
-    created_at = Column(
+created_at = Column(
         DateTime,
         server_default="now()",
     )
-
-     username = Column(
+username = Column(
         String(32),
         unique=True,
         nullable=True,
         index=True,
   )
-
-    username_verified = Column(
+username_verified = Column(
        Boolean,
        default=False,
        nullable=False,
    )
-
-     username_created_at = Column(
+username_created_at = Column(
         DateTime,
         nullable=True,
    )
-
-    posts = relationship(
+posts = relationship(
         "Post",
         back_populates="author",
         cascade="all, delete-orphan",
     )
-
-    community_posts = relationship(
+community_posts = relationship(
         "CommunityPost",
         back_populates="author",
         cascade="all, delete-orphan",
     )
-
-    followers = relationship(
+followers = relationship(
         "Follow",
         foreign_keys="Follow.followee_id",
         back_populates="followee",
         cascade="all, delete-orphan",
     )
-
-    following = relationship(
+following = relationship(
         "Follow",
         foreign_keys="Follow.follower_id",
         back_populates="follower",
@@ -94,19 +84,17 @@ class Follow(Base):
     __tablename__ = "follows"
     __table_args__ = {"schema": "social"}
 
-    follower_id = Column(
+follower_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         primary_key=True,
     )
-
-    followee_id = Column(
+followee_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         primary_key=True,
     )
-
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
     follower = relationship(
@@ -114,7 +102,6 @@ class Follow(Base):
         foreign_keys=[follower_id],
         back_populates="following",
     )
-
     followee = relationship(
         "SocialProfile",
         foreign_keys=[followee_id],
@@ -143,14 +130,12 @@ class Post(Base):
         "SocialProfile",
         back_populates="posts",
     )
-
-    comments = relationship(
+comments = relationship(
         "Comment",
         back_populates="post",
         cascade="all, delete-orphan",
     )
-
-    likes = relationship(
+likes = relationship(
         "Like",
         back_populates="post",
         cascade="all, delete-orphan",
@@ -199,11 +184,9 @@ class Comment(Base):
         "Post",
         back_populates="comments",
     )
-
     author = relationship(
         "SocialProfile",
     )
-
 
 class Like(Base):
     __tablename__ = "likes"
@@ -214,70 +197,58 @@ class Like(Base):
         ForeignKey("social.posts.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    user_id = Column(
+user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         primary_key=True,
     )
-
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
-    post = relationship(
+post = relationship(
         "Post",
         back_populates="likes",
-    )
-
-    user = relationship(
+   )
+user = relationship(
         "SocialProfile",
     )
 
 class Community(Base):
-
     __tablename__ = "communities"
     __table_args__ = {"schema": "social"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     name = Column(String(255), nullable=False)
     description = Column(Text)
-
-    created_by = Column(
+created_by = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         nullable=False,
     )
-
-    visibility = Column(
+visibility = Column(
         String(20),
         default="public",
         nullable=False,
     )
-
-    max_members = Column(
+max_members = Column(
         Integer,
         default=1000,
         nullable=False,
     )
-
-    nsid = Column(
+nsid = Column(
         SmallInteger,
         default=NSID.SOCIAL,
     )
-
-    created_at = Column(
+created_at = Column(
         DateTime,
         server_default="now()",
     )
-
-    members = relationship(
+members = relationship(
         "CommunityMember",
         back_populates="community",
         cascade="all, delete-orphan",
     )
-
-    posts = relationship(
+posts = relationship(
         "CommunityPost",
         back_populates="community",
         cascade="all, delete-orphan",
@@ -292,13 +263,11 @@ class CommunityMember(Base):
         ForeignKey("social.communities.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         primary_key=True,
     )
-
     role = Column(String(20), default="member")
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     joined_at = Column(DateTime, server_default="now()")
@@ -307,7 +276,6 @@ class CommunityMember(Base):
         "Community",
         back_populates="members",
     )
-
     user = relationship(
         "SocialProfile",
     )
@@ -321,13 +289,11 @@ class PrivacySettings(Base):
         ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    profile_visibility = Column(String(20), default="public")
+profile_visibility = Column(String(20), default="public")
     search_visibility = Column(String(20), default="public")
     friend_request_permission = Column(String(20), default="everyone")
     last_seen_visibility = Column(String(20), default="friends")
-
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
 
@@ -337,19 +303,17 @@ class FriendRequest(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    sender_id = Column(
+sender_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
-
-    receiver_id = Column(
+receiver_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,
     )
-
-    status = Column(String(20), default="pending")
+status = Column(String(20), default="pending")
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
@@ -363,14 +327,12 @@ class BlockedUser(Base):
         ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    blocked_id = Column(
+blocked_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class MutedUser(Base):
@@ -382,14 +344,12 @@ class MutedUser(Base):
         ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    muted_id = Column(
+muted_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class CommunityPost(Base):
@@ -402,107 +362,88 @@ class CommunityPost(Base):
         primary_key=True,
         default=uuid.uuid4,
     )
-
-    community_id = Column(
+community_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.communities.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-
-    author_id = Column(
+author_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-
-    content = Column(
+content = Column(
         Text,
         nullable=True,
     )
-
-    media_urls = Column(
+media_urls = Column(
         JSONB,
         default=list,
         nullable=False,
     )
-
-        nsid = Column(
+nsid = Column(
         Integer,
         nullable=False,
         default=NSID.SOCIAL,
     )
-
-    created_at = Column(
+created_at = Column(
         DateTime,
         default=datetime.utcnow,
         nullable=False,
     )
-
-    updated_at = Column(
+updated_at = Column(
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
     )
-
-    deleted_at = Column(
+deleted_at = Column(
         DateTime,
         nullable=True,
     )
-
-    is_pinned = Column(
+is_pinned = Column(
         Boolean,
         default=False,
         nullable=False,
     )
-
-    is_announcement = Column(
+is_announcement = Column(
        Boolean,
        default=False,
        nullable=False,
     )
-
-    community = relationship(
+community = relationship(
         "Community",
         back_populates="posts",
     )
-
-    author = relationship(
+author = relationship(
         "SocialProfile",
         back_populates="community_posts",
     )
 
 class CommunityBan(Base):
     __tablename__ = "community_bans"
-    __table_args__ = {"schema": "social"}
-
-    community_id = Column(
+    __table_args__ = {"schema": "social"}community_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.communities.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    user_id = Column(
+user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id", ondelete="CASCADE"),
         primary_key=True,
     )
-
-    banned_by = Column(
+banned_by = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         nullable=False,
     )
-
-    reason = Column(Text)
-
+reason = Column(Text)
     nsid = Column(
         SmallInteger,
         default=NSID.SOCIAL,
     )
-
-    created_at = Column(
+created_at = Column(
         DateTime,
         server_default="now()",
     )
