@@ -120,8 +120,8 @@ class Post(Base):
         "Comment",
         back_populates="post",
         cascade="all, delete-orphan",)
-    likes = relationship(
-        "Like",
+    reactions = relationship(
+        "Reaction",
         back_populates="post",
         cascade="all, delete-orphan",)
 
