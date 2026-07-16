@@ -13,7 +13,7 @@ from platform.models.social import (
     Share,
 )
 
-from platform.schemas import ShareOut
+from platform.schemas import ShareOut, ShareIn
 from platform.nsid import NSID
 
 
