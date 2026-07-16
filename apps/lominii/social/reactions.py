@@ -1,32 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from uuid import UUID
 
-from platform.database import get_db
-from platform.auth import get_current_user
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from platform.auth import get_current_user
+from platform.database import get_db
 from platform.models.public import User
 from platform.models.social import (
     SocialProfile,
     Post,
     Reactions,
 )
-
-from platform.schemas import LikeOut
 from platform.nsid import NSID
-
+from platform.schemas import (
+    ReactionCreate,
+    ReactionOut,
+)
 
 router = APIRouter(
-    prefix="/reactions"
+    prefix="/reactions",
     tags=["Social Reactions"],
 )
 
 
-
-@router.post("/{post_id}", response_model=LikeOut)
-async def like_post(
+@router.post("/{post_id}", response_model=ReactionOut)
+async def react_to_post(
     post_id: UUID,
+    payload: ReactionCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -50,31 +51,62 @@ async def like_post(
             detail="Post not found.",
         )
 
-    existing = await db.scalar(
-        select(Like).where(
-            Like.post_id == post.id,
-            Like.user_id == profile.id,
+    reaction = await db.scalar(
+        select(Reactions).where(
+            Reactions.post_id == post.id,
+            Reactions.user_id == profile.id,
         )
     )
 
-    if existing:
-        return existing
+    # User already reacted → update emoji
+    if reaction:
+        reaction.emoji = payload.emoji
 
-    like = Like(
+        await db.commit()
+        await db.refresh(reaction)
+
+        return reaction
+
+    # First reaction
+    reaction = Reactions(
         post_id=post.id,
         user_id=profile.id,
+        emoji=payload.emoji,
         nsid=NSID.SOCIAL,
     )
 
-    db.add(like)
-    await db.commit()
-    await db.refresh(like)
+    db.add(reaction)
 
-    return like
+    await db.commit()
+    await db.refresh(reaction)
+
+    return reaction
+
+
+@router.get("/{post_id}")
+async def get_post_reactions(
+    post_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    post = await db.get(Post, post_id)
+
+    if not post:
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found.",
+        )
+
+    result = await db.execute(
+        select(Reactions).where(
+            Reactions.post_id == post_id
+        )
+    )
+
+    return result.scalars().all()
 
 
 @router.delete("/{post_id}")
-async def unlike_post(
+async def remove_reaction(
     post_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -91,22 +123,22 @@ async def unlike_post(
             detail="Social profile not found.",
         )
 
-    like = await db.scalar(
-        select(Like).where(
-            Like.post_id == post_id,
-            Like.user_id == profile.id,
+    reaction = await db.scalar(
+        select(Reactions).where(
+            Reactions.post_id == post_id,
+            Reactions.user_id == profile.id,
         )
     )
 
-    if not like:
+    if not reaction:
         raise HTTPException(
             status_code=404,
-            detail="Like not found.",
+            detail="Reaction not found.",
         )
 
-    await db.delete(like)
+    await db.delete(reaction)
     await db.commit()
 
     return {
-        "message": "Post unliked successfully."
+        "message": "Removed reaction."
     }
