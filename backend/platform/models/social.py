@@ -76,6 +76,9 @@ class SocialProfile(Base):
         foreign_keys="Follow.follower_id",
         back_populates="follower",
         cascade="all, delete-orphan",)
+    shares = relationship(
+        "Share",
+        cascade="all, delete-orphan",)
 
 class Follow(Base):
     __tablename__ = "follows"
