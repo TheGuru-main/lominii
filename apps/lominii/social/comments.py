@@ -28,6 +28,14 @@ router = APIRouter(
 )
 
 
+ALLOWED_COMMENT_MEDIA = {
+    "image",
+    "gif",
+    "voice",
+    "video",
+    "file",
+}
+
 @router.post("/{post_id}", response_model=CommentOut)
 async def add_comment(
     post_id: UUID,
