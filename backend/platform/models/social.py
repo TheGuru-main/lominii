@@ -425,3 +425,43 @@ class CommunityBan(Base):
     admin = relationship(
     "SocialProfile",
     foreign_keys=[banned_by],)
+
+class Share(Base):
+    __tablename__ = "shares"
+    __table_args__ = {"schema": "social"}
+
+    post_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.posts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("social.profiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    caption = Column(
+        Text,
+        nullable=True,
+    )
+
+    nsid = Column(
+        SmallInteger,
+        default=NSID.SOCIAL,
+    )
+
+    created_at = Column(
+        DateTime,
+        server_default="now()",
+    )
+
+    post = relationship(
+        "Post",
+        back_populates="shares",
+    )
+
+    user = relationship(
+        "SocialProfile",
+    )
