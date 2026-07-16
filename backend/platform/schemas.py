@@ -268,3 +268,16 @@ class CommentOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ReactionCreate(BaseModel):
+    emoji: str
+
+
+class ReactionOut(BaseModel):
+    post_id: UUID
+    user_id: UUID
+    emoji: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
