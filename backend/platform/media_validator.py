@@ -202,3 +202,21 @@ def validate_media(
     validate_media_duration(profile, media_type, duration)
 
     return True
+
+def validate_extension(
+    profile: str,
+    media_type: str,
+    extension: str,
+):
+    rules = MEDIA_RULES[profile][media_type]
+
+    if "extensions" not in rules:
+        return
+
+    extension = extension.lower().lstrip(".")
+
+    if extension not in rules["extensions"]:
+        raise HTTPException(
+            status_code=400,
+            detail="File extension is not allowed.",
+        )
