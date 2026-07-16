@@ -190,3 +190,15 @@ def validate_media_duration(
             status_code=400,
             detail="Media exceeds the allowed duration.",
         )
+
+def validate_media(
+    profile: str,
+    media_type: str,
+    size: int,
+    duration: int | None = None,
+):
+    validate_media_type(profile, media_type)
+    validate_media_size(profile, media_type, size)
+    validate_media_duration(profile, media_type, duration)
+
+    return True
