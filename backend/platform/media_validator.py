@@ -155,3 +155,16 @@ def validate_media_type(
             status_code=400,
             detail=f"{media_type} is not allowed for {profile}.",
         )
+
+def validate_media_size(
+    profile: str,
+    media_type: str,
+    size: int,
+):
+    limit = MEDIA_RULES[profile][media_type]["max_size"]
+
+    if size > limit:
+        raise HTTPException(
+            status_code=400,
+            detail="Media file exceeds the allowed size.",
+        )
