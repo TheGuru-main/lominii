@@ -168,3 +168,25 @@ def validate_media_size(
             status_code=400,
             detail="Media file exceeds the allowed size.",
         )
+
+def validate_media_duration(
+    profile: str,
+    media_type: str,
+    duration: int | None,
+):
+    rules = MEDIA_RULES[profile][media_type]
+
+    if "max_duration" not in rules:
+        return
+
+    if duration is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Media duration is required.",
+        )
+
+    if duration > rules["max_duration"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Media exceeds the allowed duration.",
+        )
