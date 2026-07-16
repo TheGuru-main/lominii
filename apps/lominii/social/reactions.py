@@ -10,7 +10,7 @@ from platform.models.public import User
 from platform.models.social import (
     SocialProfile,
     Post,
-    Like,
+    Reactions,
 )
 
 from platform.schemas import LikeOut
