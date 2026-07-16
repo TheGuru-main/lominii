@@ -35,11 +35,11 @@ async def add_comment(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if is_blocked(payload.content):
-        raise HTTPException(
-            status_code=400,
-            detail="Comment violates community guidelines.",
-        )
+    if payload.content and is_blocked(payload.content):
+    raise HTTPException(
+        status_code=400,
+        detail="Comment violates community guidelines.",
+    )
 
     profile = await db.scalar(
         select(SocialProfile).where(
