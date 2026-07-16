@@ -29,15 +29,22 @@ from .messages import router as messages_router
 from .follows import router as follows_router
 from .posts import router as posts_router
 from .reactions import router as reactions_router
+from .comments import router as comments_router
+from .profiles import router as profiles_router
+from .feed import router as feed_router
 
-router = APIRouter(prefix="/api/social", tags=["Social"])
 
-
+router = APIRouter(
+    prefix="/api/social",
+    tags=["Social"],)
 
 router.include_router(messages_router)
 router.include_router(follows_router)
 router.include_router(posts_router)
 router.include_router(reactions_router)
+router.include_router(comments_router)
+router.include_router(profiles_router)
+router.include_router(feed_router)
 
  ═══════════════════════════════════════════════════════════
 # PROFILE
