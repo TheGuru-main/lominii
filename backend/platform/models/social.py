@@ -60,6 +60,9 @@ class SocialProfile(Base):
         "CommunityPost",
         back_populates="author",
         cascade="all, delete-orphan",)
+    community_bans = relationship("CommunityBan",
+    foreign_keys="CommunityBan.user_id",)
+    community_bans_given= relationship ("CommunityBan", foreign_keys="CommunityBan.banned_by",)
     followers = relationship(
         "Follow",
         foreign_keys="Follow.followee_id",
