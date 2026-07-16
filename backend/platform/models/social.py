@@ -127,7 +127,10 @@ class Post(Base):
         "Reaction",
         back_populates="post",
         cascade="all, delete-orphan",)
-
+    shares = relationship(
+        "Share",
+        back_populates="post",
+        cascade="all, delete-orphan",)
 
 class Status(Base):
     __tablename__ = "statuses"
