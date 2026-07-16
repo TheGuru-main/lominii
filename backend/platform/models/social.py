@@ -46,6 +46,24 @@ class SocialProfile(Base):
         server_default="now()",
     )
 
+     username = Column(
+        String(32),
+        unique=True,
+        nullable=True,
+        index=True,
+  )
+
+    username_verified = Column(
+       Boolean,
+       default=False,
+       nullable=False,
+   )
+
+     username_created_at = Column(
+        DateTime,
+        nullable=True,
+   )
+
     posts = relationship(
         "Post",
         back_populates="author",
