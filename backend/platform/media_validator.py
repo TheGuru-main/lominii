@@ -220,3 +220,19 @@ def validate_extension(
             status_code=400,
             detail="File extension is not allowed.",
         )
+
+def validate_mime_type(
+    profile: str,
+    media_type: str,
+    mime_type: str,
+):
+    rules = MEDIA_RULES[profile][media_type]
+
+    if "mime_types" not in rules:
+        return
+
+    if mime_type not in rules["mime_types"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Media type is not allowed.",
+        )
