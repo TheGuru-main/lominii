@@ -33,11 +33,27 @@ async function loadFriendsFeed() {
           <div class="post-author">${p.author_name || 'Unknown'}</div>
           <div class="post-content">${p.content}</div>
           <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
+
           <div class="post-actions">
-            <button onclick="likePost('${p.id}')">👍 Like</button>
-            <button onclick="commentPost('${p.id}')">💬 Comment</button>
-            <button onclick="viewProfile('${p.author_id}')">👤 Profile</button>
-          </div>
+
+    <button onclick="openReactionPicker('${p.id}')">
+        ${p.my_reaction || "👍"} ${p.reaction_count || ""}
+    </button>
+
+    <button onclick="openComments('${p.id}')">
+        💬 ${p.comment_count || 0}/6
+    </button>
+
+    <button onclick="sharePost('${p.id}')">
+        🔁 ${p.share_count || 0}
+    </button>
+
+    <button onclick="viewProfile('${p.author_id}')">
+        👤
+    </button>
+</div>
+<div id="comments-${p.id}" class="post-comments"></div>
+
         </div>
       `).join('');
     }
@@ -70,10 +86,26 @@ async function loadNewsFeed() {
           <div class="post-content">${p.content}</div>
           <div class="post-time">${new Date(p.created_at).toLocaleString()}</div>
           <div class="post-actions">
-            <button onclick="likePost('${p.id}')"> Like</button>
-            <button onclick="commentPost('${p.id}')">💬 Comment</button>
-            <button onclick="viewProfile('${p.author_id}')">👤 Profile</button>
-          </div>
+
+    <button onclick="openReactionPicker('${p.id}')">
+        ${p.my_reaction || "👍"} ${p.reaction_count || ""}
+    </button>
+
+    <button onclick="openComments('${p.id}')">
+        💬 ${p.comment_count || 0}/6
+    </button>
+
+    <button onclick="sharePost('${p.id}')">
+        🔁 ${p.share_count || 0}
+    </button>
+
+    <button onclick="viewProfile('${p.author_id}')">
+        👤
+    </button>
+
+</div>
+<div id="comments-${p.id}" class="post-comments"></div>
+
         </div>
       `).join('');
     }
@@ -105,7 +137,7 @@ async function createPost() {
   }
 }
 
-// --- Like & Comment ---
+// --- Reactions & Comment ---
 async function likePost(postId) {
   await apiFetch('/api/social/like', {
     method: 'POST',
