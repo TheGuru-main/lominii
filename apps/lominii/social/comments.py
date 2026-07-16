@@ -76,7 +76,7 @@ async def add_comment(
             detail="Maximum of 6 comments allowed per user on this post.",
         )
 
-    comment = Comment(
+    new_comment = Comment(
         post_id=post.id,
         author_id=profile.id,
         content=payload.content,
@@ -87,7 +87,7 @@ async def add_comment(
     await db.commit()
     await db.refresh(comment)
 
-    return comment
+    return new_comment
 
 @router.get("/post/{post_id}", response_model=list[CommentOut])
 async def get_comments(
