@@ -157,9 +157,24 @@ class Comment(Base):
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         nullable=False,)
-    content = Column(Text, nullable=False)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
+    content = Column(
+        Text,
+        nullable=True,)
+    media_type = Column(
+        String(20),
+        nullable=True,)
+    media_url = Column(
+        Text,
+        nullable=True,)
+    duration = Column(
+        Integer,
+        nullable=True,)
+    nsid = Column(
+        SmallInteger,
+        default=NSID.SOCIAL,)
+    created_at = Column(
+        DateTime,
+        server_default="now()",)
     post = relationship(
         "Post",
         back_populates="comments",)
