@@ -226,8 +226,7 @@ class CommunityMember(Base):
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
-        primary_key=True,
-    )
+        primary_key=True,)
     role = Column(String(20), default="member")
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     joined_at = Column(DateTime, server_default="now()")
@@ -245,13 +244,12 @@ class PrivacySettings(Base):
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-profile_visibility = Column(String(20), default="public")
+        primary_key=True,)
+    profile_visibility = Column(String(20), default="public")
     search_visibility = Column(String(20), default="public")
     friend_request_permission = Column(String(20), default="everyone")
     last_seen_visibility = Column(String(20), default="friends")
-nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
 
@@ -265,11 +263,11 @@ class FriendRequest(Base):
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,)
-receiver_id = Column(
+    receiver_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         nullable=False,)
-status = Column(String(20), default="pending")
+    status = Column(String(20), default="pending")
     nsid =Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
@@ -282,12 +280,11 @@ class BlockedUser(Base):
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
         primary_key=True,)
-blocked_id = Column(
+    blocked_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-nsid = Column(SmallInteger, default=NSID.SOCIAL)
+        primary_key=True,)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
 class MutedUser(Base):
