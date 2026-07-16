@@ -196,10 +196,26 @@ def validate_media(
     media_type: str,
     size: int,
     duration: int | None = None,
+    extension: str | None = None,
+    mime_type: str | None = None,
 ):
     validate_media_type(profile, media_type)
     validate_media_size(profile, media_type, size)
     validate_media_duration(profile, media_type, duration)
+
+    if extension:
+        validate_extension(
+            profile,
+            media_type,
+            extension,
+        )
+
+    if mime_type:
+        validate_mime_type(
+            profile,
+            media_type,
+            mime_type,
+        )
 
     return True
 
