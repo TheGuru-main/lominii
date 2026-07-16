@@ -83,6 +83,15 @@ async def add_comment(
         nsid=NSID.SOCIAL,
     )
 
+    if (
+        not payload.content
+        and not payload.media_url
+):
+    raise HTTPException(
+        status_code=400,
+        detail="Comment cannot be empty.",
+    )
+
     db.add(comment)
     await db.commit()
     await db.refresh(comment)
