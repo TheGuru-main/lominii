@@ -386,3 +386,10 @@ class CommunityBan(Base):
     created_at = Column(
         DateTime,
         server_default="now()",)
+    community = relationship("Community")
+    user = relationship(
+    "SocialProfile",
+    foreign_keys=[user_id],)
+    admin = relationship(
+    "SocialProfile",
+    foreign_keys=[banned_by],)
