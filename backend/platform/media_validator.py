@@ -133,3 +133,25 @@ MEDIA_RULES = {
         },
     },
 }
+
+from fastapi import HTTPException
+
+
+def validate_profile(profile: str):
+    if profile not in MEDIA_RULES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown media profile: {profile}",
+        )
+
+def validate_media_type(
+    profile: str,
+    media_type: str,
+):
+    validate_profile(profile)
+
+    if media_type not in MEDIA_RULES[profile]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{media_type} is not allowed for {profile}.",
+        )
