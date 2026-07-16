@@ -1,3 +1,11 @@
+ALLOWED_COMMENT_MEDIA = {
+    "image",
+    "gif",
+    "voice",
+    "video",
+    "file",
+}
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -20,14 +28,6 @@ from platform.schemas import (
 )
 
 from platform.nsid import NSID
-
-ALLOWED_COMMENT_MEDIA = {
-    "image",
-    "gif",
-    "voice",
-    "video",
-    "file",
-}
 
 router = APIRouter(
     prefix="/comments",
