@@ -199,6 +199,7 @@ class Reaction(Base):
     "SocialProfile",
     back_populates="reactions",)
 
+
 class Community(Base):
     __tablename__ = "communities"
     __table_args__ = {"schema": "social"}
