@@ -182,6 +182,9 @@ class Reactions(Base):
         String(20),
         nullable=False,
         default="👍",)
+    emoji = Column(
+        String(10),
+        nullable=False,)
     nsid = Column(
         SmallInteger,
         default=NSID.SOCIAL,)
