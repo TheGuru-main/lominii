@@ -61,6 +61,21 @@ async def add_comment(
             detail="Post not found.",
         )
 
+count = await db.scalar(
+        select(func.count())
+        .select_from(Comment)
+        .where(
+            Comment.post_id == post.id,
+            Comment.author_id == profile.id,
+        )
+    )
+
+    if count >= 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum of 6 comments allowed per user on this post.",
+        )
+
     comment = Comment(
         post_id=post.id,
         author_id=profile.id,
