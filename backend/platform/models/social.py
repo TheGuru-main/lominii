@@ -172,7 +172,7 @@ class Like(Base):
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         primary_key=True,)
-nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL)
     created_at = Column(DateTime, server_default="now()")
 
     post = relationship(
@@ -329,9 +329,8 @@ ondelete="CASCADE"),
         default=list,
         nullable=False,)
     nsid = Column(
-        Integer,
-        nullable=False,
-        default=NSID.SOCIAL,)
+    SmallInteger,
+    default=NSID.SOCIAL,)
     created_at = Column(
         DateTime,
         default=datetime.utcnow,
