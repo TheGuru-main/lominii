@@ -268,13 +268,3 @@ class CommentOut(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-class LikeOut(BaseModel):
-    post_id: UUID
-    user_id: UUID
-    nsid: int
-    created_at: datetime
-
-    class Config:
-        orm_mode = True
