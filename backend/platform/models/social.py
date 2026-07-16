@@ -214,6 +214,9 @@ class Community(Base):
         "CommunityPost",
         back_populates="community",
         cascade="all, delete-orphan",)
+    bans = relationship(
+    "CommunityBan",
+    cascade="all, delete-orphan",)
 
 class CommunityMember(Base):
     __tablename__ = "community_members"
