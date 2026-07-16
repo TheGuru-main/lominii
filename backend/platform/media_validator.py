@@ -4,77 +4,130 @@ MB = 1024 * 1024
 
 MEDIA_RULES = {
 
-    # Social comments
-    "comment": {
+    # ==========================================================
+    # SOCIAL COMMENTS
+    # ==========================================================
+    "social_comment": {
+
         "image": {
             "max_size": 5 * MB,
         },
+
         "gif": {
             "max_size": 10 * MB,
         },
+
         "voice": {
             "max_size": 5 * MB,
             "max_duration": 120,
         },
+
         "video": {
             "max_size": 2 * MB,
             "max_duration": 120,
         },
+
         "file": {
             "max_size": 5 * MB,
         },
     },
 
-    # Social posts
-    "post": {
+    # ==========================================================
+    # SOCIAL POSTS
+    # ==========================================================
+    "social_post": {
+
         "image": {
             "max_size": 20 * MB,
         },
+
         "gif": {
             "max_size": 20 * MB,
         },
+
         "voice": {
             "max_size": 20 * MB,
             "max_duration": 600,
         },
+
         "video": {
             "max_size": 500 * MB,
             "max_duration": 1800,
         },
+
         "file": {
             "max_size": 50 * MB,
         },
     },
 
-    
-    # Status/Stories
-    "status": {
+    # ==========================================================
+    # SOCIAL STATUS
+    # ==========================================================
+    "social_status": {
+
         "image": {
             "max_size": 10 * MB,
         },
+
+        "voice": {
+            "max_size": 10 * MB,
+            "max_duration": 120,
+        },
+
         "video": {
             "max_size": 100 * MB,
             "max_duration": 120,
         },
+    },
+
+    # ==========================================================
+    # MESSAGING
+    # (Social, Communities, Organizations, Games, Marketplace)
+    # ==========================================================
+    "messaging": {
+
+        "image": {
+            "max_size": 10 * MB,
+        },
+
+        "gif": {
+            "max_size": 10 * MB,
+        },
+
         "voice": {
             "max_size": 10 * MB,
-            "max_duration": 120,
+            "max_duration": 300,
+        },
+
+        "video": {
+            "max_size": 100 * MB,
+            "max_duration": 900,
+        },
+
+        "file": {
+            "max_size": 20 * MB,
         },
     },
 
-    # Education
-    "edu": {
+    # ==========================================================
+    # EDUCATION
+    # ==========================================================
+    "education": {
+
         "image": {
             "max_size": 20 * MB,
         },
-        "video": {
-            "max_size": 1024 * MB,
-            "max_duration": 7200,
-        },
+
         "voice": {
             "max_size": 20 * MB,
             "max_duration": 3600,
         },
+
+        "video": {
+            "max_size": 1024 * MB,
+            "max_duration": 7200,
+        },
+
         "file": {
             "max_size": 1024 * MB,
         },
