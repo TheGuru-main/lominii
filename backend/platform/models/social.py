@@ -163,8 +163,8 @@ class Comment(Base):
     author = relationship(
         "SocialProfile",)
 
-class Like(Base):
-    __tablename__ = "likes"
+class Reaction(Base):
+    __tablename__ = "reactions"
     __table_args__ = {"schema": "social"}
 
     post_id = Column(
@@ -175,12 +175,23 @@ class Like(Base):
         UUID(as_uuid=True),
         ForeignKey("social.profiles.id"),
         primary_key=True,)
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
-    created_at = Column(DateTime, server_default="now()")
-
+    reaction = Column(
+        String(20),
+        nullable=False,
+        default="👍",)
+    nsid = Column(
+        SmallInteger,
+        default=NSID.SOCIAL,)
+    created_at = Column(
+        DateTime,
+        server_default="now()",)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,)
     post = relationship(
         "Post",
-        back_populates="likes",)
+        back_populates="reactions",)
     user = relationship(
         "SocialProfile",)
 
@@ -236,7 +247,6 @@ class CommunityMember(Base):
     role = Column(String(20), default="member")
     nsid = Column(SmallInteger, default=NSID.SOCIAL)
     joined_at = Column(DateTime, server_default="now()")
-
     community = relationship(
         "Community",
         back_populates="members",)
@@ -255,7 +265,7 @@ class PrivacySettings(Base):
     search_visibility = Column(String(20), default="public")
     friend_request_permission = Column(String(20), default="everyone")
     last_seen_visibility = Column(String(20), default="friends")
-    nsid = Column(SmallInteger, default=NSID.SOCIAL)
+    nsid = Column(SmallInteger, default=NSID.SOCIAL,)
     created_at = Column(DateTime, server_default="now()")
     updated_at = Column(DateTime, server_default="now()")
 
@@ -264,7 +274,6 @@ class FriendRequest(Base):
     __table_args__ = {"schema": "social"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
     sender_id = Column(
         UUID(as_uuid=True),
         ForeignKey("public.users.id", ondelete="CASCADE"),
