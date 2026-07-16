@@ -18,8 +18,8 @@ from platform.nsid import NSID
 
 
 router = APIRouter(
-    prefix="/likes",
-    tags=["Social Likes"],
+    prefix="/reactions"
+    tags=["Social Reactions"],
 )
 
 
