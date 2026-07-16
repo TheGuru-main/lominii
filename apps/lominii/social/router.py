@@ -15,6 +15,7 @@ from platform.models.social import (
     Post,
     Status,
     Comment,
+    Share,
     Reactions,
     Community,
     CommunityMember,
@@ -31,6 +32,7 @@ from .posts import router as posts_router
 from .reactions import router as reactions_router
 from .comments import router as comments_router
 from .profiles import router as profiles_router
+from .shares import router as shares_router
 from .feed import router as feed_router
 
 
@@ -45,6 +47,7 @@ router.include_router(reactions_router)
 router.include_router(comments_router)
 router.include_router(profiles_router)
 router.include_router(feed_router)
+router.include_router(shares_router)
 
 
 # ═══════════════════════════════════════════════════════════
