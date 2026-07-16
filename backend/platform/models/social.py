@@ -166,7 +166,7 @@ class Comment(Base):
     author = relationship(
         "SocialProfile",)
 
-class Reaction(Base):
+class Reactions(Base):
     __tablename__ = "reactions"
     __table_args__ = {"schema": "social"}
 
