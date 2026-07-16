@@ -61,7 +61,7 @@ async def add_comment(
             detail="Post not found.",
         )
 
-count = await db.scalar(
+    count = await db.scalar(
         select(func.count())
         .select_from(Comment)
         .where(
@@ -109,6 +109,7 @@ async def get_comments(
     )
 
     return result.scalars().all()
+
 
 @router.delete("/{comment_id}")
 async def delete_comment(
