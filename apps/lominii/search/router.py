@@ -129,11 +129,26 @@ if user and user.news_preferences and user.news_preferences.get("wikipedia", Fal
     ai_summary = None
     if not is_ai_blocked(query):
         prompt_template = get_prompt(tier)
-        sources = f"Dictionary: {definition or 'None'}\nNews: {news_articles}"
-        prompt = prompt_template.format(query=norm_query, sources=sources, country=country, language=lang)
-        ai_summary = await generate(prompt)   # ← real AI call
+        sources = f"""Dictionary: {definition or "None"}
+    News: {news_articles}
+    Wikipedia: {wiki_articles}"""
 
+prompt = build_prompt(
+    query=norm_query,
+    sources=sources,
+    country=country,
+    language=lang,
+    tier=tier,
+    workspace="search",
+    intent=ctx.get("intent"),
+)
 
+ai_summary = await generate(
+    prompt,
+    intent=ctx.get("intent"),
+    workspace="search",
+    user_id=str(user.id) if user else None,
+)  
 
     else:
         ai_summary = None
