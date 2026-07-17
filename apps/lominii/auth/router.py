@@ -93,6 +93,13 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
             detail=f"Invalid credentials. Warning: account security increased after 5 failures. (Attempt {fails})"
         )
 
+    # On failure:
+    fails = await record_failure(email, db)
+
+    # On success:
+    await reset_failures(email, db)
+copies = await get_required_copies(email, db)
+
     # Successful login – reset failure counter and issue token with dynamic K
     reset_failures(email)
     copies = get_required_copies(email)   # normally 5, higher after an attack
