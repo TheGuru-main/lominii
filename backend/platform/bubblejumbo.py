@@ -3,7 +3,7 @@ JWT‑like tokens with embedded GSP cell + dynamic K‑escalation on attack.
 Now persists failure counters in PostgreSQL.
 """
 import os
-from datetime import datetime, timedelta
+import time
 from jose import jwt, JWTError
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
 from sqlalchemy import select
