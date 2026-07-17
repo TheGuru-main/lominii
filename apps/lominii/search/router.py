@@ -132,6 +132,9 @@ if user and user.news_preferences and user.news_preferences.get("wikipedia", Fal
         sources = f"Dictionary: {definition or 'None'}\nNews: {news_articles}"
         prompt = prompt_template.format(query=norm_query, sources=sources, country=country, language=lang)
         ai_summary = await generate(prompt)   # ← real AI call
+
+
+
     else:
         ai_summary = None
 
