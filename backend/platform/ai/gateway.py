@@ -4,9 +4,8 @@ AI Gateway
 Single entry point for every AI request in LOMINII.
 """
 
-from platform.ai.providers import generate as provider_generate
-
-
+from platform.ai.providers import generate_text
+    
 async def generate(
     prompt: str,
     *,
@@ -28,6 +27,4 @@ async def generate(
     - AI moderation
     """
 
-    response = await provider_generate(prompt)
-
-    return response
+    return await generate_text(prompt)
