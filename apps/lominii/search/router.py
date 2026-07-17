@@ -127,7 +127,6 @@ async def unified_search(
     # 9. AI Summary – using Gemini + Hugging Face fallback
     ai_summary = None
     if not is_ai_blocked(query):
-        prompt_template = get_prompt(tier)
         sources = f"""Dictionary: {definition or "None"}
     News: {news_articles}
     Wikipedia: {wiki_articles}"""
@@ -148,7 +147,6 @@ ai_summary = await generate(
     workspace="search",
     user_id=str(user.id) if user else None,
 )  
-
     else:
         ai_summary = None
 
