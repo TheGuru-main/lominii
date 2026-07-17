@@ -15,6 +15,7 @@ from platform.database import get_db
 from platform.gsg import gps_to_gsg
 from platform.intent_analyzer import analyze
 from platform.ai.providers import generate
+from platform.ai.gateway import generate
 from platform.wikipedia import search_wikipedia
 
 # Your custom model imports (public / search schemas)
