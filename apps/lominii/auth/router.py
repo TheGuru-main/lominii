@@ -214,13 +214,18 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
-# Bubblejumbo Box Set-up
+# Bubblejumbo attack and failure logs count Set-up
 # ---------------------------------------------------------------------------
 
 @router.get("/auth/failure-count")
-async def failure_count(email: str = Depends(get_current_user)):
-    count = get_failure_count(email)
+async def failure_count(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    count = await get_failure_count(email, db)
     return {"failures": count}
+
+@router.post("/auth/reset-failures")
+async def reset_failures_endpoint(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await reset_failures(email, db)
+    return {"message": "Failure counter reset"}
 
 # ---------------------------------------------------------------------------
 # Preference setting.
