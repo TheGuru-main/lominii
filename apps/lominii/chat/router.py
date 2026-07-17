@@ -17,7 +17,7 @@ from platform.intent_analyzer import analyze
 from platform.models.public import User, OTP
 from platform.models.news import NewsSubscription
 
-from schemas import ChatResponse, GSPCellOut, NewsItem
+from platform.schemas import ChatResponse, GSPCellOut, NewsItem, ChatMessage, ChatRequest
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
