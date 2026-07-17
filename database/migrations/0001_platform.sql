@@ -129,7 +129,7 @@ CREATE TABLE social.comments (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE social.likes (
+CREATE TABLE social.reactions (
     post_id UUID NOT NULL REFERENCES social.posts(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES social.profiles(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
