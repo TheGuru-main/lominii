@@ -198,7 +198,9 @@ class EnrollmentOut(BaseModel):
     class Config:
         orm_mode = True
 
-# schemas.py (new models for chat)
+# ==========================================================
+# AI chat model
+# ==========================================================
 
 class ChatMessage(BaseModel):
     role: str          # "user" or "assistant"
