@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import (
 )
 
 from sqlalchemy.orm import relationship
-
+from datetime import datetime, timedelta
 from platform.database import Base
 from platform.nsid import NSID
 
