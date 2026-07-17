@@ -5,7 +5,8 @@ Single entry point for every AI request in LOMINII.
 """
 
 from platform.ai.providers import generate_text
-    
+
+
 async def generate(
     prompt: str,
     *,
