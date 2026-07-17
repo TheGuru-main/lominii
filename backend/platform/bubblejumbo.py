@@ -4,7 +4,7 @@ from jose import jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
-from platform.models.public import BubbleJumboFailure
+from platform.models.public import BubbleJumboFailure, User
 
 SECRET_KEY = os.getenv("JWT_SECRET", "changeme")
 ALGORITHM = "HS256"
