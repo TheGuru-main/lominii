@@ -100,7 +100,7 @@ PROMPTS = {
         "Combine the following headlines into a short, unbiased summary of current events related to {query}. "
         "Start with the most important development, then add context. Do not editorialise. "
  "If applicable, mention any risks or limitations of the information. Indicate how confident you are and whether the outcome is highly likely or only possible. Use precise language and avoid vague statements. And always remember what you said."
-        ""The user is in {country} speaking {language}. "
+        "The user is in {country} speaking {language}. "
   "Keep it under 6 sentences, and always remember what you said.\n"
         "Sources: {sources}\nSummary:"
     ),
