@@ -12,9 +12,11 @@ from platform.content_filter import is_blocked, is_ai_blocked
 from platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place
 from platform.prompts import PROMPTS
 from platform.gsg import gps_to_gsg
+from platform.ai.gateway import generate
 from platform.intent_analyzer import analyze
 from platform.models.public import User, OTP
 from platform.models.news import NewsSubscription
+
 from schemas import ChatResponse, GSPCellOut, NewsItem
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
