@@ -17,7 +17,7 @@ HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.3"
 HF_API_URL =f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 
 
-async def generate(prompt: str) -> str:
+async def generate_text(prompt: str) -> str:
     """
     Generate text using Gemini first; if it fails, try Hugging Face.
     Returns a user‑friendly fallback if both are unavailable.
