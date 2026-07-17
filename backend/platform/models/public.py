@@ -64,3 +64,10 @@ class OTP(Base):
     verified = Column(Boolean, default=False)
 
     created_at = Column(DateTime, server_default="now()")
+
+class BubbleJumboFailure(Base):
+    __tablename__ = "bubblejumbo_failures"
+    __table_args__ = {"schema": "public"}
+
+    identity = Column(String(255), primary_key=True)
+    failures = Column(Integer, default=0)
