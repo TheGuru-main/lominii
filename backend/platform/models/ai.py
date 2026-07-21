@@ -209,7 +209,33 @@ class AIKnowledge(Base):
         nullable=False,
     )
 
+    knowledge_type = Column(
+        String(50),
+        default="general",
+        index=True,
+    )
 
+    language = Column(
+        String(10),
+        default="en",
+    )
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+    access_count = Column(
+        Integer,
+        default=0,
+    )
+
+    last_used = Column(
+        DateTime,
+        nullable=True,
+    )
 # ==========================================================
 # RELATED SEARCHES
 # ==========================================================
