@@ -288,3 +288,131 @@ class AIRelatedSearch(Base):
         String(50),
         default="search_cache",
     )
+
+
+
+# ==========================================================
+# AI SUMMARY INDEX
+# ==========================================================
+
+class AISummaryIndex(Base):
+    __tablename__ = "ai_summary_index"
+
+
+    id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
+
+    cache_key = Column(
+        String(64),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+
+    query_hash = Column(
+        String(64),
+        nullable=False,
+        index=True,
+    )
+
+    normalized_query = Column(
+        Text,
+        nullable=False,
+        index=True,
+    )
+
+    domain = Column(
+        String(100),
+        nullable=False,
+        index=True,
+    )
+
+    language = Column(
+        String(20),
+        default="en",
+        nullable=False,
+    )
+
+
+
+    # -----------------------------
+    # GSP Identity
+    # -----------------------------
+
+    L = Column(
+        Integer,
+        nullable=False,
+    )
+
+    S = Column(
+        Integer,
+        nullable=False,
+        index=True,
+    )
+
+    c = Column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
+    primary_column = Column(
+        String(2),
+        nullable=False,
+    )
+
+    primary_row = Column(
+        Integer,
+        nullable=False,
+    )
+
+
+
+    # -----------------------------
+    # AI Versioning
+    # -----------------------------
+
+    model_version = Column(
+        String(50),
+        nullable=True,
+    )
+
+    summary_version = Column(
+        Integer,
+        default=1,
+    )
+
+    # -----------------------------
+    # Usage Statistics
+    # -----------------------------
+
+    access_count = Column(
+        Integer,
+        default=0,
+    )
+
+    last_accessed = Column(
+        DateTime,
+        nullable=True,
+    )
+
+
+    # -----------------------------
+    # Timestamps
+    # -----------------------------
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
