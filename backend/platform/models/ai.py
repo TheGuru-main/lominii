@@ -113,6 +113,9 @@ class AIMessage(Base):
         back_populates="messages",
     )
 
+    tokens = Column(Integer, default=0)
+
+    latency_ms = Column(Integer, default=0)
 
 # ==========================================================
 # AI MEMORY
