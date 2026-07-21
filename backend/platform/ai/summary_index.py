@@ -72,20 +72,21 @@ class AISummaryIndexService:
     # --------------------------------------------------
 
     def compute_identity(
-        self,
-        cache_key: str,
-    ):
+    self,
+    cache_key: str,
+):
 
-        L = len(cache_key)
+    L = len(cache_key)
 
-        S = int(
-            cache_key,
-            16
-        ) % 1_000_000
+    S = int(
+        cache_key,
+        16
+    ) % 1_000_000
 
-        c = 0
+    # Distribute AI summaries across all 26 columns
+    c = S % 26
 
-        return L, S, c
+    return L, S, c
 
     # --------------------------------------------------
     # Locate Cells
