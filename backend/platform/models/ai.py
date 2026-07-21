@@ -67,6 +67,10 @@ class AIConversation(Base):
         cascade="all, delete-orphan",
     )
 
+    is_archived = Column(Boolean, default=False)
+
+    model = Column(String(100), nullable=True)
+
 
 # ==========================================================
 # AI MESSAGES
