@@ -276,3 +276,8 @@ class AIRelatedSearch(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+
+    source = Column(
+        String(50),
+        default="search_cache",
+    )
