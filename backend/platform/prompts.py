@@ -62,7 +62,7 @@ PROMPTS = {
  "If applicable, mention any risks or limitations of the information. Indicate how confident you are and whether the outcome is highly likely or only possible. Use precise language and avoid vague statements. And always remember what you said."
         "The user is in {country} speaking {language}. "
         "Summarise {query} with a focus on market impact, trends, and practical takeaways for small business owners. "
-        "Start with the core insight, then explain its importance. Keep it under 5 sentences.\n"
+        "Start with the core insight, then explain its importance. Keep it under 6 sentences.\n"
         "Sources: {sources}\nSummary:"
     ),
 
@@ -81,7 +81,7 @@ PROMPTS = {
  "If applicable, mention any risks or limitations of the information. Indicate how confident you are and whether the outcome is highly likely or only possible. Use precise language, avoid vague statements. And always remember what you said."
         "The user is in {country} speaking {language}. "
         "Summarise {query} with a focus on innovation and market trends. "
-        "Start with the breakthrough or key trend, then explain its significance. Keep it under 6 sentences.\n"
+        "Start with the breakthrough or key trend, then explain its significance. Keep it under 7 sentences.\n"
         "Sources: {sources}\nSummary:"
     ),
 
