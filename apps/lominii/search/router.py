@@ -9,6 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place, elastic_cloud
 from platform.ai.prompt_builder import build_prompt
+from platform.ai.knowledge import (
+    get_knowledge,
+    save_knowledge,
+)
 from platform.content_filter import is_blocked, is_ai_blocked
 from platform.auth import get_current_user
 from platform.database import get_db
@@ -17,7 +21,7 @@ from platform.intent_analyzer import analyze
 from platform.ai.gateway import generate
 from platform.wikipedia import search_wikipedia
 
-# Your custom model imports (public / search schemas)
+# (public / search schemas)
 from platform.models.public import User
 from platform.models.search import (
     Search,
