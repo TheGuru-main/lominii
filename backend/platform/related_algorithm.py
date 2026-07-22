@@ -42,7 +42,7 @@ class RelatedAlgorithm:
     It does NOT access the database, AI, crawler,
     cache or ranking system.
     """
-    def _deduplicate(self, values: list[str]) -> list[str]:
+def _deduplicate(self, values: list[str]) -> list[str]:
     """
     Remove duplicates while preserving order.
     """
@@ -131,49 +131,49 @@ class RelatedAlgorithm:
         """
         Expand a query into deterministic token sequences.
 
-    Example:
-        "How to learn python programming"
+        Example:
+            "How to learn python programming"
 
-    Returns:
-        [
-            "how",
-            "to",
-            "learn",
-            "python",
-            "programming",
-            "how to",
-            "to learn",
-            "learn python",
-            "python programming",
-            "how to learn",
-            "to learn python",
-            "learn python programming",
-        ]
-    """
+        Returns:
+            [
+                "how",
+                "to",
+                "learn",
+                "python",
+                "programming",
+                "how to",
+                "to learn",
+                "learn python",
+                "python programming",
+                "how to learn",
+                "to learn python",
+                "learn python programming",
+            ]
+        """
 
-    query = query.lower().strip()
+        query = query.lower().strip()
 
-    # Split on whitespace and punctuation
+        # Split on whitespace and punctuation
     tokens = [
-        token
-        for token in re.split(r"[^\w]+", query)
-        if token
-    ]
+            token
+            for token in re.split(r"[^\w]+", query)
+            if token
+        ]
 
-    results = []
+        results = []
 
-    # Individual tokens
-    results.extend(tokens)
+        # Individual tokens
+        results.extend(tokens)
 
-    # Sliding windows
-    n = len(tokens)
+        # Sliding windows
+        n = len(tokens)
 
-    for size in range(2, min(4, n) + 1):
-        for i in range(n - size + 1):
-            results.append(" ".join(tokens[i:i + size]))
+        for size in range(2, min(4, n) + 1):
+            for i in range(n - size + 1):
+                results.append(" ".join(tokens[i:i + size]))
 
-    # Remove duplicates while preserving order
-    return self._deduplicate(results)
+        # Remove duplicates while preserving order
+        return self._deduplicate(results)
 
 
     async def spelling_expansion(
