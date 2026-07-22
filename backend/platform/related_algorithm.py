@@ -30,7 +30,7 @@ Expansion Set
 """
 
 from itertools import combinations, permutations
-
+import re
 
 class RelatedAlgorithm:
     """
@@ -119,16 +119,58 @@ class RelatedAlgorithm:
 
         return list(dict.fromkeys(results))
 
-    async def token_expansion(
-        self,
-        query: str,
-    ) -> list[str]:
-        """
-        Expand using token-level decomposition.
 
-        (Implementation next.)
-        """
-        return []
+async def token_expansion(
+    self,
+    query: str,
+) -> list[str]:
+    """
+    Expand a query into deterministic token sequences.
+
+    Example:
+        "How to learn python programming"
+
+    Returns:
+        [
+            "how",
+            "to",
+            "learn",
+            "python",
+            "programming",
+            "how to",
+            "to learn",
+            "learn python",
+            "python programming",
+            "how to learn",
+            "to learn python",
+            "learn python programming",
+        ]
+    """
+
+    query = query.lower().strip()
+
+    # Split on whitespace and punctuation
+    tokens = [
+        token
+        for token in re.split(r"[^\w]+", query)
+        if token
+    ]
+
+    results = []
+
+    # Individual tokens
+    results.extend(tokens)
+
+    # Sliding windows
+    n = len(tokens)
+
+    for size in range(2, min(4, n) + 1):
+        for i in range(n - size + 1):
+            results.append(" ".join(tokens[i:i + size]))
+
+    # Remove duplicates while preserving order
+    return list(dict.fromkeys(results))
+
 
     async def spelling_expansion(
         self,
