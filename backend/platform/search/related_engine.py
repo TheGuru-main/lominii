@@ -12,6 +12,7 @@ from platform.models.ai import (
     AIRelatedSearch,
 )
 
+from platform.ai.summary_index import AISummaryIndexService
 from platform.ai.inference import infer_query
 
 from platform.crawler import (
@@ -19,6 +20,7 @@ from platform.crawler import (
 )
 
 from platform.gsp import (
+    gsp_place,
     elastic_cloud,
 )
 
