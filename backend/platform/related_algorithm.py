@@ -190,14 +190,45 @@ class RelatedAlgorithm:
 
     async def language_expansion(
         self,
-        query: str,
-    ) -> list[str]:
-        """
-        Generate multilingual variants.
+        query: str,) -> list[str]:
 
-        (Implementation next.)
         """
-        return []
+        Generate language-aware variants.
+
+        Version 1:
+        - Normalize query
+        - Preserve original
+        - Remove duplicates
+
+        Future:
+        - Cross-language expansion
+        - Transliteration
+        - Locale-aware variants
+        """
+
+        variants = []
+
+        query = query.strip()
+
+        # Preserve original
+        variants.append(query)
+
+        # English normalization
+        variants.append(normalise(query, "en"))
+
+        # French normalization
+        variants.append(normalise(query, "fr"))
+
+        # German normalization
+        variants.append(normalise(query, "de"))
+
+        # Arabic normalization
+        variants.append(normalise(query, "ar"))
+
+        # Chinese normalization
+        variants.append(normalise(query, "zh"))
+
+        return self._deduplicate(variants)
 
     async def synonym_expansion(
         self,
