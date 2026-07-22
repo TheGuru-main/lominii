@@ -42,11 +42,12 @@ class RelatedAlgorithm:
     It does NOT access the database, AI, crawler,
     cache or ranking system.
     """
-def _deduplicate(self, values: list[str]) -> list[str]:
+
+    def _deduplicate(self, values: list[str]) -> list[str]:
     """
     Remove duplicates while preserving order.
     """
-    return list(dict.fromkeys(values))
+        return list(dict.fromkeys(values))
 
     async def three_circle(
         self,
@@ -153,8 +154,8 @@ def _deduplicate(self, values: list[str]) -> list[str]:
 
         query = query.lower().strip()
 
-        # Split on whitespace and punctuation
-    tokens = [
+   # Split on whitespace and punctuation
+        tokens = [
             token
             for token in re.split(r"[^\w]+", query)
             if token
