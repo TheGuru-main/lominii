@@ -31,6 +31,7 @@ Expansion Set
 
 from itertools import combinations, permutations
 import re
+from platform.gsp import normalise
 
 class RelatedAlgorithm:
     """
