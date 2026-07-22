@@ -42,6 +42,11 @@ class RelatedAlgorithm:
     It does NOT access the database, AI, crawler,
     cache or ranking system.
     """
+    def _deduplicate(self, values: list[str]) -> list[str]:
+    """
+    Remove duplicates while preserving order.
+    """
+    return list(dict.fromkeys(values))
 
     async def three_circle(
         self,
@@ -73,13 +78,7 @@ class RelatedAlgorithm:
         # Individual words
         circles.extend(words)
 
-        return list(dict.fromkeys(circles))[:limit]
-
-def _deduplicate(self, values: list[str]) -> list[str]:
-    """
-    Remove duplicates while preserving order.
-    """
-    return list(dict.fromkeys(values))
+        return self._deduplicate(circles)[:limit]
 
     async def combinations(
         self,
@@ -101,7 +100,7 @@ def _deduplicate(self, values: list[str]) -> list[str]:
             for combo in combinations(words, size):
                 results.append(" ".join(combo))
 
-        return list(dict.fromkeys(results))
+        return self._deduplicate(results)
 
     async def permutations(
         self,
@@ -123,7 +122,7 @@ def _deduplicate(self, values: list[str]) -> list[str]:
         for perm in permutations(words):
             results.append(" ".join(perm))
 
-        return list(dict.fromkeys(results))
+        return self._deduplicate(results)
 
 
 async def token_expansion(
@@ -175,7 +174,7 @@ async def token_expansion(
             results.append(" ".join(tokens[i:i + size]))
 
     # Remove duplicates while preserving order
-    return list(dict.fromkeys(results))
+    return self._deduplicate(results)
 
 
     async def spelling_expansion(
