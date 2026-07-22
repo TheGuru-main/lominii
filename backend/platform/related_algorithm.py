@@ -75,6 +75,12 @@ class RelatedAlgorithm:
 
         return list(dict.fromkeys(circles))[:limit]
 
+def _deduplicate(self, values: list[str]) -> list[str]:
+    """
+    Remove duplicates while preserving order.
+    """
+    return list(dict.fromkeys(values))
+
     async def combinations(
         self,
         query: str,
