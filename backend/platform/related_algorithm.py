@@ -44,9 +44,9 @@ class RelatedAlgorithm:
     """
 
     def _deduplicate(self, values: list[str]) -> list[str]:
-    """
-    Remove duplicates while preserving order.
-    """
+        """
+        Remove duplicates while preserving order.
+        """
         return list(dict.fromkeys(values))
 
     async def three_circle(
