@@ -180,14 +180,42 @@ class RelatedAlgorithm:
 
     async def spelling_expansion(
         self,
-        query: str,
-    ) -> list[str]:
-        """
-        Generate spelling variants.
+        query: str, ) -> list[str]:
 
-        (Implementation next.)
         """
-        return []
+        Generate deterministic spelling variants.
+
+            Version 1:
+            - lowercase
+            - trim whitespace
+            - collapse duplicate spaces
+            - remove duplicated consecutive words
+            - remove simple punctuation
+        """
+
+        query = query.lower().strip()
+
+       # Remove punctuation
+        cleaned = re.sub(r"[^\w\s]", " ", query)
+
+        # Collapse whitespace
+        cleaned = " ".join(cleaned.split())
+
+        variants = [cleaned]
+
+        words = cleaned.split()
+
+        # Remove consecutive duplicate words
+        dedup = []
+
+            for word in words:
+                if not dedup or dedup[-1] != word:
+                    dedup.append(word)
+
+        variants.append(" ".join(dedup))
+
+        return self._deduplicate(variants)
+
 
     async def language_expansion(
         self,
