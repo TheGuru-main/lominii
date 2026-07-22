@@ -124,13 +124,12 @@ class RelatedAlgorithm:
 
         return self._deduplicate(results)
 
-
-async def token_expansion(
-    self,
-    query: str,
-) -> list[str]:
-    """
-    Expand a query into deterministic token sequences.
+    async def token_expansion(
+        self,
+        query: str,
+    ) -> list[str]:
+        """
+        Expand a query into deterministic token sequences.
 
     Example:
         "How to learn python programming"
