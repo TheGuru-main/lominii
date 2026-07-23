@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from .models import DictionaryEntry
-
+from .language import LANGUAGES
 
 class DictionaryEngine:
     """
@@ -109,3 +109,14 @@ class DictionaryEngine:
             return {}
 
         return entry.translations
+
+    def supported_languages(self):
+
+        return LANGUAGES
+
+    def is_supported_language(
+        self,
+        language: str,
+    ) -> bool:
+
+        return language.lower() in LANGUAGES
