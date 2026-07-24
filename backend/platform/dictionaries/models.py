@@ -1,13 +1,16 @@
+"""
+LOMINII Dictionary Basemodel Types
+
+Every language dictionary must follow this structure.
+"""
+
 from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
 class DictionaryEntry:
     """
-    Universal dictionary entry.
-
-    Every language and domain dictionary
-    uses the same structure.
+    A single dictionary entry.
     """
 
     word: str
@@ -18,8 +21,10 @@ class DictionaryEntry:
 
     synonyms: list[str] = field(default_factory=list)
 
-    related: list[str] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
 
-    domains: list[str] = field(default_factory=list)
+    categories: list[str] = field(default_factory=list)
 
     tags: list[str] = field(default_factory=list)
+
+    metadata: dict = field(default_factory=dict)
