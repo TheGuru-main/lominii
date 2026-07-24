@@ -294,7 +294,7 @@ class DictionaryEngine:
         target_language: str,
         source_language: str = "en", )
 
-    def supported_languages(self):
+    def supported_language(self):
 
         return LANGUAGES
 
