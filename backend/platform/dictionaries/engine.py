@@ -283,7 +283,7 @@ class DictionaryEngine:
 
         return entry
 
-    def suggestions(
+    def suggestions((
         self,
         text: str,
         language: str = "en", ):
