@@ -288,14 +288,12 @@ class DictionaryEngine:
         text: str,
         language: str = "en", ):
 
-    def translate((
+    def translate(
         self,
         word: str,
         target_language: str,
-        source_language: str = "en", 
-)
+        source_language: str = "en", )
     )
-        )
 
     def supported_language(self):
 
