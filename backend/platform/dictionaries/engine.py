@@ -51,24 +51,62 @@ class DictionaryEngine:
     def register(
         self,
         entry: DictionaryEntry,
-    ):
+):
 
         key = (
             entry.language.lower(),
             entry.word.lower(),
         )
 
+        # Primary index
         self.entries[key] = entry
 
+        # Language index
         self.languages[
-            entry.language.lower()
+        entry.language.lower()
         ][entry.word.lower()] = entry
 
+        # Domain index
         for domain in entry.domains:
 
             self.domains[
                 domain.lower()
             ][entry.word.lower()] = entry
+
+        # Alias index
+        for alias in entry.aliases:
+
+        self.aliases[
+            entry.language.lower()
+        ][alias.lower()] = entry
+
+        # Category index
+        for category in entry.categories:
+
+            self.categories[
+                category.lower()
+            ][entry.word.lower()] = entry
+
+        # Tag index
+        for tag in entry.tags:
+
+        self.tags[
+            tag.lower()
+        ][entry.word.lower()] = entry
+
+        # Phrase index
+        for phrase in entry.phrases:
+
+            self.phrases[
+                entry.language.lower()
+            ][phrase.lower()] = entry
+
+        # Abbreviation index
+        for abbreviation in entry.abbreviations:
+
+            self.abbreviations[
+                entry.language.lower()
+            ][abbreviation.lower()] = entry
 
     def lookup(
         self,
