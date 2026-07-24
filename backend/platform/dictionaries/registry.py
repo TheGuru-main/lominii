@@ -3,7 +3,7 @@ from . import french
 from . import german
 
 
-DICTIONARY = {
+DICTIONARIES = {
     english.LANGUAGE: english,
     french.LANGUAGE: french,
     german.LANGUAGE: german,
@@ -17,7 +17,7 @@ def get_dictionary(language: str):
     Falls back to English.
     """
 
-    return DICTIONARY.get(
+    return DICTIONARIES.get(
         language,
         english,
     )
