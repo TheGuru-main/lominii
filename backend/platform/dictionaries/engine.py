@@ -51,62 +51,84 @@ class DictionaryEngine:
     def register(
         self,
         entry: DictionaryEntry,
-):
+    ):
+
+        word = entry.word.lower()
+        language = entry.language.lower()
 
         key = (
-            entry.language.lower(),
-            entry.word.lower(),
+            language,
+            word,
         )
 
-        # Primary index
+    # ------------------------------------------------
+        # Main entry
+        # ------------------------------------------------
+
         self.entries[key] = entry
 
-        # Language index
-        self.languages[
-        entry.language.lower()
-        ][entry.word.lower()] = entry
+        self.languages[language][word] = entry
 
-        # Domain index
+    # ------------------------------------------------
+        # Domains
+        # ------------------------------------------------
+
         for domain in entry.domains:
 
             self.domains[
                 domain.lower()
-            ][entry.word.lower()] = entry
+            ][word] = entry
 
-        # Alias index
+    # ------------------------------------------------
+        # Aliases
+        # ------------------------------------------------
+
         for alias in entry.aliases:
 
-        self.aliases[
-            entry.language.lower()
-        ][alias.lower()] = entry
+            self.aliases[
+                language
+            ][alias.lower()] = entry
 
-        # Category index
+    # ------------------------------------------------
+        # Categories
+        # ------------------------------------------------
+
         for category in entry.categories:
 
             self.categories[
                 category.lower()
-            ][entry.word.lower()] = entry
+            ][word] = entry
 
-        # Tag index
+    # ------------------------------------------------
+        # Tags
+        # ------------------------------------------------
+
         for tag in entry.tags:
 
-        self.tags[
-            tag.lower()
-        ][entry.word.lower()] = entry
+            self.tags[
+                tag.lower()
+            ][word] = entry
 
-        # Phrase index
+    # ------------------------------------------------
+        # Phrases
+        # ------------------------------------------------
+
         for phrase in entry.phrases:
 
             self.phrases[
-                entry.language.lower()
+                language
             ][phrase.lower()] = entry
 
-        # Abbreviation index
+    # ------------------------------------------------
+        # Abbreviations
+        # ------------------------------------------------
+
         for abbreviation in entry.abbreviations:
 
             self.abbreviations[
-                entry.language.lower()
+                language
             ][abbreviation.lower()] = entry
+
 
     def lookup(
         self,
