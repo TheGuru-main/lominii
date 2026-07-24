@@ -255,6 +255,71 @@ class DictionaryEngine:
             abbreviation.lower()
         )
 
+
+    def resolve(
+        self,
+        text: str,
+        language: str = "en",
+    ):
+        """
+        Resolve any dictionary object.
+
+        Order:
+
+        1. Word
+        2. Alias
+        3. Phrase
+        4. Abbreviation
+ 
+        Returns DictionaryEntry or None.
+        """
+
+        text = text.lower()
+
+        entry = self.lookup(
+            text,
+            language,
+        )
+
+        if entry:
+            return entry
+
+        entry = self.alias(
+            text,
+            language,
+        )
+
+        if entry:
+            return entry
+
+        entry = self.phrase(
+            text,
+            language,
+        )
+
+        if entry:
+            return entry
+
+        entry = self.abbreviation(
+            text,
+            language,
+        )
+
+        return entry
+
+    def suggestions(
+        self,
+        text: str,
+        language: str = "en",
+    ):
+
+    def translate(
+        self,
+        word: str,
+        target_language: str,
+        source_language: str = "en",
+    )
+
     def supported_languages(self):
 
         return LANGUAGES
