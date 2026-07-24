@@ -286,15 +286,15 @@ class DictionaryEngine:
     def suggestions(
         self,
         text: str,
-        language: str = "en", )
-):
+        language: str = "en", ):
 
     def translate(
         self,
         word: str,
         target_language: str,
-        source_language: str = "en", )
+        source_language: str = "en", 
 )
+    )
 
     def supported_language(self):
 
