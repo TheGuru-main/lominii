@@ -61,7 +61,7 @@ class DictionaryEngine:
             word,
         )
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Main entry
         # ------------------------------------------------
 
@@ -69,7 +69,7 @@ class DictionaryEngine:
 
         self.languages[language][word] = entry
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Domains
         # ------------------------------------------------
 
@@ -79,7 +79,7 @@ class DictionaryEngine:
                 domain.lower()
             ][word] = entry
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Aliases
         # ------------------------------------------------
 
@@ -89,7 +89,7 @@ class DictionaryEngine:
                 language
             ][alias.lower()] = entry
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Categories
         # ------------------------------------------------
 
@@ -99,7 +99,7 @@ class DictionaryEngine:
                 category.lower()
             ][word] = entry
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Tags
         # ------------------------------------------------
 
@@ -109,7 +109,7 @@ class DictionaryEngine:
                 tag.lower()
             ][word] = entry
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Phrases
         # ------------------------------------------------
 
@@ -119,7 +119,7 @@ class DictionaryEngine:
                 language
             ][phrase.lower()] = entry
 
-    # ------------------------------------------------
+        # ------------------------------------------------
         # Abbreviations
         # ------------------------------------------------
 
@@ -159,7 +159,6 @@ class DictionaryEngine:
         word: str,
         language: str = "en",
     ) -> list[str]:
-
         entry = self.lookup(word, language)
 
         if entry is None:
@@ -170,9 +169,7 @@ class DictionaryEngine:
     def related(
         self,
         word: str,
-        language: str = "en",
-    ) -> list[str]:
-
+        language: str = "en", ) -> list[str]:
         entry = self.lookup(word, language)
 
         if entry is None:
@@ -183,9 +180,7 @@ class DictionaryEngine:
     def translations(
         self,
         word: str,
-        language: str = "en",
-    ) -> dict:
-
+        language: str = "en", ) -> dict:
         entry = self.lookup(word, language)
 
         if entry is None:
@@ -196,129 +191,108 @@ class DictionaryEngine:
     def alias(
         self,
         word: str,
-        language: str = "en",
-    ):
-
+        language: str = "en", ):
         return self.aliases[
             language.lower()
         ].get(
-        word.lower()
-        )
+        word.lower() )
 
     def category(
         self,
-        category: str,
-    ):
-
+        category: str, ):
         return list(
 
             self.categories[
                 category.lower()
-            ].values()
-
-        )
+            ].values() )
 
     def tag(
         self,
-        tag: str,
-    ):
+        tag: str,.):
 
         return list(
 
             self.tags[
                 tag.lower()
-            ].values()
-
-        )
+            ].values() )
 
     def phrase(
         self,
         phrase: str,
-        language: str = "en",
-    ):
+        language: str = "en", ):
 
         return self.phrases[
             language.lower()
         ].get(
-            phrase.lower()
-        )
+            phrase.lower() )
 
     def abbreviation(
         self,
         abbreviation: str,
-        language: str = "en",
-    ):
+        language: str = "en", ):
 
         return self.abbreviations[
             language.lower()
         ].get(
-            abbreviation.lower()
-        )
-
+            abbreviation.lower() )
 
     def resolve(
         self,
         text: str,
-        language: str = "en",
-    ):
-        """
-        Resolve any dictionary object.
+        language: str = "en", ):
 
-        Order:
+            """
+            Resolve any dictionary object.
 
-        1. Word
-        2. Alias
-        3. Phrase
-        4. Abbreviation
+            Order:
+
+            1. Word
+            2. Alias
+            3. Phrase
+            4. Abbreviation
  
-        Returns DictionaryEntry or None.
-        """
+            Returns DictionaryEntry or None.
+            """
 
         text = text.lower()
 
         entry = self.lookup(
             text,
-            language,
-        )
+            language, )
 
         if entry:
             return entry
 
         entry = self.alias(
             text,
-            language,
-        )
+            language, )
 
         if entry:
             return entry
 
         entry = self.phrase(
             text,
-            language,
-        )
+            language, )
 
         if entry:
             return entry
 
         entry = self.abbreviation(
             text,
-            language,
-        )
+            language, )
 
         return entry
 
     def suggestions(
         self,
         text: str,
-        language: str = "en",
-    ):
+        language: str = "en", ):
 
     def translate(
         self,
         word: str,
         target_language: str,
-        source_language: str = "en",
-    )
+        source_language: str = "en", )
 
     def supported_languages(self):
 
