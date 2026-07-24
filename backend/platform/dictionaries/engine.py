@@ -193,6 +193,68 @@ class DictionaryEngine:
 
         return entry.translations
 
+    def alias(
+        self,
+        word: str,
+        language: str = "en",
+    ):
+
+        return self.aliases[
+            language.lower()
+        ].get(
+        word.lower()
+        )
+
+    def category(
+        self,
+        category: str,
+    ):
+
+        return list(
+
+            self.categories[
+                category.lower()
+            ].values()
+
+        )
+
+    def tag(
+        self,
+        tag: str,
+    ):
+
+        return list(
+
+            self.tags[
+                tag.lower()
+            ].values()
+
+        )
+
+    def phrase(
+        self,
+        phrase: str,
+        language: str = "en",
+    ):
+
+        return self.phrases[
+            language.lower()
+        ].get(
+            phrase.lower()
+        )
+
+    def abbreviation(
+        self,
+        abbreviation: str,
+        language: str = "en",
+    ):
+
+        return self.abbreviations[
+            language.lower()
+        ].get(
+            abbreviation.lower()
+        )
+
     def supported_languages(self):
 
         return LANGUAGES
