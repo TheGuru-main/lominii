@@ -17,7 +17,7 @@ def get_dictionary(language: str):
     Falls back to English.
     """
 
-    return LANGUAGE_REGISTRY.get(
+    return DICTIONARY.get(
         language,
         english,
     )
