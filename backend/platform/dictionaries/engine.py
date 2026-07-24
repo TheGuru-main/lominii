@@ -25,6 +25,29 @@ class DictionaryEngine:
 
         self.domains = defaultdict(dict)
 
+        self.entries = {}
+
+        # Language index
+        self.languages = defaultdict(dict)
+
+        # Domain index
+        self.domains = defaultdict(dict)
+
+        # Alias index
+        self.aliases = defaultdict(dict)
+
+        # Category index
+        self.categories = defaultdict(dict)
+
+        # Tag index
+        self.tags = defaultdict(dict)
+
+        # Phrase index
+        self.phrases = defaultdict(dict)
+
+        # Abbreviation index
+        self.abbreviations = defaultdict(dict)
+
     def register(
         self,
         entry: DictionaryEntry,
