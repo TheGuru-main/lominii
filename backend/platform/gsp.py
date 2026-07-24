@@ -5,6 +5,7 @@ Arabic (standard 101‑key), Chinese (Pinyin virtual map).
 """
 
 import unicodedata
+from platform.keymaps.registry import get_keyboard
 
 # ============================================================================
 # 1. MULTI‑LANGUAGE KEYBOARD MAPS  (36‑column: a‑z + 0‑9)ENGLISH,FRENCH,ARABIC,CHINESE,GERMAN,...
@@ -47,17 +48,17 @@ _KEYMAPS = {
 _DIGITS_ROW = "0123456789"
 
 
-def get_keymap(lang: str = "en") -> dict:
-    """Return a dict mapping character -> (L, S) for the given language."""
-    rows = _KEYMAPS.get(lang, _KEYMAPS["en"])
-    km = {}
-    for r, row in enumerate(rows):
-        for c, ch in enumerate(row):
-            km[ch] = (r, c)
-    # Add digits (row 3, columns 26‑35)
-    for c, ch in enumerate(_DIGITS_ROW):
-        km[ch] = (3, 26 + c)
-    return km
+    def get_keymap(lang: str = "en") -> dict:
+        """Return a dict mapping character -> (L, S) for the given language."""
+        rows = get_keyboard(lang)
+        km = {}
+        for r, row in enumerate(rows):
+            for c, ch in enumerate(row):
+                km[ch] = (r, c)
+        # Add digits (row 3, columns 26‑35)
+            for c, ch in enumerate(_DIGITS_ROW):
+                km[ch] = (3, 26 + c)
+                return km
 
 
 # ============================================================================
