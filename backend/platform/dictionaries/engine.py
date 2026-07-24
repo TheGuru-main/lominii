@@ -286,7 +286,8 @@ class DictionaryEngine:
     def suggestions(
         self,
         text: str,
-        language: str = "en", ):
+        language: str = "en", )
+):
 
     def translate(
         self,
