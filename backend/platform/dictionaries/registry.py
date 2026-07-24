@@ -3,7 +3,7 @@ from . import french
 from . import german
 
 
-LANGUAGE_REGISTRY = {
+DICTIONARY = {
     english.LANGUAGE: english,
     french.LANGUAGE: french,
     german.LANGUAGE: german,
