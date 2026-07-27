@@ -1,236 +1,141 @@
-/* ==========================================================
-   LOMINII COMMON
-   Shared UI and Workspace Controller
-========================================================== */
+// ── Global state ──────────────────────────
+let authToken = localStorage.getItem('lominii_token') || '';
 
-/* ===== Workspace Views ===== */
+// ── Views ────────────────────────────────
 
 const views = {
-    home: document.getElementById("homeView"),
-    games: document.getElementById("gamesView"),
-    social: document.getElementById("socialView"),
-    edu: document.getElementById("eduView"),
-    quran: document.getElementById("quranView"),
+  home: document.getElementById('homeView'),
+  games: document.getElementById('gamesView'),
+  social: document.getElementById('socialView'),
+  edu: document.getElementById('eduView'),
+  quran: document.getElementById('quranView')
 };
+const footerIcons = document.querySelectorAll('.footer-nav .nav-icon');
+const backToggle = document.getElementById('backToggle');
+const splashScreen = document.getElementById('splashScreen');
+const landingView = document.getElementById('landingView');
+const dashboardView = document.getElementById('dashboardView');
+const particleCanvas = document.getElementById('particleCanvas');
 
-const footerIcons =
-    document.querySelectorAll(".footer-nav .nav-icon");
+// ── Splash → Landing transition ─────────
+setTimeout(() => {
+  if (splashScreen) splashScreen.style.display = 'none';
+  if (landingView) landingView.style.display = 'block';
+  if (particleCanvas && typeof drawParticles === 'function') drawParticles();
+}, 2000);
 
-const backToggle =
-    document.getElementById("backToggle");
-
-const userIcon =
-    document.getElementById("userIcon");
-
-const userDropdown =
-    document.getElementById("userDropdown");
-
-
-/* ===== Dashboard ===== */
-
-const landingView =
-    document.getElementById("landingView");
-
-const dashboardView =
-    document.getElementById("dashboardView");
-
-
+// ── Show Dashboard ──────────────────────
 function showDashboard() {
-
-    landingView.style.display = "none";
-    dashboardView.style.display = "block";
-
-    if (particleCanvas)
-        particleCanvas.style.display = "none";
-
-    if (typeof animId !== "undefined") {
-        cancelAnimationFrame(animId);
-    }
-
-    document.body.classList.add("search-home");
-
-    if (typeof stopParticles === "function") {
-        stopParticles();
-    }
-
-    // Always begin inside Search
-    switchToWorkspace("home");
+  landingView.style.display = 'none';
+  dashboardView.style.display = 'block';
+  if (particleCanvas) particleCanvas.style.display = 'none';
+  if (typeof animId !== 'undefined') cancelAnimationFrame(animId);
+  document.body.classList.add('search-home');
+  if (typeof loadHomeCards === 'function') loadHomeCards();
 }
 
-
-/* ===== Workspace Switching ===== */
-
+// ── Workspace Switcher ─────────────────
 function switchToWorkspace(workspace) {
+  // Hide all workspace views
+  Object.values(views).forEach(v => { if(v) v.style.display = 'none'; });
+  // Show the selected workspace
+  if (views[workspace]) views[workspace].style.display = 'block';
 
-    // 1. Hide all workspace views
+  // Update footer icons
+  footerIcons.forEach(i => i.classList.remove('active'));
+  const activeIcon = document.querySelector(`.nav-icon[data-workspace="${workspace}"]`);
+  if (activeIcon) activeIcon.classList.add('active');
 
-    Object.values(views).forEach(view => {
+  // Toggle home dropdown visibility
+  const homeDropdown = document.getElementById('homeDropdown');
+  if (workspace === 'home') {
+    document.body.classList.add('search-home');
+    document.body.classList.remove('workspace-view');
+    if (backToggle) backToggle.style.display = 'none';
+    if (homeDropdown) homeDropdown.style.display = 'block';
+  } else {
+    document.body.classList.remove('search-home');
+    document.body.classList.add('workspace-view');
+    if (backToggle) backToggle.style.display = 'block';
+    if (homeDropdown) homeDropdown.style.display = 'none';
+  }
 
-        if (view)
-            view.style.display = "none";
-
-    });
-
-    // 2. Show selected workspace
-
-    if (views[workspace]) {
-        views[workspace].style.display = "block";
-    }
-
-    // 3. Update footer active state
-
-    footerIcons.forEach(icon =>
-        icon.classList.remove("active")
-    );
-
-    const active = document.querySelector(
-        `.nav-icon[data-workspace="${workspace}"]`
-    );
-
-    if (active)
-        active.classList.add("active");
-
-    // 4. Toggle body classes
-
-    if (workspace === "home") {
-
-        document.body.classList.add("search-home");
-        document.body.classList.remove("workspace-view");
-
-        if (backToggle)
-            backToggle.style.display = "none";
-
-    } else {
-
-        document.body.classList.remove("search-home");
-        document.body.classList.add("workspace-view");
-
-        if (backToggle)
-            backToggle.style.display = "block";
-
-    }
-
-    // 5. Workspace initialisation
-
-    switch (workspace) {
-
-        case "home":
-
-            if (typeof loadHomeCards === "function")
-                loadHomeCards();
-
-            break;
-
-        case "social":
-
-            if (typeof loadFriendsFeed === "function")
-                loadFriendsFeed();
-
-            break;
-
-        case "games":
-
-            if (typeof loadGames === "function")
-                loadGames();
-
-            break;
-
-        case "edu":
-
-            if (typeof loadCourses === "function")
-                loadCourses();
-
-            break;
-
-        case "quran":
-
-            if (typeof loadQuran === "function")
-                loadQuran();
-
-            break;
-    }
+  // Workspace‑specific initialisation
+  switch (workspace) {
+    case 'home':
+      if (typeof loadHomeCards === 'function') loadHomeCards();
+      break;
+    case 'social':
+      if (typeof initialiseSocial === 'function') initialiseSocial();
+      break;
+    case 'games':
+      if (typeof initialiseGames === 'function') initialiseGames();
+      break;
+    case 'edu':
+      if (typeof initialiseEdu === 'function') initialiseEdu();
+      break;
+    case 'quran':
+      if (typeof initialiseQuran === 'function') initialiseQuran();
+      break;
+  }
 }
+function goHome() { switchToWorkspace('home'); }
 
-
-/* ===== Footer Navigation ===== */
-
+// ── Footer navigation listeners ─────────
 footerIcons.forEach(icon => {
-
-    icon.addEventListener("click", () => {
-
-        switchToWorkspace(
-            icon.dataset.workspace
-        );
-
-    });
-
+  icon.addEventListener('click', () => switchToWorkspace(icon.dataset.workspace));
 });
 
-
-/* ===== User Menu ===== */
-
+// ── User dropdown ───────────────────────
+const userIcon = document.getElementById('userIcon');
+const userDropdown = document.getElementById('userDropdown');
 if (userIcon) {
-
-    userIcon.addEventListener("click", e => {
-
-        e.stopPropagation();
-
-        if (userDropdown)
-            userDropdown.classList.toggle("show");
-
-    });
-
+  userIcon.addEventListener('click', e => {
+    e.stopPropagation();
+    userDropdown.classList.toggle('show');
+  });
 }
-
-document.addEventListener("click", () => {
-
-    if (userDropdown)
-        userDropdown.classList.remove("show");
-
+document.addEventListener('click', () => {
+  if (userDropdown) userDropdown.classList.remove('show');
 });
 
+// ── Home dropdown toggle ───────────────
+document.getElementById('dropdownToggle').addEventListener('click', () => {
+  document.getElementById('dropdownMenu').classList.toggle('show');
+});
 
-/* ===== Logout ===== */
-
-const logoutButton =
-    document.getElementById("btnLogout");
-
-if (logoutButton) {
-
-    logoutButton.addEventListener("click", () => {
-
-        localStorage.removeItem("lominii_token");
-
-        authToken = "";
-
-        switchToWorkspace("home");
-
-        landingView.style.display = "block";
-        dashboardView.style.display = "none";
-
-        if (particleCanvas)
-            particleCanvas.style.display = "block";
-
-        if (typeof startParticles === "function") {
-            startParticles();
-        }
-
-    });
-
+// ── Settings panel trigger (from user dropdown) ──
+document.getElementById('btnSettings')?.addEventListener('click', openSettings);
+document.getElementById('dropdownSettings')?.addEventListener('click', openSettings);
+function openSettings() {
+  document.getElementById('settingsPanel').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsPanel').classList.remove('open');
 }
 
-
-/* ===== Landing Buttons ===== */
-
-document.getElementById("btnExplore")
-?.addEventListener("click", showDashboard);
-
-document.getElementById("btnLogin")
-?.addEventListener("click", showDashboard);
-
-document.getElementById("btnSignup")
-?.addEventListener("click", () => {
-
-    alert("Signup page coming soon.");
-
+// ── Logout ──────────────────────────────
+document.getElementById('btnLogout').addEventListener('click', () => {
+  localStorage.removeItem('lominii_token');
+  authToken = '';
+  dashboardView.style.display = 'none';
+  landingView.style.display = 'block';
+  if (particleCanvas) particleCanvas.style.display = 'block';
+  if (typeof drawParticles === 'function') drawParticles();
 });
+document.getElementById('dropdownLogout')?.addEventListener('click', () => {
+  document.getElementById('btnLogout').click();
+});
+
+// ── Landing buttons ─────────────────────
+document.getElementById('btnExplore')?.addEventListener('click', showDashboard);
+document.getElementById('btnLogin')?.addEventListener('click', showDashboard);
+document.getElementById('btnSignup')?.addEventListener('click', () => alert('Signup coming soon.'));
+
+// ── Initial load ────────────────────────
+if (authToken) {
+  splashScreen.style.display = 'none';
+  landingView.style.display = 'none';
+  dashboardView.style.display = 'block';
+  switchToWorkspace('home');
+}
