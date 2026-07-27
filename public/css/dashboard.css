@@ -85,6 +85,7 @@
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
+
 .action-card {
   background: var(--color-surface);
   border-radius: var(--radius);
@@ -92,6 +93,7 @@
   text-align: center;
   box-shadow: var(--shadow);
 }
+
 .action-card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
 .action-card h3 { font-size: 1rem; margin-bottom: 0.3rem; }
 .action-card .loading-text { color: var(--color-muted); font-size: 0.85rem; }
@@ -109,20 +111,6 @@
   padding-bottom: 0.5rem;
 }
 
-.lomiplay-card {
-  background: var(--color-surface);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-.lomiplay-header {
-  background: var(--color-accent);
-  color: white;
-  text-align: center;
-  padding: 0.4rem;
-  border-radius: var(--radius) var(--radius) 0 0;
-  font-weight: 700;
-}
 
 /* ===== BACK BUTTON ===== */
 
