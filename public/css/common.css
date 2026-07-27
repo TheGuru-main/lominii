@@ -1,87 +1,393 @@
-/* ===== RESET & BASE ===== */
+/* =========================================================
+   LOMINII — main.css
+   UI Foundation v1.0 — design tokens, resets, shared components
+   ========================================================= */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+:root{
+    /* Color */
+    --bg:            #152236;
+    --surface:       #1E2E46;
+    --soft-surface:  #ffffff08;
+    --glass:         #ffffff12;
+    --glass-hi:      #ffffff33;
+
+    --text:          #F8FAFC;
+    --text-secondary:#B7C4D6;
+    --text-muted:    #6B7280;
+
+    --accent:        #4DA3FF;
+    --success:       #34C759;
+    --warning:       #FFD60A;
+    --danger:        #FF3B30;
+
+    /* Type */
+    --font-sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", Consolas, monospace;
+
+    /* Spacing scale — everything breathes */
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 1.75rem;
+    --space-lg: 3rem;
+    --space-xl: 5rem;
+
+    /* Shape */
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+
+    /* Motion */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --speed: 220ms;
 }
 
-body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  min-height: 100vh;
-  background: #0a0f1a;
-  overflow-x: hidden;
+*,
+*::before,
+*::after{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
 }
 
-/* ===== BUTTONS ===== */
-
-.btn {
-  display: block;
-  width: 100%;
-  padding: 1rem;
-  margin-bottom: 0.9rem;
-  border: none;
-  border-radius: 14px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+html{
+    color-scheme: dark;
 }
 
-.btn-primary {
-  background: #3b82f6;
-  color: white;
+body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
-.btn-outline {
-  background: transparent;
-  border: 2px solid #3b82f6;
-  color: #3b82f6;
+#particleCanvas{
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
 }
 
-.btn-ghost {
-  background: transparent;
-  color: #4a6578;
-  font-weight: 500;
-  margin-bottom: 0;
+/* Anything meant to feel "data/system-level" uses monospace */
+.mono, .uid, .gsp-coord{
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
 }
 
-.btn:active {
-  transform: scale(0.97);
+em, .quote, .reflection{
+    font-style: italic;
 }
 
-/* ===== COMMON CARDS ===== */
-
-.card {
-  background: #fff;
-  border: 1px solid #d0dce4;
-  border-radius: 14px;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-  cursor: pointer;
-  transition: transform 0.15s;
+a{
+    color: inherit;
+    text-decoration: none;
 }
 
-.card:active {
-  transform: scale(0.97);
+button{
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    background: none;
+    color: inherit;
 }
 
-.card .icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+input, select, textarea{
+    font-family: inherit;
+    color: var(--text);
+    background: var(--soft-surface);
+    border: 1px solid var(--glass-hi);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
 }
 
-.card h3 {
-  font-size: 1.1rem;
-  margin-bottom: 0.3rem;
+input::placeholder, textarea::placeholder{
+    color: var(--text-muted);
 }
 
-.card p {
-  font-size: 0.85rem;
-  color: #4a6578;
+/* =========================================================
+   GLASS SURFACE — the recurring visual signature
+   ========================================================= */
+
+.glass{
+    background: var(--glass);
+    border: 1px solid var(--glass-hi);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.btn{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.6rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: transform var(--speed) var(--ease), background var(--speed) var(--ease), opacity var(--speed) var(--ease);
+}
+
+.btn:active{
+    transform: scale(0.97);
+}
+
+.btn-primary{
+    background: var(--accent);
+    color: #0B1524;
+}
+
+.btn-primary:hover{
+    opacity: 0.9;
+}
+
+.btn-outline{
+    background: transparent;
+    border: 1px solid var(--glass-hi);
+    color: var(--text);
+}
+
+.btn-outline:hover{
+    background: var(--soft-surface);
+}
+
+.btn-ghost{
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0.6rem 1rem;
+}
+
+.btn-ghost:hover{
+    color: var(--text);
+}
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.card{
+    background: var(--glass);
+    border: 1px solid var(--glass-hi);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    transition: transform var(--speed) var(--ease), border-color var(--speed) var(--ease);
+}
+
+.card:hover{
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.card .icon{
+    font-size: 1.5rem;
+    margin-bottom: var(--space-xs);
+}
+
+.card h3{
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+}
+
+.card-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-sm);
+    padding: 0 var(--space-md);
+}
+
+.loading-text{
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.placeholder{
+    color: var(--text-secondary);
+    text-align: center;
+    padding: var(--space-lg) var(--space-md);
+}
+
+/* =========================================================
+   TOGGLE ROWS (settings-style checkboxes)
+   ========================================================= */
+
+.toggle-row{
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+/* =========================================================
+   FOOTER + BOTTOM NAV
+   ========================================================= */
+
+.footer{
+    text-align: center;
+    padding: var(--space-sm);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.footer strong{
+    color: var(--text-secondary);
+}
+
+.footer-nav{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.6rem var(--space-sm) calc(0.6rem + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--glass-hi);
+}
+
+.nav-icon{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+    transition: color var(--speed) var(--ease);
+}
+
+.nav-icon span:first-child{
+    font-size: 1.2rem;
+}
+
+.nav-icon.active{
+    color: var(--accent);
+}
+
+.back-toggle{
+    position: fixed;
+    top: var(--space-sm);
+    left: var(--space-sm);
+    z-index: 25;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--glass);
+    border: 1px solid var(--glass-hi);
+    display: none;
+}
+
+/* =========================================================
+   MODAL / SLIDE-IN PANEL BASE (settings, chat, etc.)
+   ========================================================= */
+
+.panel-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--glass-hi);
+}
+
+.panel-header h3{
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.close-btn{
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.3rem;
+}
+
+.close-btn:hover{
+    color: var(--text);
+}
+
+/* =========================================================
+   RESPONSIVE BASELINE
+   ========================================================= */
+
+@media (max-width: 720px){
+    .card-grid{
+        grid-template-columns: 1fr;
+        padding: 0 var(--space-sm);
+    }
+}
+
+/* =========================================================
+   LANDING PAGE
+   (not a workspace — lives here as the app's entry screen)
+   ========================================================= */
+
+#landingView{
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg) var(--space-md);
+}
+
+.landing-container{
+    max-width: 560px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.landing-container .logo-icon{
+    font-size: 2.2rem;
+    margin-bottom: var(--space-xs);
+}
+
+.landing-container h1{
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.tagline{
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+}
+
+.sub-tagline{
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.landing-container .btn{
+    width: 100%;
+    max-width: 320px;
+}
+
+.footer-note{
+    margin-top: var(--space-md);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 720px){
+    .landing-container h1{
+        font-size: 1.9rem;
+    }
+}
 /* ===== PLACEHOLDER ===== */
 
 .placeholder {
@@ -92,4 +398,3 @@ body {
   text-align: center;
   color: #4a6578;
   margin-bottom: 1.5rem;
-}
