@@ -9,11 +9,11 @@ function switchEduTab(tab) {
   document.getElementById("toggleTeacher").classList.toggle("active", tab === "teacher");
 
   // Toggle tabs
-  const studentTab = document.getElementById("studentTab");
-  const teacherTab = document.getElementById("teacherTab");
+  const studentTab = document.getElementById("switchStudentTab");
+  const teacherTab = document.getElementById("switchTeacherTab");
 
-  studentTab.classList.toggle("active", tab === "student");
-  teacherTab.classList.toggle("active", tab === "teacher");
+  switchStudentTab.classList.toggle("active", tab === "student");
+  switchTeacherTab.classList.toggle("active", tab === "teacher");
 
   // Load student dashboard when entering Student tab
   if (tab === "student") {
