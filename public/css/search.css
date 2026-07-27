@@ -1,27 +1,61 @@
 /* ===== SEARCH ===== */
 
-.search-section {
-  margin-bottom: 2rem;
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+/* =========================================================
+   LOMINII — search.css
+   Search Home —
+   Fast. Minimal. Focused.
+   ========================================================= */
+
+#homeView{
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.search-input {
-  flex: 1;
-  padding: 0.9rem 1.2rem;
-  border: 2px solid #d0dce4;
-  border-radius: 25px;
-  font-size: 1rem;
-  background: #fff;
+.search-section{
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: var(--space-lg);
 }
 
-.search-results {
-  margin-bottom: 1.5rem;
-  background: #fff;
-  border-radius: 14px;
-  padding: 1.2rem;
+.search-input{
+    flex: 1;
+    font-size: 1.05rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
 }
+
+.search-input:focus{
+    outline: none;
+    border-color: var(--accent);
+}
+
+#btnSearch{
+    background: var(--accent);
+    color: #0B1524;
+    border-radius: var(--radius-md);
+    padding: 0 1.6rem;
+    font-weight: 600;
+}
+
+.search-results{
+    margin-bottom: var(--space-lg);
+}
+
+.search-results:empty{
+    display: none;
+}
+
+#homeCards{
+    margin-bottom: var(--space-lg);
+}
+
+/* Game preview strip on Search Home */
+.game-carousel{
+    padding: 0 var(--space-md);
+}
+
+
 
 .card-grid {
   display: grid;
@@ -60,6 +94,34 @@
   color: #4a6578;
 }
 
+.game-card{
+    background: var(--glass);
+    border: 1px solid var(--glass-hi);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    cursor: pointer;
+    transition: border-color var(--speed) var(--ease);
+}
+
+.game-card:hover{
+    border-color: var(--accent);
+}
+
+.game-card .icon{
+    font-size: 1.5rem;
+}
+
+.game-card p{
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+
+/* ===== PLACEHOLDER ===== */
+
 .placeholder {
   background: #fff;
   border: 1px dashed #d0dce4;
@@ -68,7 +130,6 @@
   text-align: center;
   color: #4a6578;
   margin-bottom: 1.5rem;
-}
 
 .ai-summary-card {
   background: #fff;
