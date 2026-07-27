@@ -28,3 +28,31 @@
   font-size: 1.5rem;
   cursor: pointer;
 }
+
+/* =========================================================
+   MODAL / SLIDE-IN PANEL BASE (settings, chat, etc.)
+   ========================================================= */
+
+.panel-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--glass-hi);
+}
+
+.panel-header h3{
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.close-btn{
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.3rem;
+}
+
+.close-btn:hover{
+    color: var(--text);
+}
