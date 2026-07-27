@@ -1,79 +1,82 @@
 /* ===== DASHBOARD HEADER ===== */
 
-.header {
-  background: #fff;
-  border-bottom: 1px solid #d0dce4;
-  padding: 0.8rem 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+/* =========================================================
+   LOMINII — dashboard.css
+   Header shell shared by every workspace
+   ========================================================= */
+
+.header{
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--surface);
+    border-bottom: 1px solid var(--glass-hi);
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #3b82f6;
-  text-decoration: none;
+.header .logo{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.01em;
 }
 
-.user-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #3b82f6;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  position: relative;
+.logo-icon{
+    font-size: 1.3rem;
 }
 
-.dropdown {
-  position: absolute;
-  top: 45px;
-  right: 0;
-  background: #fff;
-  border: 1px solid #d0dce4;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-  min-width: 180px;
-  display: none;
-  z-index: 200;
+.user-icon{
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #0B1524;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.dropdown a {
-  display: block;
-  padding: 0.8rem 1.2rem;
-  color: #1a2b3c;
-  text-decoration: none;
-  font-size: 0.9rem;
+.dropdown{
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 0;
+    min-width: 200px;
+    display: none;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--glass-hi);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.35);
 }
 
-.dropdown a:hover {
-  background: #f0f4f8;
+.dropdown.open{
+    display: flex;
 }
 
-.show {
-  display: block;
+.dropdown a{
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    transition: background var(--speed) var(--ease);
 }
 
-/* ===== MAIN CONTENT ===== */
+.dropdown a:hover{
+    background: var(--soft-surface);
+    color: var(--text);
+}
 
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem 1rem;
-  background: #e8f4f8;
+.main-content{
+    min-height: calc(100vh - 64px);
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 /* ===== FOOTER NAVIGATION ===== */
