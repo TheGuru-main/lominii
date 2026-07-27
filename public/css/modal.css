@@ -23,12 +23,6 @@
   overflow-y: auto;
 }
 
-.close {
-  float: right;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
 /* =========================================================
    MODAL / SLIDE-IN PANEL BASE (settings, chat, etc.)
    ========================================================= */
