@@ -71,12 +71,6 @@ margin-bottom: 2.2rem;
     font-size: 0.75rem;
 }
 
-@media (max-width: 720px){
-    .landing-container h1{
-        font-size: 1.9rem;
-    }
-};
-
   letter-spacing: -0.5px;
   color: #0a0f1a;
   margin-bottom: 0.2rem;
