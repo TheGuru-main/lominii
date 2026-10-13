@@ -1,24 +1,40 @@
 """
-LOMINII – Main FastAPI Application
-Gurutech Platform Architecture – Shared Platform, Independent Modules
+LOMINII — Main FastAPI Application.
+Shared platform with independent application modules.
 """
-import os
-from fastapi import FastAPI
+
+import asyncio
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from apps.lominii.search.router import router as search_router
+
+from apps.lominii.admin.router import router as admin_router
+from apps.lominii.auth.router import router as auth_router
+from apps.lominii.chat.router import router as chat_router
 from apps.lominii.football.router import router as football_router
 from apps.lominii.games.router import router as games_router
+from apps.lominii.search.router import router as search_router
 from apps.lominii.social.router import router as social_router
-from apps.lominii.auth.router import router as auth_router
-from apps.lominii.admin.router import router as admin_router
-from platform.sportmonk_service import start_webhook_proxy_loop 
-import asyncio
-from apps.lominii.chat.router import router as chat_router
-from platform.database import engine, Base
 
-app = FastAPI(title="LOMINII Platform", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+from lominii_platform.database import Base, engine
+from lominii_platform.game_engine import active_sessions
+from lominii_platform.sportmonk_service import start_webhook_proxy_loop
+
+
+app = FastAPI(
+    title="LOMINII Platform",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(search_router)
 app.include_router(social_router)
 app.include_router(games_router)
@@ -26,31 +42,26 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(football_router)
 app.include_router(chat_router)
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
+
 
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    # Start the live‑score proxy as a background task (never blocks the API)
-   asyncio.create_task(start_webhook_proxy_loop())
+    """Initialize database tables and start the live-score proxy."""
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+
+    asyncio.create_task(start_webhook_proxy_loop())
+
 
 @app.get("/health")
 async def health():
+    """Return the application health status."""
     return {"status": "ok", "app": "LOMINII"}
 
-from fastapi import WebSocket, WebSocketDisconnect
-import json
-
-# room_id -> connected websockets
-game_rooms = defaultdict(set)
-
-from fastapi import WebSocket, WebSocketDisconnect
-from platform.game_engine import active_sessions
-import json
 
 @app.websocket("/ws/games/{room_id}")
 async def game_websocket(websocket: WebSocket, room_id: str):
+    """Relay messages between connected players in an active game."""
     session = active_sessions.get(room_id)
 
     if session is None:
@@ -59,30 +70,41 @@ async def game_websocket(websocket: WebSocket, room_id: str):
 
     await websocket.accept()
 
-    # Create socket list if it doesn't exist
-    session.setdefault("connections", [])
-    session["connections"].append(websocket)
+    connections = session.setdefault("connections", [])
+
+    if websocket not in connections:
+        connections.append(websocket)
 
     try:
         while True:
             data = await websocket.receive_text()
 
-            # Broadcast to every connected player in this room
-            for connection in list(session["connections"]):
-                if connection != websocket:
-                    try:
-                        await connection.send_text(data)
-                    except Exception:
-                        session["connections"].remove(connection)
+            for connection in list(connections):
+                if connection is websocket:
+                    continue
+
+                try:
+                    await connection.send_text(data)
+                except Exception:
+                    if connection in connections:
+                        connections.remove(connection)
 
     except WebSocketDisconnect:
-        if websocket in session["connections"]:
-            session["connections"].remove(websocket)
+        if websocket in connections:
+            connections.remove(websocket)
 
-        # Clean up if nobody is connected anymore
-        if not session["connections"]:
+        if not connections:
             session.pop("connections", None)
+
+
+app.mount(
+    "/",
+    StaticFiles(directory="public", html=True),
+    name="static",
+)
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
