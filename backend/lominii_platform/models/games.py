@@ -15,7 +15,7 @@ from sqlalchemy import (
 
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 
 from lominii_platform.database import Base
 from lominii_platform.nsid import NSID
@@ -65,6 +65,29 @@ class Leaderboard(Base):
     updated_at = Column(DateTime, server_default="now()")
 
 
+class GameReward(Base):
+    __tablename__ = "rewards"
+    __table_args__ = {"schema": "game"}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("public.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    game_id = Column(String(20), nullable=False)
+    reward_type = Column(String(50), nullable=False)
+    amount = Column(Integer, nullable=False, default=0)
+    description = Column(Text)
+
+    nsid = Column(SmallInteger, default=NSID.GAMES)
+    created_at = Column(DateTime, server_default="now()")
+
+    user = relationship("User")
+
+
 class GameAchievement(Base):
     __tablename__ = "achievements"
     __table_args__ = {"schema": "game"}
@@ -80,6 +103,7 @@ class GameAchievement(Base):
     game_id = Column(String(20), nullable=False)
 
     achievement = Column(String(255), nullable=False)
+    achievement_key = synonym("achievement")
     description = Column(Text)
 
     points = Column(Integer, default=0)

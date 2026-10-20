@@ -89,3 +89,12 @@ async def get_achievements(
     )
 
     return result.scalars().all()
+
+
+class RewardEngine:
+    """Compatibility facade for class-based reward engine callers."""
+
+    grant_reward = staticmethod(grant_reward)
+    unlock_achievement = staticmethod(unlock_achievement)
+    get_rewards = staticmethod(get_rewards)
+    get_achievements = staticmethod(get_achievements)
