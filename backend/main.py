@@ -6,6 +6,7 @@ Shared platform with independent application modules.
 import asyncio
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -48,6 +49,7 @@ app.include_router(chat_router)
 async def startup():
     """Initialize database tables and start the live-score proxy."""
     async with engine.begin() as connection:
+        await connection.execute(text("CREATE SCHEMA IF NOT EXISTS news"))
         await connection.run_sync(Base.metadata.create_all)
 
     asyncio.create_task(start_webhook_proxy_loop())

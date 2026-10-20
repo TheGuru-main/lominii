@@ -1,119 +1,280 @@
-"""
-Sportmonks Live‑Score Proxy – integrated with LOMINII Notification Service
-"""
-import os
-import httpx
+"""Sportmonks live football scores and LOMINII notifications."""
+
 import asyncio
+import os
 from datetime import datetime
-from .notifications import send_notification   # your own push service
 
-# ── Configuration ──────────────────────────────────────
+import httpx
+
+from .notifications import broadcast_notification
+
+
 API_KEY = os.getenv("SPORTMONK_API_KEY", "")
-LIVESCORE_URL = os.getenv("SPORTMONK_LIVE_URL", "https://sportmonks.com")
+LIVESCORE_URL = os.getenv(
+    "SPORTMONK_LIVE_URL",
+    "https://api.sportmonks.com/v3/football/livescores/inplay",
+)
 
-# ── In‑memory match state ──────────────────────────────
 MATCH_STATE_CACHE = {}
 
-# ── Dispatch a live event to LOMINII users ─────────────
-async def dispatch_live_event(payload: dict):
-    """
-    Sends a push notification to all users who have subscribed
-    to live‑football alerts.  The payload contains the event details.
-    """
-    # In the future, you can query the database for users with
-    # news_preferences → sports = true and an active push subscription.
-    # For now, we broadcast to *all* registered subscriptions.
-    title = payload.get("match_title", "Live Match")
-    body = f"{payload.get('display_text', 'Update')} | Score: {payload.get('current_score', '')}"
-    data = {
-        "match_id": payload.get("match_id"),
-        "url": f"/sports?match={payload.get('match_id')}"
-    }
-    # send_notification(user_id, title, body, data)
-    # For broadcast, we can loop over all active subscriptions.
-    # (The actual implementation of broadcast is a small addition to notifications.py.)
-    print(f"[{datetime.now()}] Push event: {title} – {body}")
 
-# ── Main polling loop (unchanged logic) ──────────────────
-async def check_live_updates():
+def _name(value, fallback=""):
+    """Extract a display name from an API object or string."""
+    if isinstance(value, dict):
+        return str(value.get("name") or fallback)
+    return str(value or fallback)
+
+
+def _participants(match):
+    """Return home and away participant names."""
+    home = "Home Team"
+    away = "Away Team"
+
+    for participant in match.get("participants") or []:
+        location = str(participant.get("meta", {}).get("location", "")).lower()
+        name = _name(participant, "Unknown Team")
+
+        if location == "home":
+            home = name
+        elif location == "away":
+            away = name
+
+    if home == "Home Team" or away == "Away Team":
+        match_name = match.get("name", "")
+        if isinstance(match_name, str) and " vs " in match_name:
+            left, right = match_name.split(" vs ", 1)
+            home = left.strip() if home == "Home Team" else home
+            away = right.strip() if away == "Away Team" else away
+
+    return home, away
+
+
+def _score(match):
+    """Extract participant scores from the Sportmonks response."""
+    scores = match.get("scores") or []
+
+    if isinstance(scores, dict):
+        home_score = scores.get("localteam_score", 0)
+        away_score = scores.get("visitorteam_score", 0)
+        return f"{home_score} - {away_score}"
+
+    home_id = None
+    away_id = None
+
+    for participant in match.get("participants") or []:
+        location = str(participant.get("meta", {}).get("location", "")).lower()
+        if location == "home":
+            home_id = participant.get("id")
+        elif location == "away":
+            away_id = participant.get("id")
+
+    home_score = 0
+    away_score = 0
+
+    for item in scores:
+        score_data = item.get("score") or {}
+        goals = score_data.get("goals", 0)
+        participant_id = item.get("participant_id")
+
+        try:
+            goals = int(goals or 0)
+        except (TypeError, ValueError):
+            goals = 0
+
+        if participant_id == home_id:
+            home_score = goals
+        elif participant_id == away_id:
+            away_score = goals
+
+    return f"{home_score} - {away_score}"
+
+
+def _event_type(event):
+    """Normalize the various event-type representations."""
+    event_type = event.get("type") or event.get("type_name") or ""
+
+    if isinstance(event_type, dict):
+        event_type = event_type.get("name", "")
+
+    normalized = str(event_type).strip().upper().replace(" ", "_")
+
+    if "GOAL" in normalized and "DISALLOWED" not in normalized:
+        return "GOAL"
+    if "YELLOW" in normalized:
+        return "YELLOWCARD"
+    if "RED" in normalized:
+        return "REDCARD"
+
+    return ""
+
+
+async def get_live_scores(competition=None):
+    """Fetch current in-play fixtures from Sportmonks API v3."""
     if not API_KEY:
-        print(f"[{datetime.now()}] Error: SPORTMONK_API_KEY missing.")
-        return
+        print(f"[{datetime.now()}] SPORTMONK_API_KEY missing.")
+        return []
 
     params = {
         "api_token": API_KEY,
-        "include": "events;scores;lineups.player;statistics.type;odds"
+        "include": "events;scores;participants;state;league",
     }
 
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(LIVESCORE_URL, params=params, timeout=10)
-            if resp.status_code != 200:
-                print(f"[{datetime.now()}] Sportmonks API Error: Status {resp.status_code}")
-                return
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(LIVESCORE_URL, params=params)
+            response.raise_for_status()
+            payload = response.json()
 
-            matches = resp.json().get("data", [])
-            active_match_ids = set()
+        matches = payload.get("data", [])
+        if isinstance(matches, dict):
+            matches = [matches]
+        if not isinstance(matches, list):
+            return []
 
-            for m in matches:
-                match_id = str(m.get("id"))
-                active_match_ids.add(match_id)
+        if competition:
+            query = str(competition).strip().lower()
 
-                home_team = m.get("home_team", {}).get("name", "Home Team")
-                away_team = m.get("away_team", {}).get("name", "Away Team")
-                match_status = m.get("status", "INPLAY")
+            def matches_competition(match):
+                league = match.get("league") or {}
+                league_name = _name(league).lower()
+                league_id = str(match.get("league_id", "")).lower()
+                match_name = str(match.get("name", "")).lower()
 
-                scores = m.get("score", {})
-                current_score = f"{scores.get('localteam_score', 0)} - {scores.get('visitorteam_score', 0)}"
+                return (
+                    query == league_id
+                    or query in league_name
+                    or query in match_name
+                )
 
-                events = m.get("events", [])
+            matches = [
+                match for match in matches
+                if matches_competition(match)
+            ]
 
-                if match_id not in MATCH_STATE_CACHE:
-                    MATCH_STATE_CACHE[match_id] = {
-                        "processed_event_ids": set(),
-                        "last_score": "0 - 0"
-                    }
+        return matches
 
-                cache = MATCH_STATE_CACHE[match_id]
+    except (httpx.HTTPError, ValueError) as exc:
+        print(f"[{datetime.now()}] Sportmonks request failed: {exc}")
+        return []
 
-                for event in sorted(events, key=lambda x: x.get("sort_order", 0)):
-                    event_id = str(event.get("id"))
 
-                    if event_id not in cache["processed_event_ids"]:
-                        event_type = event.get("type", "").upper()
-                        minute = event.get("minute")
-                        info = event.get("info", "")
+async def dispatch_live_event(payload):
+    """Persist a match-event notification for subscribed users."""
+    title = payload.get("match_title", "Live Match")
+    body = (
+        f"{payload.get('display_text', 'Match update')} "
+        f"| Score: {payload.get('current_score', '')}"
+    )
 
-                        if event_type in ["GOAL", "YELLOWCARD", "REDCARD"]:
-                            payload = {
-                                "match_id": match_id,
-                                "match_title": f"{home_team} vs {away_team}",
-                                "current_score": current_score,
-                                "update_type": event_type,
-                                "timeline_minute": minute,
-                                "status": match_status,
-                                "display_text": info or f"{event_type.replace('_', ' ').title()} at {minute}'"
-                            }
-                            # Fire‑and‑forget push
-                            asyncio.create_task(dispatch_live_event(payload))
+    data = {
+        "url": f"/sports?match={payload.get('match_id')}",
+    }
 
-                        cache["processed_event_ids"].add(event_id)
+    try:
+        count = await broadcast_notification(title, body, data)
+        print(
+            f"[{datetime.now()}] Match notification processed: "
+            f"{title}; subscribers notified: {count}"
+        )
+    except Exception as exc:
+        print(f"[{datetime.now()}] Notification delivery failed: {exc}")
 
-                cache["last_score"] = current_score
 
-            # Purge finished matches
-            finished = [m_id for m_id in MATCH_STATE_CACHE if m_id not in active_match_ids]
-            for m_id in finished:
-                del MATCH_STATE_CACHE[m_id]
+async def check_live_updates():
+    """Detect new goals and cards in currently live fixtures."""
+    matches = await get_live_scores()
+    if not matches:
+        return
 
-        except Exception as e:
-            print(f"[{datetime.now()}] Proxy loop error: {e}")
+    active_match_ids = set()
+
+    for match in matches:
+        match_id = str(match.get("id", ""))
+        if not match_id:
+            continue
+
+        active_match_ids.add(match_id)
+
+        events = match.get("events") or []
+        if not isinstance(events, list):
+            events = []
+
+        current_score = _score(match)
+        home_team, away_team = _participants(match)
+
+        if match_id not in MATCH_STATE_CACHE:
+            MATCH_STATE_CACHE[match_id] = {
+                "processed_event_ids": {
+                    str(event.get("id"))
+                    for event in events
+                    if event.get("id") is not None
+                },
+                "last_score": current_score,
+            }
+            continue
+
+        cache = MATCH_STATE_CACHE[match_id]
+
+        for event in sorted(
+            events,
+            key=lambda item: (
+                item.get("minute") or 0,
+                item.get("sort_order") or 0,
+            ),
+        ):
+            event_id = event.get("id")
+            if event_id is None:
+                event_id = (
+                    f"{event.get('type')}:{event.get('minute')}:"
+                    f"{event.get('player_id')}"
+                )
+
+            event_id = str(event_id)
+
+            if event_id in cache["processed_event_ids"]:
+                continue
+
+            cache["processed_event_ids"].add(event_id)
+
+            event_type = _event_type(event)
+            if event_type not in {"GOAL", "YELLOWCARD", "REDCARD"}:
+                continue
+
+            minute = event.get("minute")
+            info = (
+                event.get("info")
+                or event.get("addition")
+                or event_type.replace("_", " ").title()
+            )
+
+            await dispatch_live_event({
+                "match_id": match_id,
+                "match_title": f"{home_team} vs {away_team}",
+                "current_score": current_score,
+                "update_type": event_type,
+                "timeline_minute": minute,
+                "display_text": f"{info} at {minute}'" if minute is not None else str(info),
+            })
+
+        cache["last_score"] = current_score
+
+    for match_id in list(MATCH_STATE_CACHE):
+        if match_id not in active_match_ids:
+            del MATCH_STATE_CACHE[match_id]
+
 
 async def start_webhook_proxy_loop():
-    print(f"[{datetime.now()}] Live‑score proxy started (LOMINII Notifications).")
+    """Poll Sportmonks continuously without stopping FastAPI startup."""
+    print(f"[{datetime.now()}] Sportmonks live-score proxy started.")
+
     while True:
-        await check_live_updates()
+        try:
+            await check_live_updates()
+        except Exception as exc:
+            print(f"[{datetime.now()}] Live-score polling failed: {exc}")
+
         await asyncio.sleep(12)
+
 
 if __name__ == "__main__":
     try:

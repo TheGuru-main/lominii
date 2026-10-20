@@ -10,3 +10,5 @@ from .games import *
 from .ads import *
 from .admin import *
 from .crawler import *
+
+from .news import *
