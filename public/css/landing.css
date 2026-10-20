@@ -82,3 +82,50 @@ margin-bottom: 2.2rem;
         font-size: 1.9rem;
     }
 };
+
+
+/* Landing feature links and Font Awesome icons */
+.landing-container .logo-icon {
+    color: var(--accent);
+}
+
+.landing-container .logo-icon .fa {
+    font-size: 2.5rem;
+}
+
+.landing-features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem 1rem;
+    margin: 0.35rem 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.landing-features span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.landing-features .fa,
+.sub-tagline .fa {
+    color: var(--accent);
+}
+
+.landing-container .btn .fa {
+    margin-right: 0.35rem;
+}
+
+.landing-container .btn:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+@media (max-width: 480px) {
+    .landing-features {
+        gap: 0.65rem;
+        font-size: 0.82rem;
+    }
+}
