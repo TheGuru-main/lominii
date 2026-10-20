@@ -13,3 +13,5 @@ google-generativeai
 # Lomimail country-aware phone validation
 phonenumbers
 pycountry
+
+psycopg[binary]
