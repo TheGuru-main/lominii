@@ -33,7 +33,7 @@ class AIConversation(Base):
 
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("users.id"),
+        ForeignKey("public.users.id"),
         nullable=False,
         index=True,
     )
@@ -133,7 +133,7 @@ class AIMemory(Base):
 
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("users.id"),
+        ForeignKey("public.users.id"),
         nullable=False,
         index=True,
     )
