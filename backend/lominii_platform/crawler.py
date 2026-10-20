@@ -7,6 +7,8 @@ Enabled only when CRAWLER_ENABLED=true.
 
 import os
 import hashlib
+import ipaddress
+import socket
 import re
 
 import httpx
@@ -131,62 +133,128 @@ async def crawl_url(url: str, depth: int = 0) -> dict:
 # FETCH + LINK EXTRACTION
 # ==========================================================
 
+
+def is_safe_public_url(url: str) -> bool:
+    """Reject unsupported URLs and hosts resolving to non-public IPs."""
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        if not parsed.hostname or parsed.username or parsed.password:
+            return False
+        if parsed.port is not None:
+            expected_port = 443 if parsed.scheme == "https" else 80
+            if parsed.port != expected_port:
+                return False
+
+        host = parsed.hostname.rstrip(".").lower()
+        if host == "localhost" or host.endswith(".localhost"):
+            return False
+        if host.endswith(".local"):
+            return False
+
+        try:
+            addresses = [ipaddress.ip_address(host)]
+        except ValueError:
+            addresses = [
+                ipaddress.ip_address(item[4][0])
+                for item in socket.getaddrinfo(
+                    host, parsed.port or (443 if parsed.scheme == "https" else 80),
+                    type=socket.SOCK_STREAM,
+                )
+            ]
+
+        return bool(addresses) and all(ip.is_global for ip in addresses)
+    except (ValueError, OSError, socket.gaierror):
+        return False
+
+
 async def fetch_and_parse(url: str):
-    """Fetch HTML using configured HTTP limits and extract links."""
+    """Fetch bounded HTML, checking each redirect before following it."""
     url = normalize_url(url)
-    if not url:
+    if not url or not is_safe_public_url(url):
         return None, []
+
+    original_host = urlparse(url).hostname.lower()
+    current = url
 
     try:
         async with httpx.AsyncClient(
-            follow_redirects=True,
-            max_redirects=HTTP_FETCH_MAX_REDIRECTS,
+            follow_redirects=False,
             timeout=HTTP_FETCH_TIMEOUT_SECONDS,
             headers={"User-Agent": HTTP_FETCH_USER_AGENT},
         ) as client:
-            async with client.stream("GET", url) as response:
-                response.raise_for_status()
-
-                content_type = response.headers.get("content-type", "").lower()
-                if content_type and not (
-                    "text/html" in content_type
-                    or "application/xhtml+xml" in content_type
-                ):
+            for _ in range(max(0, HTTP_FETCH_MAX_REDIRECTS) + 1):
+                if not is_safe_public_url(current):
                     return None, []
 
-                length = response.headers.get("content-length")
-                if length:
-                    try:
-                        if int(length) > HTTP_FETCH_MAX_BYTES:
+                parsed_current = urlparse(current)
+                if parsed_current.hostname.lower() != original_host:
+                    return None, []
+
+                async with client.stream("GET", current) as response:
+                    if response.status_code in (301, 302, 303, 307, 308):
+                        location = response.headers.get("location")
+                        if not location:
                             return None, []
-                    except ValueError:
-                        pass
+                        target = normalize_url(urljoin(current, location))
+                        if not target:
+                            return None, []
+                        if urlparse(target).hostname.lower() != original_host:
+                            return None, []
+                        if not is_safe_public_url(target):
+                            return None, []
+                        current = target
+                        continue
 
-                chunks = []
-                total = 0
-                async for chunk in response.aiter_bytes():
-                    total += len(chunk)
-                    if total > HTTP_FETCH_MAX_BYTES:
+                    response.raise_for_status()
+
+                    content_type = response.headers.get(
+                        "content-type", ""
+                    ).lower()
+                    if content_type and not (
+                        "text/html" in content_type
+                        or "application/xhtml+xml" in content_type
+                    ):
                         return None, []
-                    chunks.append(chunk)
 
-                html = b"".join(chunks).decode(
-                    response.encoding or "utf-8",
-                    errors="replace",
-                )
+                    length = response.headers.get("content-length")
+                    if length:
+                        try:
+                            if int(length) > HTTP_FETCH_MAX_BYTES:
+                                return None, []
+                        except ValueError:
+                            pass
+
+                    chunks = []
+                    total = 0
+                    async for chunk in response.aiter_bytes():
+                        total += len(chunk)
+                        if total > HTTP_FETCH_MAX_BYTES:
+                            return None, []
+                        chunks.append(chunk)
+
+                    encoding = response.encoding or "utf-8"
+                    html = b"".join(chunks).decode(
+                        encoding, errors="replace"
+                    )
+                    break
+            else:
+                return None, []
 
         hrefs = re.findall(
             r"""href\s*=\s*["']?([^"' >]+)""",
             html,
             flags=re.IGNORECASE,
         )
+
         links = []
         for href in hrefs:
             if href.lower().startswith(
                 ("mailto:", "javascript:", "tel:", "data:")
             ):
                 continue
-            absolute = normalize_url(urljoin(url, href))
+            absolute = normalize_url(urljoin(current, href))
             if absolute:
                 links.append(absolute)
 
