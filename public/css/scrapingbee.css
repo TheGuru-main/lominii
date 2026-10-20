@@ -1,0 +1,102 @@
+/* LOMINII ScrapingBee video workspace */
+.sb-workspace {
+  margin: 2rem auto;
+  max-width: 1100px;
+  padding: 1.25rem;
+  border: 1px solid rgba(100, 116, 139, 0.25);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #172033;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.07);
+}
+
+.sb-heading { margin-bottom: 1.25rem; }
+.sb-eyebrow {
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.sb-heading h2 { margin: 0.4rem 0; }
+.sb-heading p, .sb-help, .sb-description {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.sb-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+}
+.sb-panel h3 { margin-top: 0; }
+
+.sb-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.sb-search-row input {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+}
+.sb-button {
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: #1d4ed8;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sb-button:disabled { opacity: 0.55; cursor: wait; }
+.sb-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+.sb-video-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #fff;
+}
+.sb-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #e2e8f0;
+}
+.sb-video-body { padding: 0.85rem; }
+.sb-video-body h4 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+.sb-description { font-size: 0.9rem; overflow-wrap: anywhere; }
+.sb-source { color: #64748b; overflow-wrap: anywhere; }
+.sb-video-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+.sb-link { color: #1d4ed8; font-weight: 700; }
+.sb-remove { background: #475569; }
+.sb-empty { color: #64748b; }
+.sb-status { min-height: 1.5em; color: #166534; }
+.sb-status.sb-error { color: #b91c1c; }
+
+@media (max-width: 600px) {
+  .sb-workspace { margin: 1rem 0; padding: 0.8rem; }
+  .sb-panel { padding: 0.8rem; }
+  .sb-search-row .sb-button { width: 100%; }
+}

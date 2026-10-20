@@ -3,6 +3,7 @@
 
 class NSID:
     SEARCH = 0
+    MESSAGING = 2
     GAMES = 3
     SHOP = 4
     CRAWLER = 5
@@ -15,6 +16,7 @@ class NSID:
         names = {
             0: "Search",
             1: "News",
+            2: "Messaging",
             3: "Games",
             4: "Shop",
             5: "Crawler",

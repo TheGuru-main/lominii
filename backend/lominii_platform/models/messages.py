@@ -83,7 +83,7 @@ class Message(Base):
 
     nsid = Column(
         SmallInteger,
-        default=NSID.SOCIAL
+        default=NSID.MESSAGING
     )
 
     sender = relationship(
