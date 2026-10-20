@@ -27,9 +27,15 @@ CRAWLER_ENABLED = (
 CRAWLER_DEPTH = int(os.getenv("CRAWLER_DEPTH", "2"))
 CRAWLER_MAX_PAGES = int(os.getenv("CRAWLER_MAX_PAGES", "500"))
 
+HTTP_FETCH_TIMEOUT_SECONDS = float(os.getenv("HTTP_FETCH_TIMEOUT_SECONDS", "10"))
+HTTP_FETCH_MAX_REDIRECTS = int(os.getenv("HTTP_FETCH_MAX_REDIRECTS", "5"))
+HTTP_FETCH_MAX_BYTES = int(os.getenv("HTTP_FETCH_MAX_BYTES", "2000000"))
+HTTP_FETCH_MAX_LINKS = int(os.getenv("HTTP_FETCH_MAX_LINKS", "100"))
+HTTP_FETCH_USER_AGENT = os.getenv("HTTP_FETCH_USER_AGENT", "LOMINII-Crawler/1.0")
+
 CRAWLER_K = 27
 CRAWLER_D = 27
-CRAWLER_C = 26
+CRAWLER_C = 56
 CRAWLER_R = 64
 
 
@@ -126,57 +132,69 @@ async def crawl_url(url: str, depth: int = 0) -> dict:
 # ==========================================================
 
 async def fetch_and_parse(url: str):
-    """
-    Fetch a page and return:
+    """Fetch HTML using configured HTTP limits and extract links."""
+    url = normalize_url(url)
+    if not url:
+        return None, []
 
-    (
-        page_html,
-        outgoing_links
-    )
-    """
+    try:
+        async with httpx.AsyncClient(
+            follow_redirects=True,
+            max_redirects=HTTP_FETCH_MAX_REDIRECTS,
+            timeout=HTTP_FETCH_TIMEOUT_SECONDS,
+            headers={"User-Agent": HTTP_FETCH_USER_AGENT},
+        ) as client:
+            async with client.stream("GET", url) as response:
+                response.raise_for_status()
 
-    async with httpx.AsyncClient() as client:
+                content_type = response.headers.get("content-type", "").lower()
+                if content_type and not (
+                    "text/html" in content_type
+                    or "application/xhtml+xml" in content_type
+                ):
+                    return None, []
 
-        try:
+                length = response.headers.get("content-length")
+                if length:
+                    try:
+                        if int(length) > HTTP_FETCH_MAX_BYTES:
+                            return None, []
+                    except ValueError:
+                        pass
 
-            response = await client.get(
-                url,
-                follow_redirects=True,
-                timeout=10,
-            )
+                chunks = []
+                total = 0
+                async for chunk in response.aiter_bytes():
+                    total += len(chunk)
+                    if total > HTTP_FETCH_MAX_BYTES:
+                        return None, []
+                    chunks.append(chunk)
 
-            response.raise_for_status()
+                html = b"".join(chunks).decode(
+                    response.encoding or "utf-8",
+                    errors="replace",
+                )
 
-            html = response.text
-
-            hrefs = re.findall(
-                r'href=[\'"]?([^\'" >]+)',
-                html,
-            )
-
-            links = []
-
-            for href in hrefs:
-
-                if href.startswith(("mailto:", "javascript:", "tel:")):
-                    continue
-
-                absolute = urljoin(url, href)
-
-                absolute = normalize_url(absolute)
-
-                if not absolute:
-                    continue
-
+        hrefs = re.findall(
+            r"""href\s*=\s*["']?([^"' >]+)""",
+            html,
+            flags=re.IGNORECASE,
+        )
+        links = []
+        for href in hrefs:
+            if href.lower().startswith(
+                ("mailto:", "javascript:", "tel:", "data:")
+            ):
+                continue
+            absolute = normalize_url(urljoin(url, href))
+            if absolute:
                 links.append(absolute)
 
-            links = list(dict.fromkeys(links))
+        links = list(dict.fromkeys(links))
+        return html, links[:max(0, HTTP_FETCH_MAX_LINKS)]
 
-            return html, links[:100]
-
-        except Exception:
-
-            return None, []
+    except Exception:
+        return None, []
 
 
 # ==========================================================

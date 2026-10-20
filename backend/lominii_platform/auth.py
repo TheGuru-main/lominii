@@ -6,7 +6,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from .bubblejumbo import create_token, verify_token
 
-SECRET_KEY = os.getenv("JWT_SECRET", "changeme")
+SECRET_KEY = os.getenv("JWT_SECRET", "").strip()
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET must be configured in the environment before startup"
+    )
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

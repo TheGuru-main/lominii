@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import httpx
 import os
+from urllib.parse import quote
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +36,7 @@ from lominii_platform.models.search import (
 )
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
+GNEWS_API_KEY = os.getenv("GNEWS_API_KEY", "").strip()
 
 CACHE_TTL_ANONYMOUS = 5
 CACHE_TTL_AUTHENTICATED = 300
@@ -106,23 +108,55 @@ async def unified_search(
         except Exception:
             gsg_data = None
 
+
     # 8. Fetch external sources (parallel)
-    async with httpx.AsyncClient() as client:
-        dict_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{norm_query}"
-        news_url = f"https://gnews.io/api/v4/search?q={norm_query}&lang=en&max=6&apikey=demo"
-        dict_task = client.get(dict_url)
-        news_task = client.get(news_url)
-        dict_resp, news_resp = await asyncio.gather(dict_task, news_task)
+    dict_url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{quote(norm_query, safe='')}"
+    dict_resp = None
+    news_resp = None
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        tasks = [client.get(dict_url)]
+        if GNEWS_API_KEY:
+            tasks.append(
+                client.get(
+                    "https://gnews.io/api/v4/search",
+                    params={
+                        "q": norm_query,
+                        "lang": "en",
+                        "max": 6,
+                        "apikey": GNEWS_API_KEY,
+                    },
+                )
+            )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    if results and isinstance(results[0], httpx.Response):
+        dict_resp = results[0]
+    if len(results) > 1 and isinstance(results[1], httpx.Response):
+        news_resp = results[1]
 
     definition = None
-    if dict_resp.status_code == 200:
-        dict_data = dict_resp.json()
-        definition = dict_data[0]["meanings"][0]["definitions"][0]["definition"] if dict_data else None
+    if dict_resp is not None and dict_resp.status_code == 200:
+        try:
+            dict_data = dict_resp.json()
+            definition = (
+                dict_data[0]["meanings"][0]["definitions"][0]["definition"]
+                if dict_data else None
+            )
+        except (ValueError, KeyError, IndexError, TypeError):
+            definition = None
 
     news_articles = []
-    if news_resp.status_code == 200:
-        news_data = news_resp.json()
-        news_articles = [{"title": a["title"], "url": a["url"]} for a in news_data.get("articles", [])[:6]]
+    if news_resp is not None and news_resp.status_code == 200:
+        try:
+            news_data = news_resp.json()
+            news_articles = [
+                {"title": a["title"], "url": a["url"]}
+                for a in news_data.get("articles", [])[:6]
+                if isinstance(a, dict) and a.get("title") and a.get("url")
+            ]
+        except (ValueError, KeyError, TypeError):
+            news_articles = []
 
     # 8.5 Wikipedia — optional user preference
     wiki_articles = []

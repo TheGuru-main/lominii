@@ -10,7 +10,11 @@ from sqlalchemy import select
 from lominii_platform.models.public import BubbleJumboFailure, User
 
 
-SECRET_KEY = os.getenv("JWT_SECRET", "changeme")
+SECRET_KEY = os.getenv("JWT_SECRET", "").strip()
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET must be configured in the environment before startup"
+    )
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))
 
