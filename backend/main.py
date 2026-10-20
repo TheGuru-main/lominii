@@ -52,6 +52,7 @@ async def startup():
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS news"))
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS game"))
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS messaging"))
+        await connection.execute(text("CREATE SCHEMA IF NOT EXISTS crawler"))
         await connection.run_sync(Base.metadata.create_all)
 
     asyncio.create_task(start_webhook_proxy_loop())
