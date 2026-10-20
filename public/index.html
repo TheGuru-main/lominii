@@ -50,7 +50,7 @@
 
   <div id="dashboardView" style="display: none;">
     <header class="header">
-      <a class="logo" href="#"><span class="logo-icon">♾️</span><span>LOMINII</span></a>
+      <a class="logo" href="#" id="homeLogo"><span class="logo-icon">♾️</span><span>LOMINII</span></a>
       <div class="user-icon" id="userIcon">A
         <div class="dropdown" id="userDropdown">
           <a href="#" id="btnProfile">My Profile</a>
@@ -179,16 +179,15 @@
   </div>
 </div>
 
- ========================================================= -->
-<!-- !-- GAMES WORKSPACE -->>
-<!-- ========================================================= --><
+<!-- ========================================================= -->
+<!-- GAMES WORKSPACE -->
+<!-- ========================================================= -->
 
       <div id="gamesView" style="display: none;">
-        <h2>🎮 Games</h2>
-        <div class="game-carousel" id="gameCarousel">
-  <!-- populated by script.js -->
-</div>
-        <div class="placeholder">More games coming soon!</div>
+        <h2>🎮 LOMINII Play Space</h2>
+        <div class="placeholder" role="status">
+          Play Space is currently unavailable. Game access is coming soon.
+        </div>
       </div>
 
 
@@ -684,7 +683,7 @@
         <!-- <!-- EDU WORKSPACE -->>
         <!-- =============================================== -->
 
-   <div id="eduView">
+   <div id="eduView" style="display:none;">
 <div id="switchTeacherTab" class="edu-tab">
 
 <div id="switchStudentTab" class="edu-tab active">
@@ -771,12 +770,31 @@
       </div>
     </div>
 
-    <nav class="footer-nav">
-      <div class="nav-icon active" data-workspace="Search"><span></span></div>
-      <div class="nav-icon" data-workspace="games"><span>Games</span></div>
-      <div class="nav-icon" data-workspace="Social"><span>Social</span></div>
-      <div class="nav-icon" data-workspace="edu"><span>Education</span></div>
-      <div class="nav-icon" data-workspace="quran"><span>Search</span></div>
+    <nav class="footer-nav" aria-label="LOMINII navigation">
+      <div class="nav-icon active" data-destination="search"
+           role="button" tabindex="0" aria-label="Search">
+        <i class="fa fa-search" aria-hidden="true"></i><span>Search</span>
+      </div>
+      <div class="nav-icon" data-destination="play"
+           role="button" tabindex="0" aria-label="LOMINII Play">
+        <i class="fa fa-gamepad" aria-hidden="true"></i><span>Play</span>
+      </div>
+      <div class="nav-icon" data-destination="research"
+           role="button" tabindex="0" aria-label="Research and news">
+        <i class="fa fa-flask" aria-hidden="true"></i><span>Research</span>
+      </div>
+      <div class="nav-icon" data-destination="discovery"
+           role="button" tabindex="0" aria-label="Video discovery">
+        <i class="fa fa-compass" aria-hidden="true"></i><span>Discover</span>
+      </div>
+      <div class="nav-icon" data-destination="quran"
+           role="button" tabindex="0" aria-label="Quran, coming soon">
+        <i class="fa fa-book" aria-hidden="true"></i><span>Quran</span>
+      </div>
+      <div class="nav-icon" data-destination="connect"
+           role="button" tabindex="0" aria-label="Connect">
+        <i class="fa fa-external-link" aria-hidden="true"></i><span>Connect</span>
+      </div>
     </nav>
 
     <div class="back-toggle" id="backToggle" onclick="goHome()">← Back to Search</div>
@@ -789,8 +807,6 @@
 <script src="js/newsnotificationmanager.js"></script>
 <script src="js/search.js"></script>
 <script src="js/social.js"></script>
-<script src="js/games.js"></script>
-<script src="js/PerformSearch.js"></script>
 <script src="js/edu.js"></script>
 <script src="js/quran.js"></script>
 <script src="js/settings.js"></script>

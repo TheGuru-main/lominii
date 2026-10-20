@@ -43,7 +43,11 @@ function switchToWorkspace(workspace) {
 
   // Update footer icons
   footerIcons.forEach(i => i.classList.remove('active'));
-  const activeIcon = document.querySelector(`.nav-icon[data-workspace="${workspace}"]`);
+  const destination = workspace === 'home' ? 'search'
+    : workspace === 'games' ? 'play' : workspace;
+  const activeIcon = document.querySelector(
+    `.nav-icon[data-destination="${destination}"]`
+  );
   if (activeIcon) activeIcon.classList.add('active');
 
   // Toggle home dropdown visibility
@@ -82,8 +86,97 @@ function switchToWorkspace(workspace) {
 function goHome() { switchToWorkspace('home'); }
 
 // ── Footer navigation listeners ─────────
+function navigateToDestination(destination) {
+  const setActive = () => {
+    footerIcons.forEach(icon => {
+      icon.classList.toggle(
+        'active',
+        icon.dataset.destination === destination
+      );
+    });
+  };
+
+  switch (destination) {
+    case 'search':
+      switchToWorkspace('home');
+      setActive();
+      break;
+
+    case 'play':
+      switchToWorkspace('games');
+      setActive();
+      break;
+
+    case 'research':
+      switchToWorkspace('home');
+      setActive();
+      requestAnimationFrame(() => {
+        document.getElementById('cardNews')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      });
+      break;
+
+    case 'discovery':
+      switchToWorkspace('home');
+      setActive();
+
+      const scrollToDiscovery = (attempt = 0) => {
+        const target = document.getElementById('scrapingbeeSection');
+
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          return;
+        }
+
+        if (attempt < 20) {
+          window.setTimeout(() => scrollToDiscovery(attempt + 1), 100);
+          return;
+        }
+
+        alert('Video discovery is not available right now. Please try again later.');
+      };
+
+      requestAnimationFrame(() => scrollToDiscovery());
+      break;
+
+    case 'quran':
+      alert('Quran is unavailable — coming soon.');
+      break;
+
+    case 'connect':
+      window.open(
+        'https://hi-mate-messenger-apiv1-0-0-1frontr.onrender.com',
+        '_blank',
+        'noopener,noreferrer'
+      );
+      break;
+  }
+}
+
 footerIcons.forEach(icon => {
-  icon.addEventListener('click', () => switchToWorkspace(icon.dataset.workspace));
+  const activate = () => navigateToDestination(icon.dataset.destination);
+
+  icon.addEventListener('click', activate);
+  icon.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      activate();
+    }
+  });
+});
+
+document.getElementById('openGames')?.addEventListener('click', () => {
+  navigateToDestination('play');
+});
+
+document.getElementById('homeLogo')?.addEventListener('click', event => {
+  event.preventDefault();
+  navigateToDestination('search');
 });
 
 // ── User dropdown ───────────────────────

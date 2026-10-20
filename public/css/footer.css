@@ -1,6 +1,6 @@
 /* ===== FOOTER NAVIGATION ===== */
 
-./* =========================================================
+/* =========================================================
    FOOTER + BOTTOM NAV
    ========================================================= */
 
@@ -71,4 +71,25 @@
 
 .nav-icon.active{
     color: var(--accent);
+}
+
+/* Compact six-destination navigation on narrow screens */
+@media (max-width: 480px) {
+  .footer-nav {
+    justify-content: space-between;
+    gap: 0;
+    padding: 0.45rem 0.15rem calc(0.45rem + env(safe-area-inset-bottom));
+  }
+
+  .footer-nav .nav-icon {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.25rem 0.05rem;
+    font-size: 1.15rem;
+  }
+
+  .footer-nav .nav-icon span {
+    font-size: 0.58rem;
+    white-space: nowrap;
+  }
 }
