@@ -1,6 +1,6 @@
 """Football Live Scores Router (Sportmonk)"""
 from fastapi import APIRouter
-from platform.sportmonk_service import get_live_scores
+from lominii_platform.sportmonk_service import get_live_scores
 
 router = APIRouter(prefix="/api/football", tags=["Football"])
 

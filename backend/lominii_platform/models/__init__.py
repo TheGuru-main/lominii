@@ -1,31 +1,12 @@
 """
-LOMINII ORM Models
-Registers every SQLAlchemy model with Base.metadata.
+LOMINII Core ORM Models.
+Social and EDU are preserved separately for extraction to Himate.
 """
 
-# Public
 from .public import *
-
-# Search
 from .search import *
-
-# Messaging
 from .messages import *
-
-# Social
-from .social import *
-
-# Education
-from .edu import *
-
-# Games
 from .games import *
-
-# Ads
 from .ads import *
-
-# Admin
 from .admin import *
-
-# Crawler
 from .crawler import *

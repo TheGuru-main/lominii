@@ -1,8 +1,8 @@
 """Admin Crawler Routes"""
 from fastapi import APIRouter, Depends, HTTPException
-from platform.auth import get_current_user
-from platform.crawler import CRAWLER_ENABLED, crawl_url
-from platform.pagerank import compute_pagerank
+from lominii_platform.auth import get_current_user
+from lominii_platform.crawler import CRAWLER_ENABLED, crawl_url
+from lominii_platform.pagerank import compute_pagerank
 
 router = APIRouter(prefix="/api/admin/crawler", tags=["Admin"])
 

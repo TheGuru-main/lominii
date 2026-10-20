@@ -7,23 +7,23 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place, elastic_cloud
-from platform.ai.prompt_builder import build_prompt
-from platform.ai.knowledge import (
+from lominii_platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place, elastic_cloud
+from lominii_platform.ai.prompt_builder import build_prompt
+from lominii_platform.ai.knowledge import (
     get_knowledge,
     save_knowledge,
 )
-from platform.content_filter import is_blocked, is_ai_blocked
-from platform.auth import get_current_user
-from platform.database import get_db
-from platform.gsg import gps_to_gsg
-from platform.intent_analyzer import analyze
-from platform.ai.gateway import generate
-from platform.wikipedia import search_wikipedia
+from lominii_platform.content_filter import is_blocked, is_ai_blocked
+from lominii_platform.auth import get_current_user
+from lominii_platform.database import get_db
+from lominii_platform.gsg import gps_to_gsg
+from lominii_platform.intent_analyzer import analyze
+from lominii_platform.ai.gateway import generate
+from lominii_platform.wikipedia import search_wikipedia
 
 # (public / search schemas)
-from platform.models.public import User
-from platform.models.search import (
+from lominii_platform.models.public import User
+from lominii_platform.models.search import (
     Search,
     Trending,
     Correction,
@@ -124,35 +124,63 @@ async def unified_search(
         news_data = news_resp.json()
         news_articles = [{"title": a["title"], "url": a["url"]} for a in news_data.get("articles", [])[:6]]
 
-# 8.5 Wikipedia (if user enabled it)
-    wiki_articles = [] if user and user.news_preferences and user.news_preferences.get("wikipedia", False):
-    wiki_articles = await search_wikipedia(norm_query, lang=lang, limit=3)
+    # 8.5 Wikipedia — optional user preference
+    wiki_articles = []
+    preferences = user.news_preferences if user else {}
 
-    # 9. AI Summary – using Gemini + Hugging Face fallback
+    if isinstance(preferences, dict) and preferences.get("wikipedia", False):
+        try:
+            wiki_articles = await search_wikipedia(
+                norm_query,
+                lang=lang,
+                limit=3,
+            )
+        except Exception as exc:
+            print(f"Wikipedia search failed: {exc}")
+            wiki_articles = []
+
+    # 9. AI Summary — skip when the query is blocked
     ai_summary = None
+
     if not is_ai_blocked(query):
         sources = f"""Dictionary: {definition or "None"}
-    News: {news_articles}
-    Wikipedia: {wiki_articles}"""
+News: {news_articles}
+Wikipedia: {wiki_articles}"""
 
-prompt = build_prompt(
-    query=norm_query,
-    sources=sources,
-    country=country,
-    language=lang,
-    tier=tier,
-    workspace="search",
-    intent=ctx.get("intent"),
-)
+        try:
+            prompt = build_prompt(
+                query=norm_query,
+                sources=sources,
+                country=country,
+                language=lang,
+                tier=tier,
+                workspace="search",
+                intent=ctx.get("intent"),
+            )
 
-ai_summary = await generate(
-    prompt,
-    intent=ctx.get("intent"),
-    workspace="search",
-    user_id=str(user.id) if user else None,
-)  
-    else:
-        ai_summary = None
+            ai_summary = await generate(
+                prompt,
+                intent=ctx.get("intent"),
+                workspace="search",
+                user_id=str(user.id) if user else None,
+            )
+        except Exception as exc:
+            print(f"Search AI summary failed: {exc}")
+            ai_summary = None
+
+    # 9.5 Existing correction table — spelling suggestion
+    correction = (
+        await db.execute(
+            select(Correction)
+            .where(Correction.misspelled.ilike(norm_query))
+            .order_by(Correction.confidence.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+    did_you_mean = None
+    if correction and correction.corrected.strip().lower() != norm_query.lower():
+        did_you_mean = correction.corrected.strip()
 
     # 10. Build response
     response = {
@@ -167,7 +195,7 @@ ai_summary = await generate(
         "news": news_articles,
         "wikipedia": wiki_articles,
         "ai_summary": ai_summary,
-        "did_you_mean": None,
+        "did_you_mean": did_you_mean,
         "related_questions": [],
         "gsg_cell": gsg_data
     }

@@ -3,18 +3,24 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from platform.auth import verify_password, get_password_hash, create_access_token
-from platform.bubblejumbo import (
+from sqlalchemy.exc import IntegrityError
+from lominii_platform.lomimail import (
+    normalize_phone_uid,
+    generate_lomimail_address,
+    calculate_lomimail_placement,
+)
+from lominii_platform.auth import verify_password, get_password_hash, get_current_user
+from lominii_platform.bubblejumbo import (
     create_token as create_bjt,
     record_failure,
     reset_failures,
     get_required_copies,
     get_failure_count
 )
-from platform.content_filter import is_blocked
-from platform.database import get_db
-from platform.models.public import User, OTP
-from platform.otp_service import generate_otp, send_otp
+from lominii_platform.content_filter import is_blocked
+from lominii_platform.database import get_db
+from lominii_platform.models.public import User, OTP
+from lominii_platform.otp_service import generate_otp, send_otp
 import re
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -57,18 +63,21 @@ async def signup(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=409, detail="User already exists")
 
     # Create user
+    account_preferences = {"creator_role": creator_role}
+    if creator_role == "newscaster":
+        account_preferences["news_category"] = news_category
+
     user = User(
         email=email,
         full_name=full_name,
         password_hash=get_password_hash(password),
-        creator_role=creator_role,
-        news_category=news_category if creator_role == "newscaster" else None
+        news_preferences=account_preferences,
     )
     db.add(user)
     await db.commit()
 
     # Issue token (normal K=5, no failures yet)
-    token = create_bjt(full_name)
+    token = create_bjt(email)
     return {"access_token": token, "token_type": "bearer", "email": email}
 
 # ---------------------------------------------------------------------------
@@ -86,23 +95,23 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
 
     # Check credentials
-    if not user or not verify_password(password, user.password_hash):
-        fails = record_failure(email)
+    if not user or not user.password_hash or not verify_password(password, user.password_hash):
+        fails = await record_failure(email, db)
         raise HTTPException(
             status_code=401,
-            detail=f"Invalid credentials. Warning: account security increased after 5 failures. (Attempt {fails})"
+            detail=(
+                "Invalid credentials. Warning: account security "
+                f"increased after 5 failures. (Attempt {fails})"
+            ),
         )
-    fails = await record_failure(email, db)
 
-    # Successful login – reset failure counter and issue token with dynamic K
-    reset_failures(email)
-    copies = get_required_copies(email)   # normally 5, higher after an attack
-    token = create_bjt(user.full_name, copies=copies)
-
-    return {"access_token": token, "token_type": "bearer", "email": email}
-# On success:
-    await reset_failures(email, db)
+    # Preserve the current security level for this token, then reset failures.
     copies = await get_required_copies(email, db)
+    await reset_failures(email, db)
+
+    # Use email as the token identity for protected account endpoints.
+    token = create_bjt(email, copies=copies)
+    return {"access_token": token, "token_type": "bearer", "email": email}
 
 # ---------------------------------------------------------------------------
 # Guest Session
@@ -142,87 +151,284 @@ async def google_auth(request: Request, db: AsyncSession = Depends(get_db)):
             user.google_id = google_id
             await db.commit()
 
-    token = create_bjt(user.full_name)
+    token = create_bjt(user.email)
     return {"access_token": token, "token_type": "bearer", "email": user.email}
 
 # ---------------------------------------------------------------------------
 # Phone OTP – Request
 # ---------------------------------------------------------------------------
+
+def _validate_registration_phone(data):
+    """Validate an international phone number against the selected country."""
+    try:
+        import phonenumbers
+    except ImportError:
+        raise HTTPException(
+            status_code=503,
+            detail="Phone validation dependency missing; install phonenumbers.",
+        )
+
+    raw_phone = data.get("phone", "")
+    region = data.get("country_iso2", "")
+    country = data.get("country", "")
+
+    if not isinstance(region, str) or len(region.strip()) != 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Select a country and send its two-letter country_iso2 code.",
+        )
+
+    region = region.strip().upper()
+    if region not in phonenumbers.SUPPORTED_REGIONS:
+        raise HTTPException(status_code=400, detail="Unsupported country code.")
+
+    if not isinstance(country, str) or not country.strip():
+        raise HTTPException(status_code=400, detail="Country is required.")
+
+    try:
+        import pycountry
+        selected_country = pycountry.countries.lookup(country.strip())
+    except (LookupError, ImportError):
+        raise HTTPException(status_code=400, detail="Country not recognized.")
+
+    if selected_country.alpha_2 != region:
+        raise HTTPException(
+            status_code=400,
+            detail="Selected country and country_iso2 do not match.",
+        )
+
+    country = selected_country.name
+
+    try:
+        phone = normalize_phone_uid(raw_phone)
+        parsed = phonenumbers.parse(phone, region)
+    except (ValueError, phonenumbers.NumberParseException) as exc:
+        raise HTTPException(status_code=400, detail="Invalid phone number.") from exc
+
+    if not phonenumbers.is_valid_number(parsed):
+        raise HTTPException(status_code=400, detail="Invalid phone number.")
+
+    if not phonenumbers.is_valid_number_for_region(parsed, region):
+        raise HTTPException(
+            status_code=400,
+            detail="Phone number does not match the selected country.",
+        )
+
+    return phone, region, country.strip()
+
+
+def _profile_text(data, key, limit=150, required=False):
+    value = data.get(key, "")
+    if value is None:
+        value = ""
+    if not isinstance(value, str):
+        raise HTTPException(status_code=400, detail=f"{key} must be text.")
+    value = value.strip()
+    if len(value) > limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{key} must not exceed {limit} characters.",
+        )
+    if required and not value:
+        raise HTTPException(status_code=400, detail=f"{key} is required.")
+    return value or None
+
+
 @router.post("/phone/request")
 async def phone_request(request: Request, db: AsyncSession = Depends(get_db)):
-    data = await request.json()
-    phone = data.get("phone", "").strip()
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number required")
+    try:
+        data = await request.json()
+    except (ValueError, UnicodeDecodeError):
+        raise HTTPException(status_code=400, detail="Invalid JSON request body")
+
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
+
+    phone, region, country = _validate_registration_phone(data)
 
     otp_code = generate_otp()
-    expires = datetime.utcnow() + timedelta(minutes=5)
+    otp_record = OTP(
+        phone=phone,
+        code=otp_code,
+        expires_at=datetime.utcnow() + timedelta(minutes=5),
+        verified=False,
+    )
+    db.add(otp_record)
 
-    otp_entry = OTP(phone=phone, code=otp_code, expires_at=expires)
-    db.add(otp_entry)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Could not create OTP request.")
 
-    success = await send_otp(phone, otp_code)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
+    try:
+        sent = await send_otp(phone, otp_code)
+    except Exception:
+        sent = False
 
-    return {"message": "OTP sent successfully"}
+    if not sent:
+        raise HTTPException(status_code=502, detail="OTP delivery failed. Request a new code.")
 
-# ---------------------------------------------------------------------------
-# Phone OTP – Verify
-# ---------------------------------------------------------------------------
+    return {
+        "message": "OTP sent successfully",
+        "phone": phone,
+        "country": country,
+        "country_iso2": region,
+        "expires_in_seconds": 300,
+    }
+
+
 @router.post("/phone/verify")
 async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
-    data = await request.json()
-    phone = data.get("phone", "").strip()
-    otp_input = data.get("otp", "").strip()
-    full_name = data.get("full_name", "").strip()
+    try:
+        data = await request.json()
+    except (ValueError, UnicodeDecodeError):
+        raise HTTPException(status_code=400, detail="Invalid JSON request body")
 
-    if not phone or not otp_input or not full_name:
-        raise HTTPException(status_code=400, detail="Missing fields")
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
 
-    otp_record = (await db.execute(
-        select(OTP).where(OTP.phone == phone, OTP.verified == False)
-        .order_by(OTP.created_at.desc()).limit(1)
-    )).scalar_one_or_none()
+    phone, region, country = _validate_registration_phone(data)
+    otp_input = data.get("otp", "")
+
+    if not isinstance(otp_input, str) or not otp_input.strip():
+        raise HTTPException(status_code=400, detail="OTP is required")
+    otp_input = otp_input.strip()
+
+    otp_record = (
+        await db.execute(
+            select(OTP)
+            .where(OTP.phone == phone, OTP.verified.is_(False))
+            .order_by(OTP.created_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
 
     if not otp_record:
         raise HTTPException(status_code=400, detail="No OTP requested for this number")
-
     if datetime.utcnow() > otp_record.expires_at:
-        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
-
+        raise HTTPException(status_code=400, detail="OTP expired. Request a new code.")
     if otp_record.code != otp_input:
         raise HTTPException(status_code=400, detail="Invalid OTP")
 
-    otp_record.verified = True
-    await db.commit()
+    users = (
+        await db.execute(
+            select(User).where((User.lomimail_uid == phone) | (User.phone == phone))
+        )
+    ).scalars().all()
 
-    user = (await db.execute(select(User).where(User.phone == phone))).scalar_one_or_none()
-    if not user:
+    if len(users) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail="This phone matches multiple accounts; reconciliation is required.",
+        )
+
+    user = users[0] if users else None
+
+    if user is None:
+        full_name = data.get("full_name")
+        password = data.get("password")
+
+        if not isinstance(full_name, str) or not full_name.strip():
+            raise HTTPException(status_code=400, detail="Full name is required.")
+        full_name = full_name.strip()
+
+        if not isinstance(password, str) or len(password) < 6:
+            raise HTTPException(
+                status_code=400,
+                detail="Password is required and must be at least 6 characters.",
+            )
+
+        state = _profile_text(data, "state", 100, required=True)
+        lga = _profile_text(data, "lga", 100, required=True)
+        city = _profile_text(data, "city", 100, required=True)
+        community1 = _profile_text(
+            data, "primary_community_1", 150, required=True
+        )
+        community2 = _profile_text(data, "primary_community_2", 150)
+        picture = _profile_text(data, "profile_picture_url", 500)
+        additional_image = _profile_text(data, "additional_image_url", 500)
+
         user = User(
             email=f"{phone}@lominii.local",
             full_name=full_name,
+            password_hash=get_password_hash(password),
             phone=phone,
-            password_hash=""
+            country=country,
+            state=state,
+            lga=lga,
+            city=city,
+            primary_community_1=community1,
+            primary_community_2=community2,
+            profile_picture_url=picture,
+            additional_image_url=additional_image,
         )
         db.add(user)
+        await db.flush()
+    else:
+        # Existing accounts keep their established name, password and profile.
+        user.phone = phone
+
+    if not user.lomimail_address:
+        result = await db.execute(
+            select(User.lomimail_address).where(
+                User.lomimail_address.is_not(None)
+            )
+        )
+        existing_addresses = [row[0] for row in result.all() if row[0]]
+        try:
+            user.lomimail_address = generate_lomimail_address(
+                user.full_name, existing_addresses
+            )
+        except ValueError as exc:
+            await db.rollback()
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    placement = calculate_lomimail_placement(user.full_name, phone)
+    user.lomimail_uid = phone
+    user.phone_verified = True
+    user.lomimail_handshake_at = datetime.utcnow()
+    user.lomimail_startrow = placement["start_row"]
+    otp_record.verified = True
+
+    try:
         await db.commit()
+        await db.refresh(user)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Identity conflict occurred. Please retry verification.",
+        )
 
-    token = create_bjt(full_name)
-    return {"access_token": token, "token_type": "bearer", "phone": phone}
+    token = create_bjt(user.email)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "phone": phone,
+        "country": getattr(user, "country", None) or country,
+        "lomimail_address": user.lomimail_address,
+        "uID": user.lomimail_uid,
+        "full_name": user.full_name,
+        "start_row": user.lomimail_startrow,
+        "profile": {
+            "state": getattr(user, "state", None),
+            "lga": getattr(user, "lga", None),
+            "city": getattr(user, "city", None),
+            "primary_community_1": getattr(user, "primary_community_1", None),
+            "primary_community_2": getattr(user, "primary_community_2", None),
+            "profile_picture_url": getattr(user, "profile_picture_url", None),
+            "additional_image_url": getattr(user, "additional_image_url", None),
+        },
+    }
 
 
-# ---------------------------------------------------------------------------
-# Bubblejumbo attack and failure logs count Set-up
-# ---------------------------------------------------------------------------
-
-@router.get("/auth/failure-count")
+@router.get("/failure-count")
 async def failure_count(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     count = await get_failure_count(email, db)
     return {"failures": count}
 
-@router.post("/auth/reset-failures")
+@router.post("/reset-failures")
 async def reset_failures_endpoint(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     await reset_failures(email, db)
     return {"message": "Failure counter reset"}
@@ -231,7 +437,7 @@ async def reset_failures_endpoint(email: str = Depends(get_current_user), db: As
 # Preference setting.
 # ---------------------------------------------------------------------------
 
-@router.put("/auth/preferences")
+@router.put("/preferences")
 async def save_preferences(request: Request, db: AsyncSession = Depends(get_db), email: str = Depends(get_current_user)):
     data = await request.json()
     user = (await db.execute(select(User).where(User.email == email))).scalar_one()
@@ -253,7 +459,7 @@ async def save_preferences(request: Request, db: AsyncSession = Depends(get_db),
     return {"message": "Preferences saved"}
 
 
-@router.get("/auth/preferences")
+@router.get("/preferences")
 async def get_preferences(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     user = (await db.execute(select(User).where(User.email == email))).scalar_one()
     prefs = user.news_preferences or {}

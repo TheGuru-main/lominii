@@ -8,6 +8,8 @@ from sqlalchemy import (
     Float,
     DateTime,
     ForeignKey,
+    Index,
+    func,
     Boolean,
     JSON,
     Text,
@@ -40,6 +42,23 @@ class User(Base):
     google_id = Column(String(255), unique=True)
     phone = Column(String(20), unique=True)
 
+    # Optional profile fields; nullable for legacy-account compatibility.
+    country = Column(String(100), nullable=True)
+    state = Column(String(100), nullable=True)
+    lga = Column(String(100), nullable=True)
+    city = Column(String(100), nullable=True)
+    primary_community_1 = Column(String(150), nullable=True)
+    primary_community_2 = Column(String(150), nullable=True)
+    profile_picture_url = Column(String(500), nullable=True)
+    additional_image_url = Column(String(500), nullable=True)
+
+    # Lomimail identity layer. Nullable for legacy-account compatibility.
+    lomimail_address = Column(String(255), nullable=True)
+    lomimail_uid = Column(String(20), nullable=True)
+    phone_verified = Column(Boolean, nullable=False, default=False, server_default="false")
+    lomimail_handshake_at = Column(DateTime, nullable=True)
+    lomimail_startrow = Column(SmallInteger, nullable=True)
+
     occupation = Column(String(100))
     language = Column(String(10), default="en")
 
@@ -48,6 +67,22 @@ class User(Base):
     role = Column(String(20), default="user")
 
     created_at = Column(DateTime, server_default="now()")
+
+
+# These indexes enforce identity uniqueness in PostgreSQL and are also
+# registered with SQLAlchemy metadata for fresh database initialization.
+Index(
+    "uq_users_lomimail_address_ci",
+    func.lower(User.lomimail_address),
+    unique=True,
+    postgresql_where=User.lomimail_address.is_not(None),
+)
+Index(
+    "uq_users_lomimail_uid",
+    User.lomimail_uid,
+    unique=True,
+    postgresql_where=User.lomimail_uid.is_not(None),
+)
 
 
 class OTP(Base):

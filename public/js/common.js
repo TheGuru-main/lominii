@@ -130,7 +130,13 @@ document.getElementById('dropdownLogout')?.addEventListener('click', () => {
 // ── Landing buttons ─────────────────────
 document.getElementById('btnExplore')?.addEventListener('click', showDashboard);
 document.getElementById('btnLogin')?.addEventListener('click', showDashboard);
-document.getElementById('btnSignup')?.addEventListener('click', () => alert('Signup coming soon.'));
+document.getElementById('btnSignup')?.addEventListener('click', () => {
+  if (typeof window.openLomimailRegistration === 'function') {
+    window.openLomimailRegistration();
+  } else {
+    alert('Registration is still loading. Please try again.');
+  }
+});
 
 // ── Initial load ────────────────────────
 if (authToken) {

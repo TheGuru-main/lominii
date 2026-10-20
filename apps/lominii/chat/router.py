@@ -6,18 +6,18 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from platform.database import get_db
-from platform.auth import get_current_user
-from platform.content_filter import is_blocked, is_ai_blocked
-from platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place
-from platform.prompts import PROMPTS
-from platform.gsg import gps_to_gsg
-from platform.ai.gateway import generate
-from platform.intent_analyzer import analyze
-from platform.models.public import User, OTP
-from platform.models.news import NewsSubscription
+from lominii_platform.database import get_db
+from lominii_platform.auth import get_current_user
+from lominii_platform.content_filter import is_blocked, is_ai_blocked
+from lominii_platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place
+from lominii_platform.prompts import PROMPTS
+from lominii_platform.gsg import gps_to_gsg
+from lominii_platform.ai.gateway import generate
+from lominii_platform.intent_analyzer import analyze
+from lominii_platform.models.public import User, OTP
+from lominii_platform.models.news import NewsSubscription
 
-from platform.schemas import ChatResponse, GSPCellOut, NewsItem, ChatMessage, ChatRequest
+from lominii_platform.schemas import ChatResponse, GSPCellOut, NewsItem, ChatMessage, ChatRequest
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -123,7 +123,7 @@ async def chat(
             async with httpx.AsyncClient() as client:
                 hf_response = await client.post(
                     f"https://api-inference.huggingface.co/models/{HF_MODEL}",
-                    headers={"Authorization": f"Bearer {HF_API_KEY&&$$$&&###}"},
+                    headers={"Authorization": f"Bearer {HF_API_KEY}"},
                     json={"inputs": prompt},
                     timeout=15.0
                 )

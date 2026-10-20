@@ -33,4 +33,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
     payload = validate_token(token)
     if payload is None:
         raise HTTPException(status_code=401, detail="Invalid token")
-    return payload["sub"]
+
+    identity = payload.get("sub")
+    if not isinstance(identity, str) or not identity:
+        raise HTTPException(status_code=401, detail="Invalid token identity")
+
+    # Guest tokens cannot access routes requiring a registered account.
+    if identity.startswith("guest-"):
+        raise HTTPException(
+            status_code=403,
+            detail="A registered account is required",
+        )
+
+    return identity

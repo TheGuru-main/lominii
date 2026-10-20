@@ -3,19 +3,19 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from platform.database import get_db
-from platform.invitation_service import (
+from lominii_platform.database import get_db
+from lominii_platform.invitation_service import (
     create_invitation,
     get_invitation,
     accept_invitation,
     decline_invitation,
     user_pending_invitations,
 )
-from platform.reward_engine import RewardEngine
-from platform.auth import get_current_user
-from platform.models.public import User
-from platform.models.games import GameAchievement, GameSession, Leaderboard
-from platform.game_engine import (
+from lominii_platform.reward_engine import RewardEngine
+from lominii_platform.auth import get_current_user
+from lominii_platform.models.public import User
+from lominii_platform.models.games import GameAchievement, GameSession, Leaderboard
+from lominii_platform.game_engine import (
     create_room, join_room, leave_room, get_session,
     enter_matchmaking, leave_matchmaking
 )
@@ -32,7 +32,7 @@ VALID_GAMES = {
     "snooker",
 
 } 
-──────────────────────────────
+# ──────────────────────────────
 @router.get("/")
 async def list_games():
     return [
@@ -101,25 +101,33 @@ async def send_game_invitation(
     receiver_id = data.get("receiver_id")
     game_id = data.get("game_id")
 
-if game_id not in VALID_GAMES:
-    raise HTTPException(status_code=400, detail="Invalid game")
-
     if not receiver_id:
-        raise HTTPException(status_code=400, detail="receiver_id is required")
+        raise HTTPException(
+            status_code=400,
+            detail="receiver_id is required",
+        )
 
     if not game_id:
-        raise HTTPException(status_code=400, detail="game_id is required")
+        raise HTTPException(
+            status_code=400,
+            detail="game_id is required",
+        )
+
+    if game_id not in VALID_GAMES:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid game",
+        )
 
     invitation = await create_invitation(
         sender_id=email,
         receiver_id=receiver_id,
         workspace="games",
         destination=game_id,
-        payload=data.get("payload", {})
+        payload=data.get("payload", {}),
     )
 
     return invitation
-
 
 @router.get("/invite")
 async def my_game_invitations(
