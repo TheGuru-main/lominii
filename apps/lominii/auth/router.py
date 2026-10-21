@@ -327,7 +327,15 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
 
     if not otp_record:
         raise HTTPException(status_code=400, detail="No OTP requested for this number")
-    if datetime.utcnow() > otp_record.expires_at:
+    # PostgreSQL may return a timezone-aware expiry when the existing
+    # column is TIMESTAMPTZ, even if the ORM model was declared without tz.
+    expiry = otp_record.expires_at
+    now = (
+        datetime.now(expiry.tzinfo)
+        if expiry.tzinfo is not None and expiry.utcoffset() is not None
+        else datetime.utcnow()
+    )
+    if now > expiry:
         raise HTTPException(status_code=400, detail="OTP expired. Request a new code.")
     if otp_record.code != otp_input:
         raise HTTPException(status_code=400, detail="Invalid OTP")
