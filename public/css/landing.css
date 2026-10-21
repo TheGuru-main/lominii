@@ -129,3 +129,48 @@ margin-bottom: 2.2rem;
         font-size: 0.82rem;
     }
 }
+
+
+/* ── Landing page spacing and mobile clarity ───────────── */
+#landingView {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.landing-container {
+  width: min(100%, 560px);
+  margin-inline: auto;
+  gap: .85rem;
+}
+
+.landing-container .btn {
+  display: flex;
+  width: min(100%, 320px);
+  min-height: 48px;
+  flex: 0 0 auto;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.landing-container .tagline {
+  color: var(--text-secondary);
+}
+
+.landing-container .sub-tagline {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 480px) {
+  #landingView {
+    padding: 1.25rem .9rem;
+  }
+
+  .landing-container h1 {
+    font-size: 1.85rem;
+  }
+
+  .landing-container .btn {
+    width: 100%;
+    max-width: 340px;
+  }
+}

@@ -179,17 +179,237 @@ document.getElementById('homeLogo')?.addEventListener('click', event => {
   navigateToDestination('search');
 });
 
-// ── User dropdown ───────────────────────
+
+// ── User dropdown and account profile ───────────────────
 const userIcon = document.getElementById('userIcon');
 const userDropdown = document.getElementById('userDropdown');
-if (userIcon) {
-  userIcon.addEventListener('click', e => {
-    e.stopPropagation();
-    userDropdown.classList.toggle('show');
+
+function ensureAccountMenuItem(id, label) {
+  if (!userDropdown || document.getElementById(id)) return;
+
+  const link = document.createElement('a');
+  link.href = '#';
+  link.id = id;
+  link.textContent = label;
+
+  const logoutLink = userDropdown.querySelector('#btnLogout');
+  if (logoutLink) {
+    userDropdown.insertBefore(link, logoutLink);
+  } else {
+    userDropdown.appendChild(link);
+  }
+}
+
+ensureAccountMenuItem('btnSignupFromProfile', 'Create account');
+ensureAccountMenuItem('btnAboutLominii', 'About LOMINII');
+
+if (userIcon && userDropdown) {
+  // Replace the hard-coded "A" with a neutral profile stub.
+  const initialNode = Array.from(userIcon.childNodes).find(
+    node => node.nodeType === Node.TEXT_NODE && node.textContent.trim()
+  );
+
+  if (initialNode) initialNode.textContent = '👤 ';
+
+  userIcon.setAttribute('role', 'button');
+  userIcon.setAttribute('tabindex', '0');
+  userIcon.setAttribute('aria-label', 'Open account menu');
+  userIcon.setAttribute('aria-expanded', 'false');
+
+  const toggleUserMenu = event => {
+    event.stopPropagation();
+    const isOpen = userDropdown.classList.toggle('show');
+    userIcon.setAttribute('aria-expanded', String(isOpen));
+  };
+
+  userIcon.addEventListener('click', toggleUserMenu);
+  userIcon.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleUserMenu(event);
+    }
+  });
+
+  userDropdown.addEventListener('click', event => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener('click', () => {
+    userDropdown.classList.remove('show', 'open');
+    userIcon.setAttribute('aria-expanded', 'false');
   });
 }
-document.addEventListener('click', () => {
-  if (userDropdown) userDropdown.classList.remove('show');
+
+function closeUserMenu() {
+  if (userDropdown) userDropdown.classList.remove('show', 'open');
+  if (userIcon) userIcon.setAttribute('aria-expanded', 'false');
+}
+
+function openLominiiAccountPanel(section) {
+  let overlay = document.getElementById('lominiiAccountPanel');
+
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'lominiiAccountPanel';
+    overlay.className = 'lm-account-overlay';
+    overlay.hidden = true;
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'lmAccountTitle');
+
+    overlay.innerHTML = `
+      <section class="lm-account-card">
+        <header class="lm-account-header">
+          <div>
+            <p class="lm-account-eyebrow">LOMINII ACCOUNT</p>
+            <h2 id="lmAccountTitle">My Profile</h2>
+          </div>
+          <button type="button" id="lmAccountClose"
+            class="lm-account-close" aria-label="Close profile">&times;</button>
+        </header>
+
+        <section class="lm-account-section">
+          <h3>Account details</h3>
+          <div class="lm-account-row">
+            <span>Account type</span>
+            <strong id="lmAccountType">Free search</strong>
+          </div>
+          <div class="lm-account-row">
+            <span>Status</span>
+            <strong id="lmAccountStatus">Guest session</strong>
+          </div>
+          <div class="lm-account-row">
+            <span>Email</span>
+            <strong id="lmAccountEmail">Not provided</strong>
+          </div>
+          <div class="lm-account-row">
+            <span>Username</span>
+            <strong id="lmAccountUsername">Not provided</strong>
+          </div>
+          <p class="lm-account-note" id="lmAccountNote">
+            These details reflect information available in this browser session.
+          </p>
+        </section>
+
+        <section class="lm-account-section">
+          <h3>Free access</h3>
+          <p>
+            You can explore LOMINII search without completing registration.
+            Creating an account is a separate step.
+          </p>
+          <div class="lm-account-actions">
+            <button type="button" id="lmAccountSignup"
+              class="lm-account-primary">Create account</button>
+            <button type="button" id="lmAccountSignin"
+              class="lm-account-secondary">Sign in</button>
+          </div>
+        </section>
+
+        <section class="lm-account-section" id="lmAboutSection">
+          <h3>About LOMINII</h3>
+          <p>
+            LOMINII is designed to bring search, knowledge, learning,
+            research and discovery into one adaptive digital experience.
+          </p>
+          <p>
+            Explore freely, then create an account when you are ready
+            to access account-based features.
+          </p>
+        </section>
+      </section>`;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#lmAccountClose').addEventListener('click', () => {
+      overlay.hidden = true;
+    });
+
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) overlay.hidden = true;
+    });
+
+    overlay.querySelector('#lmAccountSignup').addEventListener('click', () => {
+      overlay.hidden = true;
+      if (typeof window.openLomimailRegistration === 'function') {
+        window.openLomimailRegistration();
+      } else {
+        alert('Registration is still loading. Please try again.');
+      }
+    });
+
+    overlay.querySelector('#lmAccountSignin').addEventListener('click', () => {
+      overlay.hidden = true;
+      if (typeof openLoginModal === 'function') {
+        openLoginModal();
+      } else {
+        alert('Sign-in is still loading. Please try again.');
+      }
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !overlay.hidden) {
+        overlay.hidden = true;
+      }
+    });
+  }
+
+  const email = localStorage.getItem('lominii_email') || '';
+  const username = localStorage.getItem('lominii_username') || '';
+  const accountType = localStorage.getItem('lominii_account_type') ||
+    (email ? 'registered' : 'guest');
+  const isGuest = accountType !== 'registered';
+
+  overlay.querySelector('#lmAccountType').textContent =
+    isGuest ? 'Free search (guest)' : 'Registered account';
+
+  overlay.querySelector('#lmAccountStatus').textContent =
+    isGuest ? 'Exploring without registration' : 'Signed-in session';
+
+  overlay.querySelector('#lmAccountEmail').textContent =
+    email || 'Not provided in this session';
+
+  overlay.querySelector('#lmAccountUsername').textContent =
+    username || 'Not provided in this session';
+
+  overlay.querySelector('#lmAccountNote').textContent =
+    'Only details available in this browser session are shown here. ' +
+    'This panel does not invent or retrieve unverified profile details.';
+
+  overlay.querySelector('#lmAccountSignup').hidden = !isGuest;
+  overlay.querySelector('#lmAccountSignin').hidden = !isGuest;
+
+  overlay.hidden = false;
+
+  if (section === 'about') {
+    overlay.querySelector('#lmAboutSection').scrollIntoView({
+      block: 'nearest'
+    });
+  } else {
+    overlay.querySelector('#lmAccountTitle').textContent = 'My Profile';
+    overlay.querySelector('#lmAccountClose').focus();
+  }
+}
+
+document.getElementById('btnProfile')?.addEventListener('click', event => {
+  event.preventDefault();
+  closeUserMenu();
+  openLominiiAccountPanel('profile');
+});
+
+document.getElementById('btnSignupFromProfile')?.addEventListener('click', event => {
+  event.preventDefault();
+  closeUserMenu();
+  if (typeof window.openLomimailRegistration === 'function') {
+    window.openLomimailRegistration();
+  } else {
+    alert('Registration is still loading. Please try again.');
+  }
+});
+
+document.getElementById('btnAboutLominii')?.addEventListener('click', event => {
+  event.preventDefault();
+  closeUserMenu();
+  openLominiiAccountPanel('about');
 });
 
 // ── Home dropdown toggle ───────────────
@@ -217,6 +437,8 @@ if (btnLogout) {
   btnLogout.addEventListener('click', () => {
     localStorage.removeItem('lominii_token');
     localStorage.removeItem('lominii_uid');
+    localStorage.removeItem('lominii_account_type');
+    localStorage.removeItem('lominii_email');
     authToken = '';
     if (dashboardView) dashboardView.style.display = 'none';
     if (landingView) landingView.style.display = 'flex';
@@ -363,6 +585,8 @@ function openLoginModal() {
         }
 
         localStorage.setItem('lominii_token', result.access_token);
+        localStorage.setItem('lominii_account_type', 'registered');
+        localStorage.setItem('lominii_email', form.elements.email.value.trim());
         authToken = result.access_token;
         overlay.hidden = true;
         form.reset();
@@ -386,6 +610,9 @@ function openLoginModal() {
 async function exploreFree() {
   const button = document.getElementById('btnExplore');
   if (button) button.disabled = true;
+
+  localStorage.setItem('lominii_account_type', 'guest');
+  localStorage.removeItem('lominii_email');
 
   try {
     const result = await requestAuth('/auth/guest', {});
