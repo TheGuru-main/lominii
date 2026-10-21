@@ -1,5 +1,6 @@
 """LOMINII Auth Room – Signup, Login, Guest, Google, Phone OTP (Real DB)"""
 from datetime import datetime, timedelta
+import os
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -266,16 +267,36 @@ async def phone_request(request: Request, db: AsyncSession = Depends(get_db)):
     except Exception:
         sent = False
 
-    if not sent:
-        raise HTTPException(status_code=502, detail="OTP delivery failed. Request a new code.")
+    # Development OTP is returned only when explicitly enabled on the
+    # designated beta hostname. Normal production requests never expose it.
+    dev_otp_enabled = (
+        os.getenv("DEV_OTP_ENABLED", "").strip().lower() == "true"
+        and request.url.hostname == "lominii-search-beta.onrender.com"
+    )
 
-    return {
-        "message": "OTP sent successfully",
+    if not sent and not dev_otp_enabled:
+        raise HTTPException(
+            status_code=502,
+            detail="OTP delivery failed. Request a new code."
+        )
+
+    result = {
+        "message": (
+            "Development OTP ready for testing"
+            if dev_otp_enabled
+            else "OTP sent successfully"
+        ),
         "phone": phone,
         "country": country,
         "country_iso2": region,
         "expires_in_seconds": 300,
     }
+
+    if dev_otp_enabled:
+        result["dev_otp"] = otp_code
+        result["development_mode"] = True
+
+    return result
 
 
 @router.post("/phone/verify")

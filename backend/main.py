@@ -16,6 +16,7 @@ from apps.lominii.chat.router import router as chat_router
 from apps.lominii.football.router import router as football_router
 from apps.lominii.games.router import router as games_router
 from apps.lominii.search.router import router as search_router
+from apps.lominii.search.home_router import router as home_router
 from apps.lominii.media.router import router as scrapingbee_router
 
 from lominii_platform.database import Base, engine
@@ -37,6 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(search_router)
+app.include_router(home_router)
 app.include_router(scrapingbee_router)
 app.include_router(games_router)
 app.include_router(auth_router)
@@ -50,6 +52,7 @@ async def startup():
     """Initialize database tables and start the live-score proxy."""
     async with engine.begin() as connection:
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS news"))
+        await connection.execute(text("CREATE SCHEMA IF NOT EXISTS search"))
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS game"))
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS messaging"))
         await connection.execute(text("CREATE SCHEMA IF NOT EXISTS crawler"))

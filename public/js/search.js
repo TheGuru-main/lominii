@@ -65,7 +65,19 @@ async function performSearch() {
     resultsDiv.innerHTML = html || '<p>No results found for your query.</p>';
 
   } catch (err) {
-    resultsDiv.innerHTML = '<div class="error-state">⚠️ Search failed. Please try again.</div>';
+    const message = String(
+      err && err.message ? err.message : "Search failed. Please try again."
+    );
+    const safeMessage = message.replace(/[&<>"]/g, function (c) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;"
+      }[c];
+    });
+    resultsDiv.innerHTML =
+      '<div class="error-state">⚠️ ' + safeMessage + '</div>';
   }
 }
 
@@ -77,7 +89,19 @@ async function loadHomeCards() {
     const trends = await tr.json();
     const list = document.getElementById('trendingList');
     if (trends && trends.length) {
-      list.innerHTML = trends.map(t => `<span class="trend-chip">${t}</span>`).join(' ');
+      list.innerHTML = trends.map(function (term) {
+        const safeTerm = String(term).replace(/[&<>"]/g, function (c) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;"
+          }[c];
+        });
+        return '<button type="button" class="trend-chip" ' +
+          'onclick="document.getElementById(\'searchInput\').value=this.textContent;' +
+          'performSearch()">' + safeTerm + '</button>';
+      }).join(" ");
     } else {
       list.innerHTML = 'Nothing trending yet.';
     }

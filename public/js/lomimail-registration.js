@@ -423,39 +423,43 @@ const LOMIMAIL_COUNTRIES = [
     }
 
     async function requestJSON(path, payload) {
-      let lastError = null;
-      const bases = (typeof API_URLS !== "undefined" && Array.isArray(API_URLS))
-        ? API_URLS : API_FALLBACKS;
+      let response;
 
-      for (let i = 0; i < bases.length; i++) {
-        try {
-          const response = await fetch(bases[i] + path, {
+      try {
+        response = await fetch(
+          new URL(path, window.location.origin),
+          {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
             body: JSON.stringify(payload)
-          });
-
-          if (response.status >= 500 && i < bases.length - 1) continue;
-
-          let body = {};
-          try { body = await response.json(); } catch (_) {}
-
-          if (!response.ok) {
-            const detail = body.detail || body.message || `Request failed (${response.status}).`;
-            throw new Error(typeof detail === "string" ? detail : "Please check your information and try again.");
           }
-
-          return body;
-        } catch (error) {
-          if (error instanceof TypeError) {
-            lastError = error;
-            continue;
-          }
-          throw error;
-        }
+        );
+      } catch (_) {
+        throw new Error(
+          "Could not reach the registration server. Check your connection."
+        );
       }
 
-      throw new Error("The registration servers could not be reached. Check your connection and try again.");
+      let body = {};
+      try {
+        body = await response.json();
+      } catch (_) {}
+
+      if (!response.ok) {
+        const detail = body.detail || body.message ||
+          "Registration request failed (" + response.status + ").";
+
+        throw new Error(
+          typeof detail === "string"
+            ? detail
+            : "Please check your information and try again."
+        );
+      }
+
+      return body;
     }
 
     requestButton.addEventListener("click", async () => {
@@ -484,7 +488,12 @@ const LOMIMAIL_COUNTRIES = [
         otpWrap.hidden = false;
         verifyButton.hidden = false;
         requestButton.textContent = "Resend verification code";
-        setStatus(result.message || "Verification code requested. Check your phone.", "success");
+        setStatus(
+          result.dev_otp
+            ? "Development OTP: " + result.dev_otp
+            : (result.message || "Verification code requested. Check your phone."),
+          "success"
+        );
         otp.input.focus();
       } catch (error) {
         setStatus(error.message || "Could not request an OTP.", "error");

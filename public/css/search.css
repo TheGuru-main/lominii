@@ -28,7 +28,7 @@
     flex: 1;
     font-size: 1.05rem;
     padding: 1rem 1.25rem;
-    border-radius: var(--color-glass-highlight);
+    border-radius: 18px;
 }
 
 .search-input:focus{
@@ -148,6 +148,7 @@
   text-align: center;
   color: #4a6578;
   margin-bottom: 1.5rem;
+}
 
 .ai-summary-card {
   background: #fff;
@@ -249,6 +250,7 @@
   50% {
     opacity: .5;
   }
+}
 
 /* ── Small button variant (for inline actions) ── */
 .btn-sm {
@@ -258,4 +260,118 @@
   font-size: 0.8rem;
   border-radius: 20px;
   margin-top: 0.5rem;
+}
+
+/* LOMINII search home: responsive layout and readable cards */
+#homeView {
+  width: 100%;
+  max-width: 1180px;
+  padding: clamp(1rem, 3vw, 2.2rem);
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.search-section {
+  display: flex;
+  align-items: stretch;
+  gap: .55rem;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 1.4rem;
+  padding: .45rem;
+  border: 1px solid rgba(96, 165, 250, .35);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .18);
+}
+
+.search-input {
+  min-width: 0;
+  width: 100%;
+  color: #172338;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 16px;
+}
+
+.search-input::placeholder { color: #738096; }
+
+.search-input:focus {
+  border-color: rgba(59, 130, 246, .45);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+}
+
+#btnSearch {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 1.35rem;
+  border: 0;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, .25);
+  font-weight: 700;
+}
+
+#searchResults {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 1.5rem;
+}
+
+#homeCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+#homeCards > .card {
+  min-width: 0;
+  width: 100%;
+  border-radius: 20px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .10);
+}
+
+#homeCards > .card .icon { font-size: 2rem; }
+#homeCards > .card h3 { color: #172338; }
+
+#homeCards > .card p,
+#homeCards > .card #newsList,
+#homeCards > .card #trendingList,
+#homeCards > .card #prayerList { color: #41516a; }
+
+.trend-chip {
+  display: inline-flex;
+  align-items: center;
+  margin: .2rem;
+  padding: .5rem .8rem;
+  border: 1px solid rgba(59, 130, 246, .22);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, .09);
+  color: #1d4ed8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.news-headline {
+  padding: .65rem 0;
+  border-bottom: 1px solid #e5eaf1;
+  line-height: 1.45;
+}
+
+.game-carousel { padding: 0; margin-top: 1rem; }
+.game-card { border-radius: 20px; }
+
+@media (max-width: 640px) {
+  #homeView {
+    padding: 1rem .8rem calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .search-section { gap: .3rem; border-radius: 18px; }
+  .search-input { padding: .9rem .7rem; font-size: 1rem; }
+  #btnSearch { min-height: 44px; padding: 0 .9rem; }
+  #homeCards { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  #homeCards > .card { padding: 1.15rem; }
 }
