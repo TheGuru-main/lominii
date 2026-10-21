@@ -1,3 +1,17 @@
+function escapeSearchHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+function searchResultLink(item) {
+  const title = escapeSearchHtml(item && (item.title || item.url) || "Result");
+  try {
+    const parsed = new URL(String(item && item.url || ""));
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return title;
+    return `<a href="${escapeSearchHtml(parsed.href)}" target="_blank" rel="noopener noreferrer">${title}</a>`;
+  } catch (_) { return title; }
+}
+
 async function performSearch() {
   const query = document.getElementById('searchInput').value.trim();
   if (!query) return;
@@ -26,7 +40,7 @@ async function performSearch() {
       html += `
         <div class="ai-summary-card">
           <div class="ai-badge">🧠 AI Summary</div>
-          <p>${data.ai_summary}</p>
+          <p>${escapeSearchHtml(data.ai_summary)}</p>
           <button class="btn btn-outline btn-sm" onclick="alert('Premium feature coming soon')">🔍 Discover More</button>
         </div>`;
     }
@@ -36,22 +50,35 @@ async function performSearch() {
       html += `
         <div class="definition-card">
           <div class="def-badge">📖 Definition</div>
-          <p>${data.definition}</p>
+          <p>${escapeSearchHtml(data.definition)}</p>
         </div>`;
     }
 
     // Primary Cell info (subtle)
     html += `
       <div class="cell-info">
-        📍 Cell: (${String.fromCharCode(65 + data.primary_cell_col)}, ${data.primary_cell_row}) &nbsp;|&nbsp; 🔗 L‑sum: ${data.Lsum}, S‑sum: ${data.Ssum}
+        📍 Cell: (${String.fromCharCode(65 + data.primary_cell_col)}, ${data.primary_cell_row}) &nbsp;|&nbsp; 🔗 L: ${data.L !== undefined ? data.L : data.Lsum}, S: ${data.S !== undefined ? data.S : data.Ssum}
       </div>`;
 
     // News
     if (data.news && data.news.length > 0) {
       html += '<h4 style="margin-top:1.5rem;">📰 Related News</h4>';
-      data.news.forEach(n => {
-        html += `<div class="news-item">📌 ${n.title}</div>`;
-      });
+      data.news.forEach(n => { html += `<div class="news-item">📌 ${searchResultLink(n)}</div>`; });
+    }
+    // Wikipedia
+    if (data.wikipedia && data.wikipedia.length > 0) {
+      html += '<h4 style="margin-top:1.5rem;">📚 Wikipedia</h4>';
+      data.wikipedia.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}${item.extract ? `<p>${escapeSearchHtml(item.extract)}</p>` : ''}</div>`; });
+    }
+    // General web candidates from ScrapingBee-backed search
+    if (data.web_results && data.web_results.length > 0) {
+      html += '<h4 style="margin-top:1.5rem;">🌐 Web Results</h4>';
+      data.web_results.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}</div>`; });
+    }
+    // Pages indexed by LOMINII's crawler
+    if (data.crawler_results && data.crawler_results.length > 0) {
+      html += '<h4 style="margin-top:1.5rem;">🕸️ LOMINII Crawler</h4>';
+      data.crawler_results.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}${item.snippet ? `<p>${escapeSearchHtml(item.snippet)}</p>` : ''}</div>`; });
     }
 
     // Related Questions (placeholder for future)

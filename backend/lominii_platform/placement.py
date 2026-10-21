@@ -5,6 +5,7 @@ Every placement family now includes a namespace identifier.
 
 from abc import ABC, abstractmethod
 from .gsp import (
+    GRID_COLUMNS,
     calculate_lsum,
     calculate_ssum,
     first_letter_index,
@@ -41,7 +42,7 @@ class PlacementSource(ABC):
         c = params["c"]
         K = params.get("K", 5)
         D = params.get("D", 8)
-        C = params.get("C", 26)
+        C = params.get("C", GRID_COLUMNS)
         R = params.get("R", 64)
         return gsp_place(L, S, c, K=K, D=D, C=C, R=R)
 

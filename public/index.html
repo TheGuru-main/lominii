@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="css/footer.css">
 <link rel="stylesheet" href="css/lomimail-registration.css">
 <link rel="stylesheet" href="css/scrapingbee.css">
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 </head>
 <body>
 
@@ -813,3 +814,48 @@
 <script src="js/lomimail-registration.js"></script>
 
 <script src="js/scrapingbee.js"></script>
+
+<!-- ACCD-CODESPACE-P5 -->
+<div id="codePanel" style="display:none !important; flex-direction:column; position:fixed; inset:0; background:#0b1120; z-index:9999;">
+  <div style="display:flex; gap:6px; padding:8px 10px; background:#111827; align-items:center; flex-wrap:wrap; border-bottom:1px solid #1e293b; flex:0 0 auto;">
+    <button type="button" id="btnCodeBack" style="background:none;border:1px solid #334155;color:#e2e8f0;padding:6px 10px;border-radius:6px;cursor:pointer;">←</button>
+    <button type="button" id="btnToggleSidebar" style="background:none;border:1px solid #334155;color:#e2e8f0;padding:6px 10px;border-radius:6px;cursor:pointer;">☰</button>
+    <strong style="color:#e2e8f0;">Codespace</strong>
+    <span id="codeActivePath" style="color:#94a3b8;font-size:12px;max-width:36vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <select id="codeRepoSelect" style="padding:5px;border-radius:4px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;max-width:140px;"></select>
+    <button type="button" id="btnNewRepo" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">+ Repo</button>
+    <button type="button" id="btnNewFile" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">+ File</button>
+    <button type="button" id="btnNewFolder" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">+ Folder</button>
+    <button type="button" id="btnSaveFile" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">Save</button>
+    <button type="button" id="btnPushRepo" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">Push</button>
+    <button type="button" id="btnRunCode" style="padding:6px 12px;border-radius:6px;border:none;background:#22d3ee;color:#0f172a;font-weight:700;cursor:pointer;">▶ Run</button>
+    <button type="button" id="btnToggleTerm" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">Terminal ▾</button>
+    <button type="button" id="btnCloseCode" style="margin-left:auto;background:none;border:1px solid #334155;color:#94a3b8;padding:6px 10px;border-radius:6px;cursor:pointer;">✕</button>
+  </div>
+  <div id="codeBody" style="flex:1 1 auto; display:flex; min-height:0;">
+    <aside id="codeSidebar" style="width:200px; flex:0 0 200px; background:#0f172a; border-right:1px solid #1e293b; overflow:auto; padding:8px; color:#cbd5e1; font-size:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="opacity:0.55;">Explorer</span>
+        <button type="button" id="btnCloseSidebar" style="background:none;border:none;color:#94a3b8;cursor:pointer;">✕</button>
+      </div>
+      <div id="codeFileTree"></div>
+    </aside>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; background:#1e1e1e;">
+      <div id="codeTabBar" style="flex:0 0 auto; display:flex; overflow-x:auto; background:#0b1120; border-bottom:1px solid #1e293b; min-height:32px; align-items:flex-end; padding:0 4px;"></div>
+      <div id="monacoContainer" style="flex:1; min-height:0; background:#1e1e1e;"></div>
+    </div>
+  </div>
+  <div id="codeConsole" style="flex:0 0 30%; min-height:120px; max-height:50%; background:#020617; border-top:1px solid #1e293b; display:flex; flex-direction:column; position:relative;">
+    <div style="padding:4px 10px; font-size:11px; color:#64748b; flex:0 0 auto; display:flex; justify-content:space-between;">
+      <span>Terminal</span>
+      <span style="opacity:0.5;">tap to type</span>
+    </div>
+    <div id="codeOutput" tabindex="0" style="flex:1; margin:0; padding:8px 10px; overflow:auto; font-size:12px; color:#e2e8f0; white-space:pre-wrap; font-family:ui-monospace,Menlo,monospace; cursor:text; outline:none; line-height:1.45;"></div>
+    <div id="termActionBar" style="display:flex; gap:8px; align-items:center; padding:6px 10px; border-top:1px solid #1e293b; background:#0a0f1a; flex:0 0 auto;">
+      <button type="button" id="btnTermRun" style="padding:6px 12px;border-radius:6px;border:none;background:#22d3ee;color:#0f172a;font-weight:700;cursor:pointer;">▶ Term</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/code_console.js"></script>
+<script src="js/gsp_repo_uid_patch.js"></script>
