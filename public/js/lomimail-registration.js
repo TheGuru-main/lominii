@@ -168,7 +168,14 @@ const LOMIMAIL_COUNTRIES = [
       "aria-live": "polite"
     });
 
-    const country = selectCountry();
+    const devOtpNotice = el("div", {
+      id: "lm-dev-otp-display",
+      className: "lm-dev-otp",
+      role: "status",
+      "aria-live": "assertive",
+      hidden: ""
+    });
+const country = selectCountry();
     const phone = field("Phone number", "phone", "tel", true, "e.g. 08012345678");
     const phoneHint = el("p", { className: "lm-hint" },
       "Enter your national number. You can also enter the full international number starting with +.");
@@ -232,6 +239,7 @@ const LOMIMAIL_COUNTRIES = [
 
     form.append(
       phoneGrid,
+      devOtpNotice,
       otpWrap,
       nameGrid,
       locationGrid,
@@ -250,6 +258,8 @@ const LOMIMAIL_COUNTRIES = [
       overlay.hidden = true;
       status.textContent = "";
       status.className = "lm-status";
+      devOtpNotice.textContent = "";
+      devOtpNotice.hidden = true;
     }
 
     close.addEventListener("click", closeModal);
@@ -475,6 +485,8 @@ const LOMIMAIL_COUNTRIES = [
 
       requestButton.disabled = true;
       requestButton.textContent = "Requesting code…";
+      devOtpNotice.textContent = "";
+      devOtpNotice.hidden = true;
 
       try {
         const selected = selectedCountry();
@@ -488,14 +500,28 @@ const LOMIMAIL_COUNTRIES = [
         otpWrap.hidden = false;
         verifyButton.hidden = false;
         requestButton.textContent = "Resend verification code";
-        setStatus(
-          result.dev_otp
-            ? "Development OTP: " + result.dev_otp
-            : (result.message || "Verification code requested. Check your phone."),
-          "success"
-        );
+
+        if (result.dev_otp !== undefined && result.dev_otp !== null) {
+          devOtpNotice.textContent =
+            "BETA TEST CODE: " + String(result.dev_otp);
+          devOtpNotice.hidden = false;
+          setStatus(
+            "Development mode is active. Enter the displayed code below.",
+            "success"
+          );
+        } else {
+          devOtpNotice.textContent = "";
+          devOtpNotice.hidden = true;
+          setStatus(
+            result.message || "Verification code requested. Check your phone.",
+            "success"
+          );
+        }
+
         otp.input.focus();
       } catch (error) {
+        devOtpNotice.textContent = "";
+        devOtpNotice.hidden = true;
         setStatus(error.message || "Could not request an OTP.", "error");
         requestButton.textContent = "Send verification code";
       } finally {

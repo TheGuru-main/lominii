@@ -15,7 +15,7 @@ from lominii_platform.ai.knowledge import (
     save_knowledge,
 )
 from lominii_platform.content_filter import is_blocked, is_ai_blocked
-from lominii_platform.auth import get_current_user
+from lominii_platform.auth import oauth2_scheme, validate_token
 from lominii_platform.database import get_db
 from lominii_platform.gsg import gps_to_gsg
 from lominii_platform.intent_analyzer import analyze
@@ -41,6 +41,20 @@ GNEWS_API_KEY = os.getenv("GNEWS_API_KEY", "").strip()
 CACHE_TTL_ANONYMOUS = 5
 CACHE_TTL_AUTHENTICATED = 300
 
+async def get_search_identity(token: str = Depends(oauth2_scheme)) -> str:
+    """Accept valid guest tokens for free search, not other protected routes."""
+    payload = validate_token(token)
+
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    identity = payload.get("sub")
+    if not isinstance(identity, str) or not identity:
+        raise HTTPException(status_code=401, detail="Invalid token identity")
+
+    return identity
+
+
 
 def build_cache_key(query: str, lang: str, domain: str) -> str:
     raw = f"{query}|{lang}|{domain}"
@@ -50,7 +64,7 @@ def build_cache_key(query: str, lang: str, domain: str) -> str:
 @router.post("/")
 async def unified_search(
     request: Request,
-    email: str = Depends(get_current_user),
+    email: str = Depends(get_search_identity),
     db: AsyncSession = Depends(get_db)
 ):
     data = await request.json()

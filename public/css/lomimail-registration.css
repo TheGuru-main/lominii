@@ -188,3 +188,25 @@
     width: 100%;
   }
 }
+
+
+/* Clearly visible beta OTP notice */
+.lm-dev-otp[hidden] {
+  display: none !important;
+}
+
+.lm-dev-otp {
+  display: block;
+  margin: 12px 0 16px;
+  padding: 16px 12px;
+  border: 2px solid #86efac;
+  border-radius: 12px;
+  color: #dcfce7;
+  background: #14532d;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
