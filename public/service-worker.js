@@ -1,50 +1,80 @@
 // LOMINII Service Worker – Offline caching, push notifications, and PWA support
-const CACHE_NAME = 'lominii-v2';
+const CACHE_NAME = 'lominii-v3-keyboard';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/style.css',
-  '/script.js',
-  '/manifest.json',
-  '/offline_dictionary.json.gz',  // English
-  // Additional language dictionaries will be added as they become available
+  '/css/lominii-keyboard.css',
+  '/js/lominii-keyboard.js',
+  '/js/search.js',
+  '/offline_dictionary.json.gz'
 ];
 
 // ---------- Install ----------
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.all(STATIC_ASSETS.map(async (url) => {
+      try {
+        const response = await fetch(url, { cache: 'reload' });
+        if (response.ok) await cache.put(url, response);
+      } catch (error) {
+        console.warn('LOMINII offline asset unavailable:', url);
+      }
+    }));
+    await self.skipWaiting();
+  })());
 });
 
 // ---------- Activate (clean old caches) ----------
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys
+      .filter(key => key.startsWith('lominii-') && key !== CACHE_NAME)
+      .map(key => caches.delete(key)));
+    await Promise.all(keys
+      .filter(key => key.startsWith('lominii-') && key !== CACHE_NAME)
+      .map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
 // ---------- Fetch (serve from cache, fallback to network) ----------
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and API calls
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
-    return;
-  }
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).then((networkResponse) => {
-        // Optionally cache new files for next time
-        return networkResponse;
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const isDocument = request.mode === 'navigate';
+
+    if (!isDocument) {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+    }
+
+    try {
+      const response = await fetch(request);
+      if (response && response.ok && response.type === 'basic') {
+        cache.put(request, response.clone()).catch(() => {});
+      }
+      return response;
+    } catch (error) {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      if (isDocument) {
+        const fallback = await cache.match('/index.html');
+        if (fallback) return fallback;
+      }
+      return new Response('LOMINII is offline. Reconnect and try again.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
       });
-    })
-  );
+    }
+  })());
 });
 
 // ---------- Push Notifications (now with type‑aware handling) ----------

@@ -62,41 +62,41 @@
 }
 
 
-.card-grid {
+#homeCards.card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.card {
-  background: #fff;
-  border: 1px solid #d0dce4;
-  border-radius: 14px;
+#homeCards > .card {
+  background: var(--glass);
+  border: 1px solid var(--glass-hi);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   text-align: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  backdrop-filter: blur(12px);
   cursor: pointer;
   transition: transform 0.15s;
 }
 
-.card:active {
+#homeCards > .card:active {
   transform: scale(0.97);
 }
 
-.card .icon {
+#homeCards > .card .icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
 }
 
-.card h3 {
+#homeCards > .card h3 {
   font-size: 1.1rem;
   margin-bottom: 0.3rem;
 }
 
-.card p {
+#homeCards > .card p {
   font-size: 0.85rem;
-  color: #4a6578;
+  color: var(--text-secondary);
 }
 
 .game-card{
@@ -125,38 +125,39 @@
 }
 
 .lomiplay-card {
-  background: var(--color-surface);
-  border-radius: var(--radius);
+  background: var(--surface);
+  border-radius: var(--radius-md);
   padding: 1rem;
   margin-bottom: 1.5rem;
 }
 .lomiplay-header {
-  background: var(--color-accent);
+  background: var(--accent);
   color: white;
   text-align: center;
   padding: 0.4rem;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   font-weight: 700;
 }
 /* ===== PLACEHOLDER ===== */
 
-.placeholder {
-  background: #fff;
-  border: 1px dashed #d0dce4;
-  border-radius: 14px;
+#homeView .placeholder {
+  background: var(--glass);
+  border: 1px dashed var(--glass-hi);
+  border-radius: var(--radius-md);
   padding: 2rem;
   text-align: center;
-  color: #4a6578;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
 
 .ai-summary-card {
-  background: #fff;
+  background: var(--surface);
+  border: 1px solid var(--glass-hi);
   border-left: 4px solid #8b5cf6;
   border-radius: 14px;
   padding: 1.2rem;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 
 .ai-badge {
@@ -169,12 +170,13 @@
 }
 
 .definition-card {
-  background: #fff;
+  background: var(--surface);
+  border: 1px solid var(--glass-hi);
   border-left: 4px solid #3b82f6;
   border-radius: 14px;
   padding: 1.2rem;
   margin-bottom: 1rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 
 .def-badge {
@@ -188,15 +190,15 @@
 
 .cell-info {
   font-size: 0.8rem;
-  color: #6b7f8e;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
   text-align: right;
 }
 
 .did-you-mean {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  color: #92400e;
+  background: rgba(255, 214, 10, 0.10);
+  border: 1px solid rgba(255, 214, 10, 0.35);
+  color: var(--text);
   padding: 0.6rem 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -210,8 +212,8 @@
 }
 
 .news-item {
-  background: #fff;
-  border: 1px solid #d0dce4;
+  background: var(--surface);
+  border: 1px solid var(--glass-hi);
   border-radius: 8px;
   padding: 0.6rem 1rem;
   margin-bottom: 0.4rem;
@@ -219,8 +221,8 @@
 }
 
 .related-q {
-  background: #f0f4ff;
-  border: 1px solid #d0dce4;
+  background: var(--soft-surface);
+  border: 1px solid var(--glass-hi);
   border-radius: 8px;
   padding: 0.6rem 1rem;
   margin-bottom: 0.4rem;
@@ -239,7 +241,7 @@
 .error-state {
   text-align: center;
   padding: 2rem;
-  color: #dc2626;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -280,20 +282,20 @@
   padding: .45rem;
   border: 1px solid rgba(96, 165, 250, .35);
   border-radius: 22px;
-  background: rgba(255, 255, 255, .97);
+  background: var(--glass);
   box-shadow: 0 14px 38px rgba(0, 0, 0, .18);
 }
 
 .search-input {
   min-width: 0;
   width: 100%;
-  color: #172338;
+  color: var(--text);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 16px;
 }
 
-.search-input::placeholder { color: #738096; }
+.search-input::placeholder { color: var(--text-muted); }
 
 .search-input:focus {
   border-color: rgba(59, 130, 246, .45);
@@ -327,6 +329,10 @@
 
 #homeCards > .card {
   min-width: 0;
+  background: var(--glass);
+  border: 1px solid var(--glass-hi);
+  color: var(--text);
+  backdrop-filter: blur(12px);
   width: 100%;
   border-radius: 20px;
   text-align: left;
@@ -335,12 +341,12 @@
 }
 
 #homeCards > .card .icon { font-size: 2rem; }
-#homeCards > .card h3 { color: #172338; }
+#homeCards > .card h3 { color: var(--text); }
 
 #homeCards > .card p,
 #homeCards > .card #newsList,
 #homeCards > .card #trendingList,
-#homeCards > .card #prayerList { color: #41516a; }
+#homeCards > .card #prayerList { color: var(--text-secondary); }
 
 .trend-chip {
   display: inline-flex;
@@ -350,14 +356,14 @@
   border: 1px solid rgba(59, 130, 246, .22);
   border-radius: 999px;
   background: rgba(59, 130, 246, .09);
-  color: #1d4ed8;
+  color: var(--accent);
   font: inherit;
   cursor: pointer;
 }
 
 .news-headline {
   padding: .65rem 0;
-  border-bottom: 1px solid #e5eaf1;
+  border-bottom: 1px solid var(--glass-hi);
   line-height: 1.45;
 }
 

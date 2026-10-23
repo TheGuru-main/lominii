@@ -1,6 +1,7 @@
 """LOMINII Auth Room – Signup, Login, Guest, Google, Phone OTP (Real DB)"""
 from datetime import datetime, timedelta
 import os
+import logging
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -23,6 +24,8 @@ from lominii_platform.database import get_db
 from lominii_platform.models.public import User, OTP
 from lominii_platform.otp_service import generate_otp, send_otp
 import re
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -393,7 +396,25 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
             additional_image_url=additional_image,
         )
         db.add(user)
-        await db.flush()
+        try:
+            # Flush now so uniqueness and database constraints are handled
+            # before the rest of the identity handshake proceeds.
+            await db.flush()
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "An account or identity already exists for this phone. "
+                    "Please retry verification or contact support."
+                ),
+            )
+        except Exception:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="Could not create the account during verification.",
+            )
     else:
         # Existing accounts keep their established name, password and profile.
         user.phone = phone
@@ -421,6 +442,9 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
     otp_record.verified = True
 
     try:
+        # Generate the token before committing so token configuration errors
+        # do not leave the OTP consumed while the client receives a 500.
+        token = create_bjt(user.email)
         await db.commit()
         await db.refresh(user)
     except IntegrityError:
@@ -429,8 +453,17 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
             status_code=409,
             detail="Identity conflict occurred. Please retry verification.",
         )
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception:
+        await db.rollback()
+        logger.exception("Unexpected error during phone OTP verification")
+        raise HTTPException(
+            status_code=500,
+            detail="Phone verification could not be completed. Please retry.",
+        )
 
-    token = create_bjt(user.email)
     return {
         "access_token": token,
         "token_type": "bearer",

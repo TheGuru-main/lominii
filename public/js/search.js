@@ -24,15 +24,27 @@ async function performSearch() {
     const response = await apiFetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query })
+      body: JSON.stringify((() => {
+        const payload = { q: query };
+        const languageControl = document.querySelector(
+          '[name="language"], #searchLanguage, #languageSelect'
+        );
+        const selectedLanguage = languageControl && languageControl.value;
+        if (selectedLanguage) payload.language = selectedLanguage;
+        return payload;
+      })())
     });
     const data = await response.json();
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error('The search service returned an invalid response.');
+    }
 
     let html = '';
 
     // Did you mean?
     if (data.did_you_mean) {
-      html += `<div class="did-you-mean">Did you mean: <span onclick="document.getElementById('searchInput').value='${data.did_you_mean}';performSearch()">${data.did_you_mean}</span>?</div>`;
+      const suggestion = escapeSearchHtml(data.did_you_mean);
+      html += `<div class="did-you-mean">Did you mean: <button type="button" class="search-query-action" data-search-query="${suggestion}">${suggestion}</button>?</div>`;
     }
 
     // AI Summary
@@ -49,15 +61,33 @@ async function performSearch() {
     if (data.definition) {
       html += `
         <div class="definition-card">
-          <div class="def-badge">📖 Definition</div>
+          <div class="def-badge">📖 Dictionary</div>
+          ${data.dictionary && data.dictionary.word
+            ? `<strong>${escapeSearchHtml(data.dictionary.word)}</strong>`
+            : ''}
+          ${data.dictionary && data.dictionary.part_of_speech
+            ? `<span class="dictionary-pos">${escapeSearchHtml(data.dictionary.part_of_speech)}</span>`
+            : ''}
           <p>${escapeSearchHtml(data.definition)}</p>
+          ${data.dictionary && data.dictionary.source
+            ? `<small class="dictionary-source">Source: ${escapeSearchHtml(data.dictionary.source)}</small>`
+            : ''}
         </div>`;
     }
 
     // Cell info
+    const cellCol = Number(data.primary_cell_col);
+    const cellRow = Number(data.primary_cell_row);
+    const cellLabel = Number.isInteger(cellCol) && cellCol >= 0 && cellCol <= 25
+      && Number.isFinite(cellRow)
+      ? `(${String.fromCharCode(65 + cellCol)}, ${cellRow})`
+      : 'Unavailable';
+    const lValue = data.L ?? data.Lsum ?? '—';
+    const sValue = data.S ?? data.Ssum ?? '—';
+
     html += `
       <div class="cell-info">
-        📍 Cell: (${String.fromCharCode(65 + data.primary_cell_col)}, ${data.primary_cell_row}) &nbsp;|&nbsp; 🔗 L: ${data.L !== undefined ? data.L : data.Lsum}, S: ${data.S !== undefined ? data.S : data.Ssum}
+        📍 Cell: ${escapeSearchHtml(cellLabel)} &nbsp;|&nbsp; 🔗 L: ${escapeSearchHtml(lValue)}, S: ${escapeSearchHtml(sValue)}
       </div>`;
 
     // News
@@ -85,11 +115,22 @@ async function performSearch() {
     if (data.related_questions && data.related_questions.length > 0) {
       html += '<h4 style="margin-top:1.5rem;">🤔 People Also Ask</h4>';
       data.related_questions.forEach(q => {
-        html += `<div class="related-q" onclick="document.getElementById('searchInput').value='${q}';performSearch()">${q}</div>`;
+        const safeQuestion = escapeSearchHtml(q);
+        html += `<button type="button" class="related-q search-query-action" data-search-query="${safeQuestion}">${safeQuestion}</button>`;
       });
     }
 
     resultsDiv.innerHTML = html || '<p>No results found for your query.</p>';
+
+    // Use event listeners rather than embedding untrusted text in JavaScript.
+    resultsDiv.querySelectorAll('[data-search-query]').forEach(button => {
+      button.addEventListener('click', () => {
+        const input = document.getElementById('searchInput');
+        if (!input) return;
+        input.value = button.dataset.searchQuery || '';
+        performSearch();
+      });
+    });
 
   } catch (err) {
     const message = String(

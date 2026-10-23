@@ -15,3 +15,4 @@ phonenumbers
 pycountry
 
 psycopg[binary]
+langdetect==1.0.9

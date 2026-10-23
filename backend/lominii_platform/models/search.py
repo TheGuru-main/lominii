@@ -7,6 +7,8 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Text,
+    UniqueConstraint,
+    Index,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
@@ -104,6 +106,46 @@ class DictionaryCache(Base):
 
     nsid = Column(SmallInteger, default=NSID.SEARCH)
     cached_at = Column(DateTime, server_default="now()")
+
+
+class DictionaryGridEntry(Base):
+    """External dictionary records indexed for keyboard/GSP-based retrieval."""
+    __tablename__ = "dictionary_grid_entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "language", "normalized_word",
+            name="uq_dictionary_grid_language_word",
+        ),
+        Index(
+            "ix_dictionary_grid_primary_cell",
+            "language", "primary_cell_col", "primary_cell_row",
+        ),
+        {"schema": "search"},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    word = Column(String(255), nullable=False)
+    normalized_word = Column(String(255), nullable=False)
+    language = Column(String(10), nullable=False, default="en")
+
+    definition = Column(Text, nullable=False)
+    phonetic = Column(String(255))
+    part_of_speech = Column(String(100))
+    source = Column(String(255), nullable=False, default="Dictionary API")
+    source_url = Column(Text)
+
+    # The same GSP calculation is used when indexing and querying.
+    uid_chain = Column(JSONB, nullable=False, default=list)
+    L_sum = Column(Integer, nullable=False)
+    S_sum = Column(Integer, nullable=False)
+    keyboard_column = Column(Integer, nullable=False)
+
+    primary_cell_col = Column(Integer, nullable=False)
+    primary_cell_row = Column(Integer, nullable=False)
+    replica_cells = Column(JSONB, nullable=False, default=list)
+
+    indexed_at = Column(DateTime, server_default="now()", nullable=False)
+    last_seen_at = Column(DateTime, server_default="now()", nullable=False)
 
 
 class SearchCache(Base):

@@ -25,34 +25,45 @@ def get_keymap(lang: str = "en") -> dict:
 
 
 def normalise(text: str, lang: str = "en") -> str:
-    """Lowercase and fold diacritics without stemming or deleting query words."""
-    text = unicodedata.normalize("NFKD", (text or "").lower())
-    return "".join(ch for ch in text if not unicodedata.combining(ch))
+    """Unicode-normalise text while preserving language-specific letters."""
+    from lominii_platform.keymaps.keyboard import normalise_text
+    return normalise_text(text)
 
 
 def calculate_uid_chain(word: str, lang: str = "en") -> list[int]:
-    """Return ordered zero-based alphabet indices for a-z in the normalized query."""
-    normalized = normalise(word, lang)
-    return [ord(ch) - ord("a") for ch in normalized if "a" <= ch <= "z"]
+    """Return ordered zero-based indices from the selected language alphabet."""
+    from lominii_platform.keymaps.keyboard import calculate_uid_chain as alphabet_uid
+    return alphabet_uid(word, lang)
 
 
 def calculate_lsum(word: str, lang: str = "en") -> int:
-    """Return L: letter count, not keyboard-row coordinates."""
+    """L is the number of recognised alphabet symbols."""
     return len(calculate_uid_chain(word, lang))
 
 
 def calculate_ssum(word: str, lang: str = "en") -> int:
-    """Return S: sum of the ordered zero-based alphabet-index chain."""
+    """S is the sum of the selected alphabet's zero-based indices."""
     return sum(calculate_uid_chain(word, lang))
 
 
 def first_letter_index(word: str, lang: str = "en") -> int:
-    """Return the keyboard column of the first alphabet letter for this language."""
+    """Return the physical keyboard column of the first recognised letter."""
+    from lominii_platform.keymaps.keyboard import alphabet_index_map, get_keyboard
+
+    alphabet = alphabet_index_map(lang)
     normalized = normalise(word, lang)
-    character = next((ch for ch in normalized if "a" <= ch <= "z"), "")
-    if not character:
+    character = next((ch for ch in normalized if ch in alphabet), None)
+    if character is None:
         return 0
-    return get_keymap(lang).get(character, (0, 0))[1]
+
+    for row in get_keyboard(lang):
+        position = row.find(character)
+        if position >= 0:
+            return position
+
+    # Language letters absent from the base physical rows still retain
+    # their alphabet index; they use a deterministic fallback column.
+    return alphabet[character] % GRID_COLUMNS
 
 
 def gsp_place(Lsum: int, Ssum: int, c: int, K: int = REPLICA_COUNT,

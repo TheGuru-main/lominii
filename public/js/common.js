@@ -6,8 +6,6 @@ let authToken = localStorage.getItem('lominii_token') || '';
 const views = {
   home: document.getElementById('homeView'),
   games: document.getElementById('gamesView'),
-  social: document.getElementById('socialView'),
-  edu: document.getElementById('eduView'),
   quran: document.getElementById('quranView')
 };
 const footerIcons = document.querySelectorAll('.footer-nav .nav-icon');
@@ -17,19 +15,15 @@ const landingView = document.getElementById('landingView');
 const dashboardView = document.getElementById('dashboardView');
 const particleCanvas = document.getElementById('particleCanvas');
 
-// ── Splash → Landing transition ─────────
-setTimeout(() => {
-  if (splashScreen) splashScreen.style.display = 'none';
-  if (landingView) landingView.style.display = 'block';
-  if (particleCanvas && typeof drawParticles === 'function') drawParticles();
-}, 2000);
+// Initial routing below decides which screen is visible.
+ // No delayed landing-page timer: it could override authenticated routing.
 
 // ── Show Dashboard ──────────────────────
 function showDashboard() {
-  landingView.style.display = 'none';
-  dashboardView.style.display = 'block';
-  if (particleCanvas) particleCanvas.style.display = 'none';
-  if (typeof animId !== 'undefined') cancelAnimationFrame(animId);
+  if (landingView) landingView.style.display = 'none';
+  if (dashboardView) dashboardView.style.display = 'block';
+  if (typeof stopParticles === 'function') stopParticles();
+  else if (particleCanvas) particleCanvas.style.display = 'none';
   document.body.classList.add('search-home');
   if (typeof loadHomeCards === 'function') loadHomeCards();
 }
@@ -69,14 +63,8 @@ function switchToWorkspace(workspace) {
     case 'home':
       if (typeof loadHomeCards === 'function') loadHomeCards();
       break;
-    case 'social':
-      if (typeof initialiseSocial === 'function') initialiseSocial();
-      break;
     case 'games':
       if (typeof initialiseGames === 'function') initialiseGames();
-      break;
-    case 'edu':
-      if (typeof initialiseEdu === 'function') initialiseEdu();
       break;
     case 'quran':
       if (typeof initialiseQuran === 'function') initialiseQuran();
@@ -434,16 +422,21 @@ function closeSettings() {
 // ── Logout ──────────────────────────────
 const btnLogout = document.getElementById('btnLogout');
 if (btnLogout) {
-  btnLogout.addEventListener('click', () => {
+  btnLogout.addEventListener('click', event => {
+    event.preventDefault();
     localStorage.removeItem('lominii_token');
     localStorage.removeItem('lominii_uid');
     localStorage.removeItem('lominii_account_type');
     localStorage.removeItem('lominii_email');
+    localStorage.removeItem('lominii_username');
     authToken = '';
+
     if (dashboardView) dashboardView.style.display = 'none';
-    if (landingView) landingView.style.display = 'flex';
-    if (particleCanvas) particleCanvas.style.display = 'block';
-    if (typeof drawParticles === 'function') drawParticles();
+    if (landingView) landingView.style.display = '';
+    document.body.classList.remove('search-home', 'workspace-view');
+
+    if (typeof startParticles === 'function') startParticles();
+    else if (particleCanvas) particleCanvas.style.display = 'block';
   });
 }
 document.getElementById('dropdownLogout')?.addEventListener('click', () => {
@@ -611,23 +604,27 @@ async function exploreFree() {
   const button = document.getElementById('btnExplore');
   if (button) button.disabled = true;
 
-  localStorage.setItem('lominii_account_type', 'guest');
-  localStorage.removeItem('lominii_email');
-
   try {
     const result = await requestAuth('/auth/guest', {});
-    if (result.access_token) {
-      localStorage.setItem('lominii_token', result.access_token);
-      authToken = result.access_token;
+    if (!result || !result.access_token) {
+      throw new Error('The guest service did not return a session token.');
     }
-  } catch (error) {
-    // Browsing the public search screen should remain available if guest auth
-    // is temporarily unavailable.
-    console.warn('Guest session unavailable; opening public exploration.', error);
-  } finally {
-    if (button) button.disabled = false;
+
+    localStorage.setItem('lominii_token', result.access_token);
+    localStorage.setItem('lominii_account_type', 'guest');
+    localStorage.removeItem('lominii_email');
+    authToken = result.access_token;
+
     showDashboard();
     switchToWorkspace('home');
+  } catch (error) {
+    console.error('Guest session could not be started:', error);
+    alert(
+      'Free exploration is temporarily unavailable. ' +
+      'Please try again shortly.'
+    );
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -644,9 +641,16 @@ document.getElementById('btnSignup')?.addEventListener('click', () => {
 });
 
 // ── Initial load ────────────────────────
+if (splashScreen) splashScreen.style.display = 'none';
+
 if (authToken) {
-  if (splashScreen) splashScreen.style.display = 'none';
   if (landingView) landingView.style.display = 'none';
   if (dashboardView) dashboardView.style.display = 'block';
+  if (particleCanvas) particleCanvas.style.display = 'none';
+  document.body.classList.add('search-home');
   switchToWorkspace('home');
+} else {
+  if (landingView) landingView.style.display = '';
+  if (dashboardView) dashboardView.style.display = 'none';
+  if (particleCanvas) particleCanvas.style.display = 'block';
 }

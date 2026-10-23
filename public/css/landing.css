@@ -1,150 +1,85 @@
-/* ===== PARTICLE CANVAS ===== */
+/* LOMINII landing page — cleaned and consolidated */
 
-#particleCanvas {
-  position: fixed;
-  top: 0;
-  left: 0;
+#landingView {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 100%;
-  z-index: 0;
+  min-height: 100vh;
+  padding: var(--space-lg, 2rem) var(--space-md, 1rem);
 }
 
-/* ===== 
-/* =========================================================
-   LANDING PAGE
-   (not a workspace — lives here as the app's entry screen)
-   ========================================================= */
-
-#landingView{
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-lg) var(--space-md);
+#landingView .landing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  width: min(100%, 560px);
+  margin-inline: auto;
+  text-align: center;
 }
 
-.landing-container{
-    max-width: 560px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-sm);
+#landingView .logo-icon {
+  margin-bottom: var(--space-xs, 0.25rem);
+  color: var(--accent, #7c83ff);
+  font-size: 2.2rem;
 }
 
-.landing-container .logo-icon{
-    font-size: 2.2rem;
-    margin-bottom: var(--space-xs);
+#landingView .logo-icon .fa {
+  font-size: 2.5rem;
 }
 
-.landing-container h1{
-    font-size: 2.4rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-}
-
-.tagline{
-    color:#ffff009;
-  font-style: italic;
-  font-size: 1.3rem;
- 
-  
-}
-
-.sub-tagline{
-    color: black;
-    font-size: 0.9rem;
-margin-bottom: 2.2rem;
-  font-weight: 500;
-}
-
-.landing-container .btn{
-    width: 100%;
-    max-width: 320px;
-}
-
-.footer-note{
-    margin-top: var(--space-md);
-    color: var(--text-muted);
-    font-size: 0.75rem;
-}
-
-  letter-spacing: -0.5px;
-  color: #0a0f1a;
-  margin-bottom: 0.2rem;
+#landingView h1 {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
-@media (max-width: 720px){
-    .landing-container h1{
-        font-size: 1.9rem;
-    }
-};
-
-
-/* Landing feature links and Font Awesome icons */
-.landing-container .logo-icon {
-    color: var(--accent);
+#landingView .tagline {
+  margin: 0;
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 1.3rem;
+  font-style: italic;
+  line-height: 1.4;
 }
 
-.landing-container .logo-icon .fa {
-    font-size: 2.5rem;
+#landingView .sub-tagline {
+  margin: 0 0 1rem;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
-.landing-features {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.7rem 1rem;
-    margin: 0.35rem 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.landing-features span {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.landing-features .fa,
-.sub-tagline .fa {
-    color: var(--accent);
-}
-
-.landing-container .btn .fa {
-    margin-right: 0.35rem;
-}
-
-.landing-container .btn:disabled {
-    opacity: 0.65;
-    cursor: wait;
-}
-
-@media (max-width: 480px) {
-    .landing-features {
-        gap: 0.65rem;
-        font-size: 0.82rem;
-    }
-}
-
-
-/* ── Landing page spacing and mobile clarity ───────────── */
-#landingView {
-  width: 100%;
-  min-height: 100vh;
-}
-
-.landing-container {
-  width: min(100%, 560px);
-  margin-inline: auto;
-  gap: .85rem;
-}
-
-.landing-container .btn {
+#landingView .landing-features {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem 1rem;
+  margin: 0.35rem 0;
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 0.9rem;
+}
+
+#landingView .landing-features span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+#landingView .landing-features .fa,
+#landingView .sub-tagline .fa {
+  color: var(--accent, #7c83ff);
+}
+
+#landingView .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: min(100%, 320px);
   min-height: 48px;
   flex: 0 0 auto;
@@ -152,24 +87,43 @@ margin-bottom: 2.2rem;
   line-height: 1.35;
 }
 
-.landing-container .tagline {
-  color: var(--text-secondary);
+#landingView .btn .fa {
+  margin-right: 0.35rem;
 }
 
-.landing-container .sub-tagline {
-  margin-bottom: 1rem;
+#landingView .btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+#landingView .footer-note {
+  margin-top: var(--space-md, 1rem);
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  #landingView h1 {
+    font-size: 1.9rem;
+  }
 }
 
 @media (max-width: 480px) {
   #landingView {
-    padding: 1.25rem .9rem;
+    padding: 1.25rem 0.9rem;
   }
 
-  .landing-container h1 {
+  #landingView h1 {
     font-size: 1.85rem;
   }
 
-  .landing-container .btn {
+  #landingView .landing-features {
+    gap: 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  #landingView .btn {
     width: 100%;
     max-width: 340px;
   }

@@ -43,12 +43,12 @@
   margin-bottom: 1rem;
   font-size: 0.95rem;
 }
-.toggle-row {
+#settingsPanel .toggle-row {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.toggle-row input[type="checkbox"] {
+#settingsPanel .toggle-row input[type="checkbox"] {
   width: 18px; height: 18px;
 }
 .bj-info p {
@@ -59,7 +59,7 @@
   font-weight: 600;
   color: #2f80ed;
 }
-.btn-outline {
+#settingsPanel .btn-outline {
   background: transparent;
   border: 2px solid #2f80ed;
   color: #2f80ed;

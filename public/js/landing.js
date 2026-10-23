@@ -70,5 +70,9 @@ function startParticles() {
   drawParticles();
 }
 
-// Start the show
-drawParticles();
+// Start particles only for the landing page; authenticated sessions go to Search.
+if (localStorage.getItem('lominii_token')) {
+  stopParticles();
+} else {
+  startParticles();
+}
