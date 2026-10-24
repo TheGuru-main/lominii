@@ -1,0 +1,109 @@
+/* LOMINII in-app keyboard: scoped to the LOMINII PWA UI. */
+.lominii-keyboard[hidden] { display: none !important; }
+
+.lominii-keyboard {
+  position: fixed;
+  z-index: 2147483000;
+  inset: auto 0 0;
+  padding: 8px max(8px, env(safe-area-inset-right))
+           calc(8px + env(safe-area-inset-bottom))
+           max(8px, env(safe-area-inset-left));
+  background: var(--lominii-keyboard-bg, #151b2b);
+  color: #f7f8ff;
+  border-top: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 -8px 28px rgba(0,0,0,.3);
+  font-family: system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.lominii-keyboard-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 7px;
+  max-width: 760px;
+}
+
+.lominii-keyboard-brand {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: #aabaff;
+  margin-right: auto;
+}
+
+.lominii-keyboard-language {
+  max-width: 125px;
+  border: 1px solid #424c66;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #fff;
+  background: #252d43;
+  font-size: 12px;
+}
+
+.lominii-key-row {
+  display: flex;
+  justify-content: center;
+  gap: clamp(3px, 1vw, 7px);
+  max-width: 760px;
+  margin: 0 auto 6px;
+}
+
+.lominii-key {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 8px;
+  padding: 5px 2px;
+  background: #30394f;
+  color: #fff;
+  font-size: clamp(13px, 3.6vw, 18px);
+  font-weight: 500;
+  box-shadow: 0 2px 0 #202739;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lominii-key:active {
+  background: #586ba0;
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.lominii-key-wide {
+  flex: 1.45 1 0;
+  background: #46516d;
+  font-size: 13px;
+}
+
+.lominii-key-space {
+  flex: 4 1 0;
+  font-size: 12px;
+}
+
+.lominii-key-close {
+  flex: 0 0 38px;
+  min-height: 32px;
+  padding: 3px;
+}
+
+html.lominii-keyboard-open body {
+  padding-bottom: 0;
+}
+
+@media (min-width: 700px) {
+  .lominii-keyboard {
+    left: 50%;
+    right: auto;
+    width: min(760px, 100%);
+    transform: translateX(-50%);
+    border: 1px solid rgba(255,255,255,.14);
+    border-bottom: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .lominii-key { min-height: 46px; }
+}
