@@ -36,6 +36,22 @@ def is_valid_email(email: str) -> bool:
     return re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email) is not None
 
 # ---------------------------------------------------------------------------
+def _validate_bcrypt_password(password: str) -> None:
+    """Validate passwords before passing them to bcrypt."""
+    if not isinstance(password, str):
+        raise HTTPException(status_code=400, detail="Password must be text")
+    if len(password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters",
+        )
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=400,
+            detail="Password is too long; use no more than 72 UTF-8 bytes",
+        )
+
+
 # Email + Password Signup
 # ---------------------------------------------------------------------------
 @router.post("/signup")
@@ -50,8 +66,7 @@ async def signup(request: Request, db: AsyncSession = Depends(get_db)):
     # Validation
     if not is_valid_email(email):
         raise HTTPException(status_code=400, detail="Invalid email format")
-    if len(password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    _validate_bcrypt_password(password)
     if not full_name:
         raise HTTPException(status_code=400, detail="Full name is required")
     if creator_role not in ("creator", "newscaster"):
@@ -365,11 +380,7 @@ async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Full name is required.")
         full_name = full_name.strip()
 
-        if not isinstance(password, str) or len(password) < 6:
-            raise HTTPException(
-                status_code=400,
-                detail="Password is required and must be at least 6 characters.",
-            )
+        _validate_bcrypt_password(password)
 
         state = _profile_text(data, "state", 100, required=True)
         lga = _profile_text(data, "lga", 100, required=True)
