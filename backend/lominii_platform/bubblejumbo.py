@@ -66,7 +66,7 @@ async def get_required_copies(identity: str, db) -> int:
 
 # ── Token creation & verification (unchanged, except now need db for copies) ──
 
-def create_token(identity: str, copies: int = None, C: int = 26, R: int = 64) -> str:
+def create_token(identity: str, copies: int = None, C: int = 56, R: int = 64) -> str:
     L = calculate_lsum(identity)
     S = calculate_ssum(identity)
     c = first_letter_index(identity)

@@ -47,6 +47,16 @@ def calculate_ssum(word: str, lang: str = "en") -> int:
 
 
 def first_letter_index(word: str, lang: str = "en") -> int:
+    """Return the true zero-based alphabet index of the first recognised letter."""
+    from lominii_platform.keymaps.keyboard import alphabet_index_map
+
+    alphabet = alphabet_index_map(lang)
+    normalized = normalise(word, lang)
+    character = next((ch for ch in normalized if ch in alphabet), None)
+    return alphabet[character] if character is not None else 0
+
+
+def keyboard_column_index(word: str, lang: str = "en") -> int:
     """Return the physical keyboard column of the first recognised letter."""
     from lominii_platform.keymaps.keyboard import alphabet_index_map, get_keyboard
 
@@ -61,8 +71,7 @@ def first_letter_index(word: str, lang: str = "en") -> int:
         if position >= 0:
             return position
 
-    # Language letters absent from the base physical rows still retain
-    # their alphabet index; they use a deterministic fallback column.
+    # Deterministic fallback for language-specific letters without a key.
     return alphabet[character] % GRID_COLUMNS
 
 

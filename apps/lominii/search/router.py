@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import case, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from lominii_platform.gsp import (calculate_lsum, calculate_ssum, calculate_uid_chain,
-    elastic_cloud, first_letter_index, gsp_place, normalise)
+    elastic_cloud, first_letter_index, keyboard_column_index, gsp_place, normalise)
 from lominii_platform.ai.prompt_builder import build_prompt
 from lominii_platform.content_filter import is_blocked, is_ai_blocked
 from lominii_platform.auth import oauth2_scheme, validate_token
@@ -582,8 +582,9 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
     L = calculate_lsum(norm_query, lang)
     S = calculate_ssum(norm_query, lang)
     c = first_letter_index(norm_query, lang)
-    gsp = gsp_place(L, S, c, K=5)
-    cloud = elastic_cloud(L, S, c, radius=1, first_letter_radius=1)
+    keyboard_c = keyboard_column_index(norm_query, lang)
+    gsp = gsp_place(L, S, c, K=5, C=56, R=64)
+    cloud = elastic_cloud(L, S, keyboard_c, radius=1, first_letter_radius=1)
     primary = gsp["primary_cell"]
 
     gsg_data = None
@@ -742,7 +743,7 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
                     uid_chain=uid_chain,
                     L_sum=L,
                     S_sum=S,
-                    keyboard_column=c,
+                    keyboard_column=keyboard_c,
                     primary_cell_col=primary["col"],
                     primary_cell_row=primary["row"],
                     replica_cells=replica_cells,
