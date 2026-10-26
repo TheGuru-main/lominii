@@ -19,6 +19,12 @@ from apps.lominii.search.router import router as search_router
 from apps.lominii.search.home_router import router as home_router
 from apps.lominii.media.router import router as scrapingbee_router
 
+from lominii_platform.models.crawler import (
+    CrawlerPage,
+    CrawlerWebsiteToken,
+    CrawlerWebsiteCharacter,
+)
+
 from lominii_platform.database import Base, engine
 from lominii_platform.game_engine import active_sessions
 from lominii_platform.sportmonk_service import start_webhook_proxy_loop

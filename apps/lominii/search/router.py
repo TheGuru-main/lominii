@@ -1,3 +1,4 @@
+from sqlalchemy import delete, func
 """LOMINII unified search: corrected GSP, independent sources, crawler index, and cache."""
 import asyncio
 import hashlib
@@ -22,8 +23,8 @@ from lominii_platform.intent_analyzer import analyze
 from lominii_platform.ai.gateway import generate
 from lominii_platform.wikipedia import search_wikipedia
 from lominii_platform.models.public import User
-from lominii_platform.models.search import Search, Correction, NewsArticle, NewsCache, DictionaryCache, DictionaryGridEntry, SearchCache
-from lominii_platform.models.crawler import CrawlerPage
+from lominii_platform.models.search import Search, Correction, NewsArticle, NewsCache, DictionaryCache, DictionaryGridEntry, DictionaryGridSnapshot, DictionaryLexicalToken, DictionaryLetterIndex, SearchCache
+from lominii_platform.models.crawler import CrawlerPage, CrawlerWebsiteToken, CrawlerWebsiteCharacter
 from lominii_platform.http_fetch import fetch_public_page
 from lominii_platform.keymaps.keyboard import detect_language, SUPPORTED_LANGUAGES
 
@@ -225,28 +226,242 @@ def _snippet(content: str | None, query: str, limit: int = 260) -> str:
     return text[start:start + limit]
 
 
-async def _crawler_lookup(db: AsyncSession, query: str) -> list[dict]:
-    """Search crawler-indexed page text; this does not fetch arbitrary URLs."""
-    tokens = list(dict.fromkeys(token for token in re.findall(r"[a-z0-9]{3,}", query.lower())[:6]))
+
+def _website_token_records(url_hash: str, text: str, language: str, section: str):
+    """Extract normalized token occurrences and their character positions."""
+    records = []
+    character_records = []
+
+    for position, match in enumerate(
+        re.finditer(r"[^\W_]+(?:['’\-][^\W_]+)*", text or "", flags=re.UNICODE)
+    ):
+        original = match.group(0)
+        normalized = normalise(original, language).strip().lower()
+
+        if not normalized or len(normalized) > 255:
+            continue
+
+        records.append({
+            "url_hash": url_hash,
+            "normalized_token": normalized,
+            "original_token": original,
+            "language": (language or "en")[:16],
+            "section": section,
+            "token_position": position,
+            "char_start": match.start(),
+        })
+
+        for char_position, character in enumerate(normalized):
+            if character.isalnum():
+                character_records.append({
+                    "url_hash": url_hash,
+                    "character": character,
+                    "character_position": char_position,
+                    "normalized_token": normalized,
+                    "language": (language or "en")[:16],
+                    "section": section,
+                    "token_position": position,
+                })
+
+    return records, character_records
+
+
+async def _rebuild_website_lexical_index(
+    db: AsyncSession,
+    url_hash: str,
+    title: str,
+    content: str,
+    language: str,
+) -> None:
+    """Replace lexical records for one fetched page."""
+    await db.execute(
+        delete(CrawlerWebsiteToken).where(
+            CrawlerWebsiteToken.url_hash == url_hash
+        )
+    )
+    await db.execute(
+        delete(CrawlerWebsiteCharacter).where(
+            CrawlerWebsiteCharacter.url_hash == url_hash
+        )
+    )
+
+    token_rows = []
+    character_rows = []
+
+    for section, text in (
+        ("title", title or ""),
+        ("body", content or ""),
+    ):
+        tokens, characters = _website_token_records(
+            url_hash, text, language or "en", section
+        )
+        token_rows.extend(tokens)
+        character_rows.extend(characters)
+
+    # Bound per-page indexing work to avoid pathological page payloads.
+    token_rows = token_rows[:50000]
+    character_rows = character_rows[:250000]
+
+    if token_rows:
+        await db.execute(CrawlerWebsiteToken.__table__.insert(), token_rows)
+
+    if character_rows:
+        await db.execute(
+            CrawlerWebsiteCharacter.__table__.insert(),
+            character_rows,
+        )
+
+
+async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> list[dict]:
+    """Retrieve crawler pages using indexed lexical tokens, then fallback."""
+    tokens = list(dict.fromkeys(
+        token for token in re.findall(r"[^\W_]+", query.lower(), flags=re.UNICODE)
+        if len(token) >= 2
+    ))[:10]
+
     if not tokens:
         return []
-    conditions = []
-    for token in tokens:
-        pattern = f"%{token}%"
-        conditions.extend([CrawlerPage.title.ilike(pattern), CrawlerPage.content.ilike(pattern)])
+
     try:
-        statement = (select(CrawlerPage).where(or_(*conditions)).order_by(
-            case((CrawlerPage.title.ilike(f"%{query}%"), 0), else_=1),
-            CrawlerPage.pagerank.desc(), CrawlerPage.last_crawled.desc()).limit(8))
+        # First pass: exact normalized-token matches in fetched website text.
+        normalized_tokens = []
+        for token in tokens:
+            try:
+                normalized_tokens.append(normalise(token, lang or "en").strip().lower())
+            except Exception:
+                normalized_tokens.append(token)
+
+        normalized_tokens = list(dict.fromkeys(t for t in normalized_tokens if t))
+
+        matched = []
+        if normalized_tokens:
+            token_statement = (
+                select(
+                    CrawlerWebsiteToken.url_hash,
+                    func.count(
+                        func.distinct(CrawlerWebsiteToken.normalized_token)
+                    ).label("matched_tokens"),
+                )
+                .where(
+                    CrawlerWebsiteToken.normalized_token.in_(normalized_tokens)
+                )
+                .group_by(CrawlerWebsiteToken.url_hash)
+                .order_by(func.count(
+                    func.distinct(CrawlerWebsiteToken.normalized_token)
+                ).desc())
+                .limit(30)
+            )
+            matched = (await db.execute(token_statement)).all()
+
+        results = []
+        if matched:
+            scores = {row.url_hash: int(row.matched_tokens or 0) for row in matched}
+            pages = (
+                await db.execute(
+                    select(CrawlerPage).where(
+                        CrawlerPage.url_hash.in_(list(scores.keys()))
+                    )
+                )
+            ).scalars().all()
+
+            # GSP-aware ranking: cell agreement is a relevance signal,
+            # not a hard filter that can hide otherwise relevant pages.
+            query_cell = None
+            try:
+                normalized_query = normalise(query, lang or "en")
+                q_l = calculate_lsum(normalized_query, lang or "en")
+                q_s = calculate_ssum(normalized_query, lang or "en")
+                q_c = first_letter_index(normalized_query, lang or "en")
+                resolved = gsp_place(q_l, q_s, q_c, K=5)
+                primary = resolved.get("primary_cell") or {}
+                if "col" in primary and "row" in primary:
+                    query_cell = f"{primary['col']},{primary['row']}"
+            except Exception as exc:
+                print(f"GSP query resolution unavailable: {exc}")
+
+            query_lower = query.casefold()
+            query_terms = set(normalized_tokens)
+            query_phrase = " ".join(query_lower.split())
+
+            def page_relevance(page):
+                title = (page.title or "").casefold()
+                content = (page.content or "").casefold()
+                page_cell = (page.gsp_cell or "").strip()
+
+                title_hits = sum(
+                    1 for term in query_terms if term and term in title
+                )
+                phrase_title = int(
+                    bool(query_phrase and query_phrase in title)
+                )
+                phrase_body = int(
+                    bool(query_phrase and query_phrase in content)
+                )
+                gsp_match = int(
+                    bool(query_cell and page_cell == query_cell)
+                )
+
+                return (
+                    phrase_title,
+                    gsp_match,
+                    scores.get(page.url_hash, 0),
+                    title_hits,
+                    phrase_body,
+                    float(page.pagerank or 0.0),
+                    page.last_crawled.timestamp()
+                    if page.last_crawled else 0.0,
+                )
+
+            pages.sort(key=page_relevance, reverse=True)
+
+            for page in pages[:8]:
+                results.append({
+                    "title": page.title or page.url,
+                    "url": page.url,
+                    "snippet": _snippet(page.content, query),
+                    "pagerank": float(page.pagerank or 0.0),
+                    "source": "LOMINII crawler",
+                })
+
+        if results:
+            return results
+
+        # Compatibility fallback for older pages not yet lexically indexed.
+        conditions = []
+        for token in tokens[:6]:
+            pattern = f"%{token}%"
+            conditions.extend([
+                CrawlerPage.title.ilike(pattern),
+                CrawlerPage.content.ilike(pattern),
+            ])
+
+        statement = (
+            select(CrawlerPage)
+            .where(or_(*conditions))
+            .order_by(
+                case(
+                    (CrawlerPage.title.ilike(f"%{query}%"), 0),
+                    else_=1,
+                ),
+                CrawlerPage.pagerank.desc(),
+                CrawlerPage.last_crawled.desc(),
+            )
+            .limit(8)
+        )
         rows = (await db.execute(statement)).scalars().all()
-        return [{"title": row.title or row.url, "url": row.url,
-                 "snippet": _snippet(row.content, query), "pagerank": float(row.pagerank or 0.0),
-                 "source": "LOMINII crawler"} for row in rows]
+
+        return [{
+            "title": row.title or row.url,
+            "url": row.url,
+            "snippet": _snippet(row.content, query),
+            "pagerank": float(row.pagerank or 0.0),
+            "source": "LOMINII crawler",
+        } for row in rows]
+
     except Exception as exc:
         await db.rollback()
-        print(f"Crawler index lookup failed: {exc}")
+        print(f"Crawler lexical lookup failed: {exc}")
         return []
-
 
 async def _stored_news_lookup(db: AsyncSession, query: str, domain: str, intent: str) -> list[dict]:
     tokens = list(dict.fromkeys(token for token in re.findall(r"[a-z0-9]{3,}", query.lower())[:5]))
@@ -413,6 +628,15 @@ async def _fetch_and_index_web_results(
                     last_crawled=now,
                 ))
 
+            await db.flush()
+            await _rebuild_website_lexical_index(
+                db=db,
+                url_hash=url_hash,
+                title=title,
+                content=page.get("content") or "",
+                language=lang or "en",
+            )
+
             indexed.append({
                 "title": title,
                 "url": page["url"],
@@ -426,13 +650,173 @@ async def _fetch_and_index_web_results(
     return indexed
 
 
+
+def _dictionary_lexical_records(word: str, definition: str, lang: str):
+    """Build bounded token records from a complete headword and definition."""
+    records = []
+    seen = set()
+
+    for token_type, text in (("word", word), ("meaning", definition)):
+        position = 0
+
+        for raw in re.findall(r"[^\W_]+(?:['’\-][^\W_]+)*", text, flags=re.UNICODE):
+            original = raw.strip()
+            normalized = normalise(original, lang).strip().lower()
+
+            if not normalized or len(normalized) > 255:
+                position += 1
+                continue
+
+            # Keep one token record for each distinct token/type combination.
+            key = (token_type, normalized)
+            if key not in seen:
+                records.append({
+                    "normalized_token": normalized,
+                    "original_token": original[:255],
+                    "token_type": token_type,
+                    "token_position": position,
+                })
+                seen.add(key)
+
+            position += 1
+
+            # Avoid unbounded database writes from pathological input.
+            if len(records) >= 1500:
+                break
+
+        if len(records) >= 1500:
+            break
+
+    return records
+
+
+async def _rebuild_dictionary_lexical_indexes(db, entry):
+    """Replace an entry's token and character indexes after an upsert."""
+    from sqlalchemy import delete
+
+    await db.execute(
+        delete(DictionaryLexicalToken).where(
+            DictionaryLexicalToken.dictionary_entry_id == entry.id
+        )
+    )
+    await db.execute(
+        delete(DictionaryLetterIndex).where(
+            DictionaryLetterIndex.dictionary_entry_id == entry.id
+        )
+    )
+
+    tokens = _dictionary_lexical_records(
+        entry.word, entry.definition, entry.language
+    )
+
+    for token in tokens:
+        db.add(DictionaryLexicalToken(
+            dictionary_entry_id=entry.id,
+            language=entry.language,
+            normalized_token=token["normalized_token"],
+            original_token=token["original_token"],
+            token_type=token["token_type"],
+            token_position=token["token_position"],
+        ))
+
+        for char_position, character in enumerate(token["normalized_token"]):
+            db.add(DictionaryLetterIndex(
+                dictionary_entry_id=entry.id,
+                language=entry.language,
+                normalized_token=token["normalized_token"],
+                character=character,
+                character_position=char_position,
+                token_type=token["token_type"],
+            ))
+
+
+async def _create_dictionary_grid_snapshots(db, checkpoint_size: int = 2000):
+    """
+    Create one timestamped snapshot for every newly crossed 2,000-entry
+    boundary. Each snapshot contains the complete records for that checkpoint.
+    """
+    from sqlalchemy import func
+
+    total = int(
+        (await db.execute(
+            select(func.count(DictionaryGridEntry.id))
+        )).scalar_one() or 0
+    )
+
+    latest_snapshot = (
+        await db.execute(
+            select(DictionaryGridSnapshot)
+            .order_by(DictionaryGridSnapshot.total_indexed.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+    last_checkpoint = (
+        int(latest_snapshot.total_indexed)
+        if latest_snapshot is not None else 0
+    )
+
+    next_checkpoint = ((last_checkpoint // checkpoint_size) + 1) * checkpoint_size
+
+    while next_checkpoint <= total:
+        rows = (
+            await db.execute(
+                select(DictionaryGridEntry)
+                .order_by(DictionaryGridEntry.id)
+                .offset(next_checkpoint - checkpoint_size)
+                .limit(checkpoint_size)
+            )
+        ).scalars().all()
+
+        if len(rows) != checkpoint_size:
+            # Do not create a misleading/incomplete checkpoint.
+            break
+
+        snapshot_entries = [
+            {
+                "id": row.id,
+                "word": row.word,
+                "normalized_word": row.normalized_word,
+                "language": row.language,
+                "definition": row.definition,
+                "phonetic": row.phonetic,
+                "part_of_speech": row.part_of_speech,
+                "source": row.source,
+                "source_url": row.source_url,
+                "uid_chain": row.uid_chain or [],
+                "L_sum": row.L_sum,
+                "S_sum": row.S_sum,
+                "keyboard_column": row.keyboard_column,
+                "primary_cell_col": row.primary_cell_col,
+                "primary_cell_row": row.primary_cell_row,
+                "replica_cells": row.replica_cells or [],
+                "indexed_at": (
+                    row.indexed_at.isoformat() if row.indexed_at else None
+                ),
+            }
+            for row in rows
+        ]
+
+        db.add(DictionaryGridSnapshot(
+            total_indexed=next_checkpoint,
+            checkpoint_size=checkpoint_size,
+            grid_columns=56,
+            grid_rows=64,
+            entries=snapshot_entries,
+            snapshot_at=datetime.utcnow(),
+        ))
+
+        await db.flush()
+        next_checkpoint += checkpoint_size
+
+
 @router.post("/dictionary/index")
 async def index_dictionary_batch(
     request: Request,
     email: str = Depends(get_search_identity),
     db: AsyncSession = Depends(get_db),
 ):
-    """Allow only administrators to write batches to the shared GSP lexicon."""
+    """Index dictionary entries, lexical tokens, letters, and grid snapshots."""
     actor = (
         await db.execute(
             select(User).where(User.email == email).limit(1)
@@ -447,17 +831,30 @@ async def index_dictionary_batch(
 
     data = await request.json()
     entries = data.get("entries")
+
     if not isinstance(entries, list) or not entries:
-        raise HTTPException(status_code=400, detail="entries must be a non-empty list")
+        raise HTTPException(
+            status_code=400,
+            detail="entries must be a non-empty list",
+        )
+
     if len(entries) > 500:
-        raise HTTPException(status_code=413, detail="Maximum 500 entries per batch")
+        raise HTTPException(
+            status_code=413,
+            detail="Maximum 500 entries per batch",
+        )
 
     requested_lang = str(data.get("language") or data.get("lang") or "en")
     lang = requested_lang.lower().split("-", 1)[0]
+
     if lang not in SUPPORTED_LANGUAGES:
-        raise HTTPException(status_code=400, detail="Unsupported language")
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported language",
+        )
 
     inserted = updated = skipped = 0
+    indexed_ids = []
 
     try:
         for item in entries:
@@ -467,6 +864,7 @@ async def index_dictionary_batch(
 
             word = str(item.get("word") or "").strip()
             definition = str(item.get("definition") or "").strip()
+
             if (
                 not word
                 or not definition
@@ -479,15 +877,22 @@ async def index_dictionary_batch(
                 continue
 
             normalized = normalise(word, lang).strip()
-            if not normalized:
+
+            if not normalized or len(normalized) > 255:
                 skipped += 1
                 continue
 
             chain = calculate_uid_chain(normalized, lang)
             L = calculate_lsum(normalized, lang)
             S = calculate_ssum(normalized, lang)
-            column = first_letter_index(normalized, lang)
-            placement = gsp_place(L, S, column, K=5)
+
+            # Main GSP column is alphabet-based; keyboard_column is physical.
+            gsp_column = first_letter_index(normalized, lang)
+            physical_keyboard_column = keyboard_column_index(normalized, lang)
+
+            placement = gsp_place(
+                L, S, gsp_column, K=5, C=56, R=64
+            )
             primary = placement.get("primary_cell") or {}
 
             if "col" not in primary or "row" not in primary:
@@ -515,26 +920,50 @@ async def index_dictionary_batch(
                 "uid_chain": chain,
                 "L_sum": L,
                 "S_sum": S,
-                "keyboard_column": column,
+                "keyboard_column": physical_keyboard_column,
                 "primary_cell_col": primary["col"],
                 "primary_cell_row": primary["row"],
-                "replica_cells": placement.get("replica_cells") or [],
+                "replica_cells": [
+                    {
+                        "col": cell["col"],
+                        "row": cell["row"],
+                        "k": cell["k"],
+                    }
+                    for cell in (placement.get("cells") or [])
+                ],
                 "last_seen_at": now,
             }
 
             if entry is None:
-                db.add(DictionaryGridEntry(**values))
+                entry = DictionaryGridEntry(
+                    **values,
+                    indexed_at=now,
+                )
+                db.add(entry)
                 inserted += 1
             else:
                 for key, value in values.items():
                     setattr(entry, key, value)
                 updated += 1
 
+            # Ensure the entry has a database ID before creating child indexes.
+            await db.flush()
+            await _rebuild_dictionary_lexical_indexes(db, entry)
+            indexed_ids.append(entry.id)
+
+        # Checkpoint creation is based on total distinct grid entries,
+        # not the number of rows received in this particular batch.
+        await db.flush()
+        await _create_dictionary_grid_snapshots(db, checkpoint_size=2000)
         await db.commit()
+
     except Exception as exc:
         await db.rollback()
         print(f"Dictionary batch indexing failed: {exc}")
-        raise HTTPException(status_code=500, detail="Dictionary batch indexing failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Dictionary batch indexing failed",
+        )
 
     return {
         "ok": True,
@@ -543,8 +972,9 @@ async def index_dictionary_batch(
         "inserted": inserted,
         "updated": updated,
         "skipped": skipped,
+        "lexical_entries_reindexed": len(indexed_ids),
+        "snapshot_checkpoint_size": 2000,
     }
-
 
 @router.post("/")
 async def unified_search(request: Request, email: str = Depends(get_search_identity),

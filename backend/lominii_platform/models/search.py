@@ -148,6 +148,92 @@ class DictionaryGridEntry(Base):
     last_seen_at = Column(DateTime, server_default="now()", nullable=False)
 
 
+class DictionaryGridSnapshot(Base):
+    """Timestamped checkpoint of each 2,000-entry dictionary-grid milestone."""
+    __tablename__ = "dictionary_grid_snapshots"
+    __table_args__ = (
+        Index("ix_dictionary_grid_snapshots_total", "total_indexed"),
+        Index("ix_dictionary_grid_snapshots_at", "snapshot_at"),
+        {"schema": "search"},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    total_indexed = Column(Integer, nullable=False)
+    checkpoint_size = Column(Integer, nullable=False, default=2000)
+    grid_columns = Column(Integer, nullable=False, default=56)
+    grid_rows = Column(Integer, nullable=False, default=64)
+
+    # Stores complete words, definitions, language, and GSP placement
+    # for the checkpoint batch.
+    entries = Column(JSONB, nullable=False, default=list)
+
+    snapshot_at = Column(DateTime, nullable=False, server_default="now()")
+
+
+class DictionaryLexicalToken(Base):
+    """Word-level index built from headwords and definition text."""
+    __tablename__ = "dictionary_lexical_tokens"
+    __table_args__ = (
+        Index(
+            "ix_dictionary_lexical_language_token",
+            "language", "normalized_token",
+        ),
+        Index(
+            "ix_dictionary_lexical_entry",
+            "dictionary_entry_id",
+        ),
+        {"schema": "search"},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    dictionary_entry_id = Column(
+        Integer,
+        ForeignKey("search.dictionary_grid_entries.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    language = Column(String(10), nullable=False)
+    normalized_token = Column(String(255), nullable=False)
+    original_token = Column(String(255), nullable=False)
+    token_type = Column(String(20), nullable=False)
+    token_position = Column(Integer, nullable=False, default=0)
+
+
+class DictionaryLetterIndex(Base):
+    """Character-position index for letter matching and lexical assistance."""
+    __tablename__ = "dictionary_letter_index"
+    __table_args__ = (
+        Index(
+            "ix_dictionary_letter_language_char",
+            "language", "character",
+        ),
+        Index(
+            "ix_dictionary_letter_token",
+            "language", "normalized_token",
+        ),
+        Index(
+            "ix_dictionary_letter_entry",
+            "dictionary_entry_id",
+        ),
+        {"schema": "search"},
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    dictionary_entry_id = Column(
+        Integer,
+        ForeignKey("search.dictionary_grid_entries.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    language = Column(String(10), nullable=False)
+    normalized_token = Column(String(255), nullable=False)
+    character = Column(String(8), nullable=False)
+    character_position = Column(Integer, nullable=False)
+    token_type = Column(String(20), nullable=False)
+
+
 class SearchCache(Base):
     __tablename__ = "search_cache"
     __table_args__ = {"schema": "search"}
