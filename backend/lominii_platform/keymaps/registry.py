@@ -1,44 +1,21 @@
 """
 LOMINII Language Registry.
 
-Provides language-specific keyboard layouts independently of
-the GSP placement grid and tokenizer recognition chain.
+Delegates to keymaps.keyboard, the single source of truth for alphabets,
+keyboard rows and the tokenizer.
 """
+from . import keyboard as _keyboard
+from .keyboard import KEYBOARDS, SUPPORTED_LANGUAGES, get_keyboard
 
-from .english import KEYBOARD as ENGLISH
-from .french import KEYBOARD as FRENCH
-from .german import KEYBOARD as GERMAN
-
-
-KEYMAPS = {
-    "en": ENGLISH,
-    "fr": FRENCH,
-    "de": GERMAN,
-}
-
-
-def get_keyboard(language: str = "en") -> list[str]:
-    """
-    Return the keyboard layout for a language.
-
-    Unsupported languages fall back to English.
-    """
-    language = (language or "en").lower().strip()
-    return KEYMAPS.get(language, KEYMAPS["en"])
+KEYMAPS = {code: list(rows) for code, rows in KEYBOARDS.items()}
 
 
 def register(language: str, keyboard: list[str]) -> None:
-    """
-    Register or replace a language keyboard layout.
-    """
+    """Register or replace a keyboard layout (alphabet must exist already)."""
     language = language.lower().strip()
-
-    if not language:
-        raise ValueError("Language code cannot be empty")
-
-    if not isinstance(keyboard, list) or not all(
-        isinstance(row, str) for row in keyboard
-    ):
+    if language not in SUPPORTED_LANGUAGES:
+        raise ValueError(f"Unknown language: {language!r}")
+    if not isinstance(keyboard, list) or not all(isinstance(r, str) for r in keyboard):
         raise TypeError("Keyboard must be a list of strings")
-
+    _keyboard.KEYBOARDS[language] = tuple(keyboard)
     KEYMAPS[language] = keyboard

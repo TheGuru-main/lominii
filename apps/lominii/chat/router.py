@@ -10,7 +10,7 @@ from sqlalchemy import select
 from lominii_platform.database import get_db
 from lominii_platform.auth import get_current_user
 from lominii_platform.content_filter import is_blocked, is_ai_blocked
-from lominii_platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place
+from lominii_platform.gsp import normalise, calculate_lsum, calculate_ssum, first_letter_index, gsp_place, place_text
 from lominii_platform.prompts import PROMPTS
 from lominii_platform.gsg import gps_to_gsg
 from lominii_platform.ai.gateway import generate
@@ -62,7 +62,7 @@ async def chat(
     L = calculate_lsum(norm_query, lang)
     S = calculate_ssum(norm_query, lang)
     c = first_letter_index(norm_query, lang)
-    gsp = gsp_place(L, S, c, K=5)
+    gsp = place_text(norm_query, lang, K=5)
     primary = gsp["primary_cell"]
 
     # ---------- GSG cell (optional) ----------

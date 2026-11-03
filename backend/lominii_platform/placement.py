@@ -10,8 +10,9 @@ from .gsp import (
     calculate_ssum,
     first_letter_index,
     gsp_place,
+    query_marker,
 )
-from .gsg import gps_to_gsg
+from .gsg import gps_to_gsg, GSG_COLS
 from .nsid import NSID
 import hashlib
 
@@ -61,10 +62,9 @@ class KeyboardPlacement(PlacementSource):
         return {"word": self.word, "language": self.lang}
 
     def parameters(self) -> dict:
-        L = calculate_lsum(self.word, self.lang)
-        S = calculate_ssum(self.word, self.lang)
-        c = first_letter_index(self.word, self.lang)
-        return {"L": L, "S": S, "c": c, "K": self._K, "D": self._D}
+        marker = query_marker(self.word, self.lang)
+        return {"L": marker["L"], "S": marker["S"], "c": marker["c"],
+                "C": marker["columns"], "K": self._K, "D": self._D}
 
     def namespace_id(self) -> int:
         return self._nsid
@@ -85,7 +85,7 @@ class GSGPlacement(PlacementSource):
 
     def parameters(self) -> dict:
         (gsg_x, gsg_y), (L, S, c) = gps_to_gsg(self.lat, self.lon)
-        return {"L": L, "S": S, "c": c, "K": self._K, "D": self._D,
+        return {"L": L, "S": S, "c": c, "C": GSG_COLS, "K": self._K, "D": self._D,
                 "gsg_cell": (gsg_x, gsg_y)}
 
     def namespace_id(self) -> int:
@@ -110,7 +110,7 @@ class CrawlerPlacement(PlacementSource):
         c = ord(first_letter) - 97 if 'a' <= first_letter <= 'z' else 0
         L = len(self.url)
         S = int(hashlib.sha256(self.url.encode()).hexdigest()[:8], 16) % 1_000_000
-        return {"L": L, "S": S, "c": c, "K": self._K, "D": self._D}
+        return {"L": L, "S": S, "c": c, "C": 26, "K": self._K, "D": self._D}
 
     def namespace_id(self) -> int:
         return NSID.CRAWLER

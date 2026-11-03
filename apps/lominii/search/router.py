@@ -6,14 +6,17 @@ import html
 import httpx
 import os
 import re
+import time
+from collections import deque
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
 from urllib.parse import parse_qs, quote, urlencode, urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import case, or_, select
+from sqlalchemy import case, or_, select, text, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from lominii_platform.gsp import (calculate_lsum, calculate_ssum, calculate_uid_chain,
-    elastic_cloud, first_letter_index, keyboard_column_index, gsp_place, normalise)
+    elastic_cloud, first_letter_index, keyboard_column_index, gsp_place, normalise,
+    place_text, query_marker)
 from lominii_platform.ai.prompt_builder import build_prompt
 from lominii_platform.content_filter import is_blocked, is_ai_blocked
 from lominii_platform.auth import oauth2_scheme, validate_token
@@ -26,14 +29,35 @@ from lominii_platform.models.public import User
 from lominii_platform.models.search import Search, Correction, NewsArticle, NewsCache, DictionaryCache, DictionaryGridEntry, DictionaryGridSnapshot, DictionaryLexicalToken, DictionaryLetterIndex, SearchCache
 from lominii_platform.models.crawler import CrawlerPage, CrawlerWebsiteToken, CrawlerWebsiteCharacter
 from lominii_platform.http_fetch import fetch_public_page
-from lominii_platform.keymaps.keyboard import detect_language, SUPPORTED_LANGUAGES
+from lominii_platform.keymaps.keyboard import (detect_by_alphabet, detect_language,
+    SUPPORTED_LANGUAGES, get_alphabet, grid_columns, tokenize, word_kind)
 
 router = APIRouter(prefix="/api/search", tags=["Search"])
 GNEWS_API_KEY = os.getenv("GNEWS_API_KEY", "").strip()
 SCRAPINGBEE_API_KEY = os.getenv("SCRAPINGBEE_API_KEY", "").strip()
 CACHE_TTL_ANONYMOUS = 5
 CACHE_TTL_AUTHENTICATED = 300
-CACHE_VERSION = "search-gsp-v5-lexicon-first-langdetect"
+CACHE_VERSION = "search-gsp-v6-alphabet-grid-numbers"
+
+
+def _cell_label(marker: dict, col: int) -> str:
+    """Readable column label: the language's own letter, or the digit on the number face."""
+    face = marker.get("face", "L")
+    if face == "N":
+        return str(col)
+    if face == "L":
+        alphabet = get_alphabet(marker.get("lang", "en"))
+        if 0 <= col < len(alphabet):
+            return alphabet[col].upper()
+    return "-"
+
+
+def _cell_key(placement: dict) -> str:
+    """"col,row" for letter faces; "N:col,row" for the number face, "X:..." if unplaceable."""
+    primary = placement["primary_cell"]
+    face = (placement.get("marker") or {}).get("face", "L")
+    prefix = "" if face == "L" else f"{face}:"
+    return f"{prefix}{primary['col']},{primary['row']}"
 
 async def get_search_identity(token: str = Depends(oauth2_scheme)) -> str:
     """Accept valid guest tokens for free search, not other protected routes."""
@@ -44,6 +68,111 @@ async def get_search_identity(token: str = Depends(oauth2_scheme)) -> str:
     if not isinstance(identity, str) or not identity:
         raise HTTPException(status_code=401, detail="Invalid token identity")
     return identity
+
+
+# ---- search hardening ------------------------------------------------------
+MAX_QUERY_CHARS = int(os.getenv("SEARCH_MAX_QUERY_CHARS", "300"))
+SEARCH_RATE_PER_MINUTE = int(os.getenv("SEARCH_RATE_PER_MINUTE", "30"))
+_rate_hits: dict[str, deque] = {}
+
+
+def _rate_limited(key: str, limit: int | None = None, window: float = 60.0) -> int:
+    """0 if allowed, else seconds to wait. In-process sliding window (per worker)."""
+    limit = SEARCH_RATE_PER_MINUTE if limit is None else limit
+    if limit <= 0:
+        return 0
+    now = time.monotonic()
+    hits = _rate_hits.setdefault(key, deque())
+    while hits and now - hits[0] > window:
+        hits.popleft()
+    if len(hits) >= limit:
+        return max(1, int(window - (now - hits[0])) + 1)
+    hits.append(now)
+    if len(_rate_hits) > 10000:  # drop idle keys so the table cannot grow forever
+        for stale in [k for k, v in _rate_hits.items() if not v or now - v[-1] > window]:
+            _rate_hits.pop(stale, None)
+    return 0
+
+
+def _like_escape(value: str) -> str:
+    """Escape LIKE wildcards so user text is matched literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _gsg_for_request(data: dict) -> dict | None:
+    """GSG cell for THIS request only; never taken from a shared cache."""
+    lat, lon = data.get("lat"), data.get("lon")
+    if lat is None or lon is None:
+        return None
+    try:
+        lat, lon = float(lat), float(lon)
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return None
+        gsg_cell, _ = gps_to_gsg(lat, lon)
+        return {"grid_x": gsg_cell[0], "grid_y": gsg_cell[1],
+                "cell_id": f"city.{gsg_cell[0]}.{gsg_cell[1]}"}
+    except Exception:
+        return None
+
+
+def _edit_distance(a: str, b: str, cap: int = 3) -> int:
+    """Insert/delete/replace/swap distance; returns cap + 1 when above cap."""
+    if abs(len(a) - len(b)) > cap:
+        return cap + 1
+    prev2 = None
+    prev = list(range(len(b) + 1))
+    for i in range(1, len(a) + 1):
+        cur = [i] + [0] * len(b)
+        for j in range(1, len(b) + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                cur[j] = min(cur[j], prev2[j - 2] + 1)
+        if min(cur) > cap:
+            return cap + 1
+        prev2, prev = prev, cur
+    return prev[-1]
+
+
+def _rank_suggestions(query: str, candidates, limit: int = 5) -> list[str]:
+    """candidates: (display_word, normalized_word) pairs, most recently used first.
+    Nearest edit distance wins; ties keep the incoming (recency) order."""
+    max_dist = 1 if len(query) <= 4 else 2
+    seen, scored = set(), []
+    for display, normalized in candidates:
+        normalized = (normalized or "").strip()
+        if not normalized or normalized == query or normalized in seen:
+            continue
+        distance = _edit_distance(query, normalized, cap=max_dist)
+        if distance <= max_dist:
+            seen.add(normalized)
+            scored.append((distance, abs(len(normalized) - len(query)),
+                           normalized, display or normalized))
+    scored.sort(key=lambda item: item[0])  # stable: ties keep the recency order
+    return [item[3] for item in scored[:limit]]
+
+
+async def _cloud_suggestions(db, norm_query: str, lang: str, cloud: list, limit: int = 5) -> list[str]:
+    """Near-miss words found in the elastic cloud's neighbouring grid cells."""
+    if len(norm_query) < 3 or not cloud:
+        return []
+    cells = [(item["col"], item["row"]) for item in cloud][:40]
+    try:
+        rows = (await db.execute(
+            select(DictionaryGridEntry.word, DictionaryGridEntry.normalized_word)
+            .where(
+                DictionaryGridEntry.language == lang,
+                tuple_(DictionaryGridEntry.primary_cell_col,
+                       DictionaryGridEntry.primary_cell_row).in_(cells),
+            )
+            .order_by(DictionaryGridEntry.last_seen_at.desc().nullslast())
+            .limit(400)
+        )).all()
+    except Exception as exc:
+        await db.rollback()
+        print(f"Cloud suggestions failed: {exc}")
+        return []
+    return _rank_suggestions(norm_query, [(row[0], row[1]) for row in rows], limit)
 
 
 def build_cache_key(query: str, lang: str, domain: str) -> str:
@@ -249,19 +378,23 @@ def _website_token_records(url_hash: str, text: str, language: str, section: str
             "section": section,
             "token_position": position,
             "char_start": match.start(),
+            "kind": word_kind(normalized, language or "en"),
         })
 
-        for char_position, character in enumerate(normalized):
-            if character.isalnum():
-                character_records.append({
-                    "url_hash": url_hash,
-                    "character": character,
-                    "character_position": char_position,
-                    "normalized_token": normalized,
-                    "language": (language or "en")[:16],
-                    "section": section,
-                    "token_position": position,
-                })
+        # One row per tokenizer unit: a digraph letter ("gb", "sh") is one row,
+        # digits are marked N so they are never read as letters, and letters
+        # outside the alphabet are marked F instead of being dropped.
+        for char_position, unit in enumerate(tokenize(normalized, language or "en")):
+            character_records.append({
+                "url_hash": url_hash,
+                "character": unit.value[:8],
+                "kind": unit.kind,
+                "character_position": char_position,
+                "normalized_token": normalized,
+                "language": (language or "en")[:16],
+                "section": section,
+                "token_position": position,
+            })
 
     return records, character_records
 
@@ -316,7 +449,7 @@ async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> lis
     """Retrieve crawler pages using indexed lexical tokens, then fallback."""
     tokens = list(dict.fromkeys(
         token for token in re.findall(r"[^\W_]+", query.lower(), flags=re.UNICODE)
-        if len(token) >= 2
+        if len(token) >= 2 or word_kind(token, lang or "en") == "N"
     ))[:10]
 
     if not tokens:
@@ -369,13 +502,10 @@ async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> lis
             query_cell = None
             try:
                 normalized_query = normalise(query, lang or "en")
-                q_l = calculate_lsum(normalized_query, lang or "en")
-                q_s = calculate_ssum(normalized_query, lang or "en")
-                q_c = first_letter_index(normalized_query, lang or "en")
-                resolved = gsp_place(q_l, q_s, q_c, K=5)
+                resolved = place_text(normalized_query, lang or "en", K=5)
                 primary = resolved.get("primary_cell") or {}
                 if "col" in primary and "row" in primary:
-                    query_cell = f"{primary['col']},{primary['row']}"
+                    query_cell = _cell_key(resolved)
             except Exception as exc:
                 print(f"GSP query resolution unavailable: {exc}")
 
@@ -430,17 +560,17 @@ async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> lis
         conditions = []
         for token in tokens[:6]:
             pattern = f"%{token}%"
-            conditions.extend([
-                CrawlerPage.title.ilike(pattern),
-                CrawlerPage.content.ilike(pattern),
-            ])
+            conditions.append(CrawlerPage.title.ilike(pattern))
+            # Trigram indexes cover 3+ characters; shorter tokens would scan every page.
+            if len(token) >= 3:
+                conditions.append(CrawlerPage.content.ilike(pattern))
 
         statement = (
             select(CrawlerPage)
             .where(or_(*conditions))
             .order_by(
                 case(
-                    (CrawlerPage.title.ilike(f"%{query}%"), 0),
+                    (CrawlerPage.title.ilike(f"%{_like_escape(query)}%", escape="\\"), 0),
                     else_=1,
                 ),
                 CrawlerPage.pagerank.desc(),
@@ -448,7 +578,10 @@ async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> lis
             )
             .limit(8)
         )
+        # Never let the fallback scan run away; restore the default afterwards.
+        await db.execute(text("SET LOCAL statement_timeout = 2500"))
         rows = (await db.execute(statement)).scalars().all()
+        await db.execute(text("SET LOCAL statement_timeout = DEFAULT"))
 
         return [{
             "title": row.title or row.url,
@@ -542,11 +675,7 @@ async def _fetch_and_index_web_results(
                 return None
 
             normalized_title = normalise(page["title"], lang)
-            L = calculate_lsum(normalized_title, lang)
-            S = calculate_ssum(normalized_title, lang)
-            c = first_letter_index(normalized_title, lang)
-            placement = gsp_place(L, S, c, K=5)["primary_cell"]
-            cell = f"{placement['col']},{placement['row']}"
+            cell = _cell_key(place_text(normalized_title, lang, K=5))
 
             if existing:
                 existing.url = page["url"]
@@ -606,11 +735,7 @@ async def _fetch_and_index_web_results(
 
             now = datetime.utcnow()
             title = page["title"]
-            L = calculate_lsum(normalise(title, lang), lang)
-            S = calculate_ssum(normalise(title, lang), lang)
-            c = first_letter_index(normalise(title, lang), lang)
-            placement = gsp_place(L, S, c, K=5)["primary_cell"]
-            cell = f"{placement['col']},{placement['row']}"
+            cell = _cell_key(place_text(normalise(title, lang), lang, K=5))
 
             if existing:
                 existing.title = title
@@ -675,6 +800,7 @@ def _dictionary_lexical_records(word: str, definition: str, lang: str):
                     "original_token": original[:255],
                     "token_type": token_type,
                     "token_position": position,
+                    "kind": word_kind(normalized, lang),
                 })
                 seen.add(key)
 
@@ -717,14 +843,18 @@ async def _rebuild_dictionary_lexical_indexes(db, entry):
             original_token=token["original_token"],
             token_type=token["token_type"],
             token_position=token["token_position"],
+            kind=token["kind"],
         ))
 
-        for char_position, character in enumerate(token["normalized_token"]):
+        for char_position, unit in enumerate(
+            tokenize(token["normalized_token"], entry.language)
+        ):
             db.add(DictionaryLetterIndex(
                 dictionary_entry_id=entry.id,
                 language=entry.language,
                 normalized_token=token["normalized_token"],
-                character=character,
+                character=unit.value[:8],
+                kind=unit.kind,
                 character_position=char_position,
                 token_type=token["token_type"],
             ))
@@ -787,6 +917,7 @@ async def _create_dictionary_grid_snapshots(db, checkpoint_size: int = 2000):
                 "L_sum": row.L_sum,
                 "S_sum": row.S_sum,
                 "keyboard_column": row.keyboard_column,
+                "grid_columns": row.grid_columns or grid_columns(row.language),
                 "primary_cell_col": row.primary_cell_col,
                 "primary_cell_row": row.primary_cell_row,
                 "replica_cells": row.replica_cells or [],
@@ -800,7 +931,7 @@ async def _create_dictionary_grid_snapshots(db, checkpoint_size: int = 2000):
         db.add(DictionaryGridSnapshot(
             total_indexed=next_checkpoint,
             checkpoint_size=checkpoint_size,
-            grid_columns=56,
+            grid_columns=max(grid_columns(code) for code in SUPPORTED_LANGUAGES),
             grid_rows=64,
             entries=snapshot_entries,
             snapshot_at=datetime.utcnow(),
@@ -882,16 +1013,17 @@ async def index_dictionary_batch(
                 skipped += 1
                 continue
 
-            chain = calculate_uid_chain(normalized, lang)
-            L = calculate_lsum(normalized, lang)
-            S = calculate_ssum(normalized, lang)
+            marker = query_marker(normalized, lang)
+            chain = marker["uid"]
+            L = marker["L"]
+            S = marker["S"]
 
-            # Main GSP column is alphabet-based; keyboard_column is physical.
-            gsp_column = first_letter_index(normalized, lang)
+            # Main GSP column is the alphabet index; keyboard_column is physical.
+            gsp_column = marker["c"]
             physical_keyboard_column = keyboard_column_index(normalized, lang)
 
             placement = gsp_place(
-                L, S, gsp_column, K=5, C=56, R=64
+                L, S, gsp_column, K=5, C=marker["columns"], R=64
             )
             primary = placement.get("primary_cell") or {}
 
@@ -921,6 +1053,7 @@ async def index_dictionary_batch(
                 "L_sum": L,
                 "S_sum": S,
                 "keyboard_column": physical_keyboard_column,
+                "grid_columns": marker["columns"],
                 "primary_cell_col": primary["col"],
                 "primary_cell_row": primary["row"],
                 "replica_cells": [
@@ -979,23 +1112,39 @@ async def index_dictionary_batch(
 @router.post("/")
 async def unified_search(request: Request, email: str = Depends(get_search_identity),
                          db: AsyncSession = Depends(get_db)):
-    data = await request.json()
-    query = str(data.get("q", "")).strip()
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Invalid request body")
+    raw_query = str(data.get("q", ""))
+    query = " ".join("".join(ch for ch in raw_query if ch.isprintable() or ch.isspace()).split())
     if not query:
         raise HTTPException(status_code=400, detail="Missing query")
+    if len(query) > MAX_QUERY_CHARS:
+        raise HTTPException(status_code=400, detail=f"Query too long (max {MAX_QUERY_CHARS} characters)")
     if is_blocked(query):
         raise HTTPException(status_code=400, detail="Blocked query")
+
+    wait = _rate_limited(f"search:{email}")
+    if wait:
+        raise HTTPException(status_code=429, detail="Too many searches. Please slow down.",
+                            headers={"Retry-After": str(wait)})
 
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     requested_lang = str(data.get("language") or data.get("lang") or "").lower().split("-", 1)[0]
     saved_lang = str(user.language or "").lower().split("-", 1)[0] if user and user.language else ""
+    alphabet_lang = detect_by_alphabet(query)
     if requested_lang in SUPPORTED_LANGUAGES:
         lang = requested_lang
+    elif alphabet_lang:
+        lang = alphabet_lang
     elif saved_lang in SUPPORTED_LANGUAGES:
         lang = saved_lang
     else:
         lang = detect_language(query, default="en")
-    country = "Nigeria"
+    country = user.country if user and getattr(user, "country", None) else "Nigeria"
     tier = user.subscription_status if user else "free"
     norm_query = normalise(query, lang).strip()
     ctx = analyze(norm_query)
@@ -1005,27 +1154,30 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
     cached = (await db.execute(select(SearchCache).where(SearchCache.cache_key == cache_key))).scalar_one_or_none()
     ttl = CACHE_TTL_AUTHENTICATED if user else CACHE_TTL_ANONYMOUS
     if cached and cached.cached_at and (datetime.utcnow() - cached.cached_at.replace(tzinfo=None)) < timedelta(minutes=ttl):
-        return cached.result
+        # Per-request fields never come from another user's cached copy.
+        hit = dict(cached.result)
+        hit["query"] = query
+        hit["gsg_cell"] = _gsg_for_request(data)
+        if user:
+            try:
+                db.add(Search(user_id=user.id, query=query,
+                              gsp_cell=_cell_key(place_text(norm_query, lang, K=5))))
+                await db.commit()
+            except Exception:
+                await db.rollback()
+        return hit
 
     # GSP values are independent of keyboard geometry except for c.
-    uid_chain = calculate_uid_chain(norm_query, lang)
-    L = calculate_lsum(norm_query, lang)
-    S = calculate_ssum(norm_query, lang)
-    c = first_letter_index(norm_query, lang)
+    marker = query_marker(norm_query, lang)
+    uid_chain = marker["uid"]
+    L, S, c = marker["L"], marker["S"], marker["c"]
     keyboard_c = keyboard_column_index(norm_query, lang)
-    gsp = gsp_place(L, S, c, K=5, C=56, R=64)
-    cloud = elastic_cloud(L, S, keyboard_c, radius=1, first_letter_radius=1)
+    gsp = gsp_place(L, S, c, K=5, C=marker["columns"], R=64)
+    gsp["marker"] = marker
+    cloud = elastic_cloud(L, S, c, radius=1, first_letter_radius=1, C=marker["columns"])
     primary = gsp["primary_cell"]
 
-    gsg_data = None
-    lat, lon = data.get("lat"), data.get("lon")
-    if lat is not None and lon is not None:
-        try:
-            gsg_cell, _ = gps_to_gsg(float(lat), float(lon))
-            gsg_data = {"grid_x": gsg_cell[0], "grid_y": gsg_cell[1],
-                        "cell_id": f"city.{gsg_cell[0]}.{gsg_cell[1]}"}
-        except Exception:
-            gsg_data = None
+    gsg_data = _gsg_for_request(data)
 
     # Dictionary lookup order: GSP-indexed grid, then legacy dictionary cache,
     # then the external dictionary API if no usable indexed record exists.
@@ -1095,7 +1247,7 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
             print(f"Dictionary cache lookup failed: {exc}")
             dictionary_cache_row = None
 
-    crawler_results = await _crawler_lookup(db, norm_query)
+    crawler_results = await _crawler_lookup(db, norm_query, lang)
 
     async def wiki_source():
         try:
@@ -1174,6 +1326,7 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
                     L_sum=L,
                     S_sum=S,
                     keyboard_column=keyboard_c,
+                    grid_columns=marker["columns"],
                     primary_cell_col=primary["col"],
                     primary_cell_row=primary["row"],
                     replica_cells=replica_cells,
@@ -1195,7 +1348,8 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
                 grid_entry.uid_chain = uid_chain
                 grid_entry.L_sum = L
                 grid_entry.S_sum = S
-                grid_entry.keyboard_column = c
+                grid_entry.keyboard_column = keyboard_c
+                grid_entry.grid_columns = marker["columns"]
                 grid_entry.primary_cell_col = primary["col"]
                 grid_entry.primary_cell_row = primary["row"]
                 grid_entry.replica_cells = replica_cells
@@ -1222,30 +1376,43 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
             print(f"Search AI summary failed: {exc}")
             ai_summary = None
 
-    correction = (await db.execute(select(Correction).where(Correction.misspelled.ilike(norm_query))
+    correction = (await db.execute(select(Correction).where(Correction.misspelled.ilike(_like_escape(norm_query), escape="\\"))
         .order_by(Correction.confidence.desc()).limit(1))).scalar_one_or_none()
     did_you_mean = None
     if correction and correction.corrected.strip().lower() != norm_query.lower():
         did_you_mean = correction.corrected.strip()
 
+    # Typo tolerance: the elastic cloud finds near-miss words in neighbouring cells.
+    suggestions: list[str] = []
+    if is_single_dictionary_term and not definition and marker["face"] == "L":
+        suggestions = await _cloud_suggestions(db, norm_query, lang, cloud)
+        if did_you_mean is None and suggestions:
+            did_you_mean = suggestions[0]
+
     response = {
         "query": query, "L": L, "Lsum": L, "uID": uid_chain, "S": S, "Ssum": S, "c": c,
         "primary_cell_col": primary["col"], "primary_cell_row": primary["row"],
+        "cell_label": _cell_label(marker, primary["col"]), "language": lang,
+        "face": marker["face"], "grid_columns": marker["columns"],
         "gsp": gsp, "elastic_cloud": cloud, "elastic_cloud_size": len(cloud),
         "definition": definition, "dictionary": dictionary, "news": news_articles,
         "wikipedia": wiki_articles, "web_results": web_results, "crawler_results": crawler_results,
-        "ai_summary": ai_summary, "did_you_mean": did_you_mean, "related_questions": [],
+        "ai_summary": ai_summary, "did_you_mean": did_you_mean, "suggestions": suggestions,
+        "related_questions": [],
         "gsg_cell": gsg_data,
         "source_status": {"dictionary": bool(definition), "news": bool(news_articles),
             "wikipedia": bool(wiki_articles), "web": bool(web_results), "crawler": bool(crawler_results)},
     }
     if user:
-        db.add(Search(user_id=user.id, query=query, gsp_cell=f"{primary['col']},{primary['row']}"))
-    if cached:
-        cached.result = response
-        cached.cached_at = datetime.utcnow()
-    else:
-        db.add(SearchCache(cache_key=cache_key, result=response, cached_at=datetime.utcnow()))
+        db.add(Search(user_id=user.id, query=query, gsp_cell=_cell_key(gsp)))
+    # Cache only results that found something, and never a user's location.
+    if any(response["source_status"].values()) or ai_summary:
+        stored = {**response, "gsg_cell": None}
+        if cached:
+            cached.result = stored
+            cached.cached_at = datetime.utcnow()
+        else:
+            db.add(SearchCache(cache_key=cache_key, result=stored, cached_at=datetime.utcnow()))
     try:
         await db.commit()
     except Exception:

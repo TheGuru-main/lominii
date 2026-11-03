@@ -1,11 +1,14 @@
 // LOMINII Service Worker – Offline caching, push notifications, and PWA support
-const CACHE_NAME = 'lominii-v3-keyboard';
+const CACHE_NAME = 'lominii-v4-frontend';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/lominii-keyboard.css',
   '/js/lominii-keyboard.js',
   '/js/search.js',
+  '/js/quran.js',
+  '/manifest.json',
+  '/icons/icon-192.png',
   '/offline_dictionary.json.gz'
 ];
 
@@ -39,31 +42,44 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
-// ---------- Fetch (serve from cache, fallback to network) ----------
+// ---------- Fetch ----------
+// Static files only. A cached copy is served at once and refreshed in the
+// background, so a new deployment reaches visitors on their next visit. Pages
+// try the network first. The API, sign-in routes and any signed-in request are
+// never cached.
+const STATIC_FILE = /\.(?:js|css|png|svg|ico|webp|woff2?|json|gz)$/i;
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (url.origin !== self.location.origin) return;
+  if (request.headers.has('Authorization')) return;
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
+
+  const isDocument = request.mode === 'navigate';
+  if (!isDocument && !STATIC_FILE.test(url.pathname)) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const isDocument = request.mode === 'navigate';
+    const cached = await cache.match(request);
 
-    if (!isDocument) {
-      const cached = await cache.match(request);
-      if (cached) return cached;
-    }
-
-    try {
-      const response = await fetch(request);
+    const refresh = fetch(request).then((response) => {
       if (response && response.ok && response.type === 'basic') {
         cache.put(request, response.clone()).catch(() => {});
       }
       return response;
+    });
+
+    if (cached && !isDocument) {
+      event.waitUntil(refresh.catch(() => {}));
+      return cached;
+    }
+
+    try {
+      return await refresh;
     } catch (error) {
-      const cached = await cache.match(request);
       if (cached) return cached;
       if (isDocument) {
         const fallback = await cache.match('/index.html');

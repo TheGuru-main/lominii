@@ -5,7 +5,7 @@ Now persists failure counters in PostgreSQL.
 import os
 import time
 from jose import jwt, JWTError
-from lominii_platform.gsp import calculate_lsum, calculate_ssum, first_letter_index, gsp_place
+from lominii_platform.gsp import gsp_place, query_marker
 from sqlalchemy import select
 from lominii_platform.models.public import BubbleJumboFailure, User
 
@@ -66,13 +66,27 @@ async def get_required_copies(identity: str, db) -> int:
 
 # ── Token creation & verification (unchanged, except now need db for copies) ──
 
-def create_token(identity: str, copies: int = None, C: int = 56, R: int = 64) -> str:
-    L = calculate_lsum(identity)
-    S = calculate_ssum(identity)
-    c = first_letter_index(identity)
-    if copies is None:
-        copies = 5   # default; caller should pass the dynamic value from get_required_copies
-    cells = gsp_place(L, S, c, K=copies, C=C, R=R)
+# Identity strings (email, phone, guest id) always use the English face so a
+# user's token does not change when the interface language changes.
+IDENTITY_LANGUAGE = "en"
+# Tokens issued before alphabet-length columns carry no "C" and used 56.
+LEGACY_COLUMNS = 56
+MAX_COPIES = 20
+
+
+def _copies(value) -> int:
+    try:
+        value = int(value)
+    except (TypeError, ValueError):
+        return 5
+    return max(1, min(value, MAX_COPIES))
+
+
+def create_token(identity: str, copies: int = None, C: int = None, R: int = 64) -> str:
+    marker = query_marker(identity, IDENTITY_LANGUAGE)
+    columns = C or marker["columns"]
+    K = _copies(copies)   # default 5; caller passes get_required_copies()
+    cells = gsp_place(marker["L"], marker["S"], marker["c"], K=K, C=columns, R=R)
     primary = cells["primary_cell"]
     now = int(time.time())
     payload = {
@@ -82,24 +96,31 @@ def create_token(identity: str, copies: int = None, C: int = 56, R: int = 64) ->
         "bj": {
             "col": primary["col"],
             "row": primary["row"],
-            "L": L,
-            "S": S,
-            "c": c,
-            "K": copies
+            "L": marker["L"],
+            "S": marker["S"],
+            "c": marker["c"],
+            "K": K,
+            "C": columns,
+            "face": marker["face"],
+            "lang": IDENTITY_LANGUAGE,
         }
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-def verify_token(token: str, C: int = 26, R: int = 64) -> dict | None:
+
+def verify_token(token: str, C: int = None, R: int = 64) -> dict | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         return None
     bj = payload.get("bj", {})
-    L, S, c, K = bj.get("L"), bj.get("S"), bj.get("c"), bj.get("K")
+    L, S, c = bj.get("L"), bj.get("S"), bj.get("c")
     if L is None or S is None or c is None:
         return None
-    cells = gsp_place(L, S, c, K=K, C=C, R=R)
+    columns = C or bj.get("C") or LEGACY_COLUMNS
+    if not isinstance(columns, int) or not 1 <= columns <= 64:
+        return None
+    cells = gsp_place(L, S, c, K=_copies(bj.get("K")), C=columns, R=R)
     primary = cells["primary_cell"]
     if primary["col"] != bj.get("col") or primary["row"] != bj.get("row"):
         return None

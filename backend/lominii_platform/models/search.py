@@ -139,6 +139,8 @@ class DictionaryGridEntry(Base):
     L_sum = Column(Integer, nullable=False)
     S_sum = Column(Integer, nullable=False)
     keyboard_column = Column(Integer, nullable=False)
+    # Grid columns (alphabet length) this cell was computed with; NULL = legacy 56.
+    grid_columns = Column(SmallInteger)
 
     primary_cell_col = Column(Integer, nullable=False)
     primary_cell_row = Column(Integer, nullable=False)
@@ -198,6 +200,8 @@ class DictionaryLexicalToken(Base):
     original_token = Column(String(255), nullable=False)
     token_type = Column(String(20), nullable=False)
     token_position = Column(Integer, nullable=False, default=0)
+    # L letters only, N digits only, M mixed.
+    kind = Column(String(1), nullable=False, default="L", server_default="L")
 
 
 class DictionaryLetterIndex(Base):
@@ -232,6 +236,8 @@ class DictionaryLetterIndex(Base):
     character = Column(String(8), nullable=False)
     character_position = Column(Integer, nullable=False)
     token_type = Column(String(20), nullable=False)
+    # L letter of the alphabet, N number, F foreign letter.
+    kind = Column(String(1), nullable=False, default="L", server_default="L")
 
 
 class SearchCache(Base):

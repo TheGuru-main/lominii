@@ -79,6 +79,9 @@ class CrawlerWebsiteToken(Base):
     # Character offset within the section text.
     char_start = Column(Integer, nullable=False, default=0)
 
+    # L letters only, N digits only, M mixed.
+    kind = Column(String(1), nullable=False, default="L", server_default="L")
+
 
 class CrawlerWebsiteCharacter(Base):
     __tablename__ = "website_characters"
@@ -103,7 +106,10 @@ class CrawlerWebsiteCharacter(Base):
     )
 
     # One character from a normalized token.
-    character = Column(String(1), nullable=False)
+    character = Column(String(8), nullable=False)
+
+    # L letter of the alphabet, N number, F foreign letter.
+    kind = Column(String(1), nullable=False, default="L", server_default="L")
 
     # Position within the normalized token.
     character_position = Column(Integer, nullable=False)

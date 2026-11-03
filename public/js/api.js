@@ -56,6 +56,14 @@ async function apiFetch(path, options = {}) {
     { ...options, headers }
   );
 
+  // An expired or invalid token must not lock a visitor out of search:
+  // drop it and retry once as a guest.
+  if (isSearch && token && response.status === 401 && !options.__retried) {
+    localStorage.removeItem("lominii_token");
+    window.dispatchEvent(new CustomEvent("lominii:session-expired"));
+    return apiFetch(path, { ...options, __retried: true });
+  }
+
   if (!response.ok) {
     let message = "Server request failed (" + response.status + ").";
 
@@ -69,7 +77,10 @@ async function apiFetch(path, options = {}) {
       }
     } catch (_) {}
 
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.retryAfter = Number(response.headers.get("Retry-After")) || 0;
+    throw error;
   }
 
   return response;

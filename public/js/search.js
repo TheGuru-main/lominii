@@ -13,139 +13,261 @@ function searchResultLink(item) {
   } catch (_) { return title; }
 }
 
-async function performSearch() {
-  const query = document.getElementById('searchInput').value.trim();
-  if (!query) return;
+// ---- search request state ----------------------------------------------
+const SEARCH_MAX_QUERY = 300;
+let searchSequence = 0;
+let searchController = null;
+let searchBlockedUntil = 0;
+let searchCooldownTimer = null;
 
+function setSearchBusy(busy) {
+  const button = document.getElementById('btnSearch');
+  if (!button) return;
+  button.disabled = busy;
+  button.setAttribute('aria-busy', busy ? 'true' : 'false');
+}
+
+function showSearchError(resultsDiv, message, canRetry) {
+  resultsDiv.innerHTML =
+    '<div class="error-state" role="alert">⚠️ ' + escapeSearchHtml(message) +
+    (canRetry
+      ? '<br><button type="button" class="search-retry" data-search-retry>Try again</button>'
+      : '') +
+    '</div>';
+  const retry = resultsDiv.querySelector('[data-search-retry]');
+  if (retry) retry.addEventListener('click', performSearch);
+}
+
+function startSearchCooldown(resultsDiv, seconds) {
+  clearInterval(searchCooldownTimer);
+  searchBlockedUntil = Date.now() + seconds * 1000;
+  setSearchBusy(true);
+  const tick = () => {
+    const left = Math.ceil((searchBlockedUntil - Date.now()) / 1000);
+    if (left <= 0) {
+      clearInterval(searchCooldownTimer);
+      searchBlockedUntil = 0;
+      setSearchBusy(false);
+      resultsDiv.innerHTML = '<p>You can search again now.</p>';
+      return;
+    }
+    resultsDiv.innerHTML =
+      '<div class="error-state" role="alert">⏳ You are searching very quickly. ' +
+      'Try again in ' + left + ' second' + (left === 1 ? '' : 's') + '.</div>';
+  };
+  tick();
+  searchCooldownTimer = setInterval(tick, 1000);
+}
+
+// The language is sent only when someone actually chose it: a language control
+// on the page, or text typed with the LOMINII keyboard in that layout.
+function searchLanguageFor(input) {
+  const control = document.querySelector('[name="language"], #searchLanguage, #languageSelect');
+  if (control && control.value) return control.value;
+  const keyboard = window.LOMINIIKeyboard;
+  return (keyboard && typeof keyboard.languageFor === 'function' && keyboard.languageFor(input)) || '';
+}
+
+function searchErrorMessage(err) {
+  const status = err && err.status;
+  if (err && err.name === 'AbortError') return 'Search took too long. Please try again.';
+  if (status === 400) return String(err.message || 'That search could not be processed.');
+  if (status === 401) return 'Your session has ended. Please reload the page and try again.';
+  if (status >= 500) return 'Search is unavailable right now. Please try again in a moment.';
+  if (err && err.name === 'TypeError') return 'Could not reach LOMINII. Check your connection and try again.';
+  return String((err && err.message) || 'Search failed. Please try again.');
+}
+
+function renderSearchResults(resultsDiv, query, data) {
+  const list = value => (Array.isArray(value) ? value : []);
+  const news = list(data.news);
+  const wikipedia = list(data.wikipedia);
+  const webResults = list(data.web_results);
+  const crawlerResults = list(data.crawler_results);
+  const related = list(data.related_questions);
+  const didYouMean = typeof data.did_you_mean === 'string' ? data.did_you_mean.trim() : '';
+  const similar = list(data.suggestions)
+    .filter(word => typeof word === 'string' && word.trim() &&
+      word.trim().toLowerCase() !== didYouMean.toLowerCase())
+    .slice(0, 4);
+  const hasResults = Boolean(
+    data.ai_summary || data.definition || news.length || wikipedia.length ||
+    webResults.length || crawlerResults.length
+  );
+
+  let html = '';
+
+  // Did you mean?
+  if (didYouMean) {
+    const suggestion = escapeSearchHtml(didYouMean);
+    html += `<div class="did-you-mean">Did you mean: <button type="button" class="search-query-action" data-search-query="${suggestion}">${suggestion}</button>?</div>`;
+  }
+  if (similar.length) {
+    html += '<div class="similar-words">Also close: ' + similar.map(word => {
+      const safe = escapeSearchHtml(word.trim());
+      return `<button type="button" class="search-query-action" data-search-query="${safe}">${safe}</button>`;
+    }).join(' ') + '</div>';
+  }
+
+  if (!hasResults) {
+    html += '<div class="no-results" role="status">No results found for “' +
+      escapeSearchHtml(query) + '”. ' +
+      (didYouMean || similar.length
+        ? 'Check the suggestions above.'
+        : 'Try different words or check the spelling.') + '</div>';
+  }
+
+  // AI Summary
+  if (data.ai_summary) {
+    html += `
+      <div class="ai-summary-card">
+        <div class="ai-badge">🧠 AI Summary</div>
+        <p>${escapeSearchHtml(data.ai_summary)}</p>
+        <button class="btn btn-outline btn-sm" onclick="alert('Premium feature coming soon')">🔍 Discover More</button>
+      </div>`;
+  }
+
+  // Dictionary Definition
+  if (data.definition) {
+    html += `
+      <div class="definition-card">
+        <div class="def-badge">📖 Dictionary</div>
+        ${data.dictionary && data.dictionary.word
+          ? `<strong>${escapeSearchHtml(data.dictionary.word)}</strong>`
+          : ''}
+        ${data.dictionary && data.dictionary.part_of_speech
+          ? `<span class="dictionary-pos">${escapeSearchHtml(data.dictionary.part_of_speech)}</span>`
+          : ''}
+        <p>${escapeSearchHtml(data.definition)}</p>
+        ${data.dictionary && data.dictionary.source
+          ? `<small class="dictionary-source">Source: ${escapeSearchHtml(data.dictionary.source)}</small>`
+          : ''}
+      </div>`;
+  }
+
+  // Cell info: the column is the language's own letter (server label), not just A-Z.
+  const cellCol = Number(data.primary_cell_col);
+  const cellRow = Number(data.primary_cell_row);
+  let cellLabel = 'Unavailable';
+  if (Number.isInteger(cellCol) && cellCol >= 0 && Number.isFinite(cellRow)) {
+    const letter = typeof data.cell_label === 'string' && data.cell_label
+      ? data.cell_label
+      : (cellCol <= 25 ? String.fromCharCode(65 + cellCol) : String(cellCol));
+    cellLabel = `(${letter}, ${cellRow})`;
+  }
+  const lValue = data.L ?? data.Lsum ?? '—';
+  const sValue = data.S ?? data.Ssum ?? '—';
+  const languageNote = typeof data.language === 'string' && data.language
+    ? ` &nbsp;|&nbsp; 🌐 ${escapeSearchHtml(data.language.toUpperCase())}`
+    : '';
+
+  html += `
+    <div class="cell-info">
+      📍 Cell: ${escapeSearchHtml(cellLabel)} &nbsp;|&nbsp; 🔗 L: ${escapeSearchHtml(lValue)}, S: ${escapeSearchHtml(sValue)}${languageNote}
+    </div>`;
+
+  // News
+  if (news.length > 0) {
+    html += '<h4 style="margin-top:1.5rem;">📰 Related News</h4>';
+    news.forEach(n => { html += `<div class="news-item">📌 ${searchResultLink(n)}</div>`; });
+  }
+  // Wikipedia
+  if (wikipedia.length > 0) {
+    html += '<h4 style="margin-top:1.5rem;">📚 Wikipedia</h4>';
+    wikipedia.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}${item.extract ? `<p>${escapeSearchHtml(item.extract)}</p>` : ''}</div>`; });
+  }
+  // General web candidates from ScrapingBee-backed search
+  if (webResults.length > 0) {
+    html += '<h4 style="margin-top:1.5rem;">🌐 Web Results</h4>';
+    webResults.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}</div>`; });
+  }
+  // Pages indexed by LOMINII's crawler
+  if (crawlerResults.length > 0) {
+    html += '<h4 style="margin-top:1.5rem;">🕸️ LOMINII Crawler</h4>';
+    crawlerResults.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}${item.snippet ? `<p>${escapeSearchHtml(item.snippet)}</p>` : ''}</div>`; });
+  }
+
+  // Related Questions
+  if (related.length > 0) {
+    html += '<h4 style="margin-top:1.5rem;">🤔 People Also Ask</h4>';
+    related.forEach(q => {
+      const safeQuestion = escapeSearchHtml(q);
+      html += `<button type="button" class="related-q search-query-action" data-search-query="${safeQuestion}">${safeQuestion}</button>`;
+    });
+  }
+
+  resultsDiv.innerHTML = html;
+
+  // Use event listeners rather than embedding untrusted text in JavaScript.
+  resultsDiv.querySelectorAll('[data-search-query]').forEach(button => {
+    button.addEventListener('click', () => {
+      const input = document.getElementById('searchInput');
+      if (!input) return;
+      input.value = button.dataset.searchQuery || '';
+      performSearch();
+    });
+  });
+}
+
+async function performSearch() {
+  const input = document.getElementById('searchInput');
   const resultsDiv = document.getElementById('searchResults');
-  resultsDiv.innerHTML = '<div class="loading-pulse">✨ LOMINII is thinking…</div>';
+  if (!input || !resultsDiv) return;
+
+  const query = input.value.replace(/\s+/g, ' ').trim();
+  if (!query) return;
+  if (searchBlockedUntil > Date.now()) return;
+  if (query.length > SEARCH_MAX_QUERY) {
+    showSearchError(resultsDiv,
+      'Please shorten your search to ' + SEARCH_MAX_QUERY + ' characters or fewer.', false);
+    return;
+  }
+  if (navigator.onLine === false) {
+    showSearchError(resultsDiv, 'You appear to be offline. Reconnect and try again.', true);
+    return;
+  }
+
+  // Only the newest search may update the page.
+  const sequence = ++searchSequence;
+  if (searchController) searchController.abort();
+  const controller = new AbortController();
+  searchController = controller;
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
+
+  setSearchBusy(true);
+  resultsDiv.innerHTML = '<div class="loading-pulse" role="status">✨ LOMINII is thinking…</div>';
 
   try {
+    const payload = { q: query };
+    const language = searchLanguageFor(input);
+    if (language) payload.language = language;
+
     const response = await apiFetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify((() => {
-        const payload = { q: query };
-        const languageControl = document.querySelector(
-          '[name="language"], #searchLanguage, #languageSelect'
-        );
-        const selectedLanguage = languageControl && languageControl.value;
-        if (selectedLanguage) payload.language = selectedLanguage;
-        return payload;
-      })())
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
     const data = await response.json();
+    if (sequence !== searchSequence) return;
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
       throw new Error('The search service returned an invalid response.');
     }
-
-    let html = '';
-
-    // Did you mean?
-    if (data.did_you_mean) {
-      const suggestion = escapeSearchHtml(data.did_you_mean);
-      html += `<div class="did-you-mean">Did you mean: <button type="button" class="search-query-action" data-search-query="${suggestion}">${suggestion}</button>?</div>`;
-    }
-
-    // AI Summary
-    if (data.ai_summary) {
-      html += `
-        <div class="ai-summary-card">
-          <div class="ai-badge">🧠 AI Summary</div>
-          <p>${escapeSearchHtml(data.ai_summary)}</p>
-          <button class="btn btn-outline btn-sm" onclick="alert('Premium feature coming soon')">🔍 Discover More</button>
-        </div>`;
-    }
-
-    // Dictionary Definition
-    if (data.definition) {
-      html += `
-        <div class="definition-card">
-          <div class="def-badge">📖 Dictionary</div>
-          ${data.dictionary && data.dictionary.word
-            ? `<strong>${escapeSearchHtml(data.dictionary.word)}</strong>`
-            : ''}
-          ${data.dictionary && data.dictionary.part_of_speech
-            ? `<span class="dictionary-pos">${escapeSearchHtml(data.dictionary.part_of_speech)}</span>`
-            : ''}
-          <p>${escapeSearchHtml(data.definition)}</p>
-          ${data.dictionary && data.dictionary.source
-            ? `<small class="dictionary-source">Source: ${escapeSearchHtml(data.dictionary.source)}</small>`
-            : ''}
-        </div>`;
-    }
-
-    // Cell info
-    const cellCol = Number(data.primary_cell_col);
-    const cellRow = Number(data.primary_cell_row);
-    const cellLabel = Number.isInteger(cellCol) && cellCol >= 0 && cellCol <= 25
-      && Number.isFinite(cellRow)
-      ? `(${String.fromCharCode(65 + cellCol)}, ${cellRow})`
-      : 'Unavailable';
-    const lValue = data.L ?? data.Lsum ?? '—';
-    const sValue = data.S ?? data.Ssum ?? '—';
-
-    html += `
-      <div class="cell-info">
-        📍 Cell: ${escapeSearchHtml(cellLabel)} &nbsp;|&nbsp; 🔗 L: ${escapeSearchHtml(lValue)}, S: ${escapeSearchHtml(sValue)}
-      </div>`;
-
-    // News
-    if (data.news && data.news.length > 0) {
-      html += '<h4 style="margin-top:1.5rem;">📰 Related News</h4>';
-      data.news.forEach(n => { html += `<div class="news-item">📌 ${searchResultLink(n)}</div>`; });
-    }
-    // Wikipedia
-    if (data.wikipedia && data.wikipedia.length > 0) {
-      html += '<h4 style="margin-top:1.5rem;">📚 Wikipedia</h4>';
-      data.wikipedia.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}${item.extract ? `<p>${escapeSearchHtml(item.extract)}</p>` : ''}</div>`; });
-    }
-    // General web candidates from ScrapingBee-backed search
-    if (data.web_results && data.web_results.length > 0) {
-      html += '<h4 style="margin-top:1.5rem;">🌐 Web Results</h4>';
-      data.web_results.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}</div>`; });
-    }
-    // Pages indexed by LOMINII's crawler
-    if (data.crawler_results && data.crawler_results.length > 0) {
-      html += '<h4 style="margin-top:1.5rem;">🕸️ LOMINII Crawler</h4>';
-      data.crawler_results.forEach(item => { html += `<div class="source-item">${searchResultLink(item)}${item.snippet ? `<p>${escapeSearchHtml(item.snippet)}</p>` : ''}</div>`; });
-    }
-
-    // Related Questions
-    if (data.related_questions && data.related_questions.length > 0) {
-      html += '<h4 style="margin-top:1.5rem;">🤔 People Also Ask</h4>';
-      data.related_questions.forEach(q => {
-        const safeQuestion = escapeSearchHtml(q);
-        html += `<button type="button" class="related-q search-query-action" data-search-query="${safeQuestion}">${safeQuestion}</button>`;
-      });
-    }
-
-    resultsDiv.innerHTML = html || '<p>No results found for your query.</p>';
-
-    // Use event listeners rather than embedding untrusted text in JavaScript.
-    resultsDiv.querySelectorAll('[data-search-query]').forEach(button => {
-      button.addEventListener('click', () => {
-        const input = document.getElementById('searchInput');
-        if (!input) return;
-        input.value = button.dataset.searchQuery || '';
-        performSearch();
-      });
-    });
-
+    renderSearchResults(resultsDiv, query, data);
   } catch (err) {
-    const message = String(
-      err && err.message ? err.message : "Search failed. Please try again."
-    );
-    const safeMessage = message.replace(/[&<>"]/g, function (c) {
-      return {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;"
-      }[c];
-    });
-    resultsDiv.innerHTML =
-      '<div class="error-state">⚠️ ' + safeMessage + '</div>';
+    if (sequence !== searchSequence) return;
+    if (err && err.status === 429) {
+      startSearchCooldown(resultsDiv, Math.max(1, err.retryAfter || 30));
+      return;
+    }
+    showSearchError(resultsDiv,
+      timedOut ? 'Search took too long. Please try again.' : searchErrorMessage(err), true);
+  } finally {
+    clearTimeout(timer);
+    if (sequence === searchSequence && !(searchBlockedUntil > Date.now())) {
+      setSearchBusy(false);
+    }
   }
 }
 
@@ -238,7 +360,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSearch = document.getElementById('btnSearch');
   const searchInput = document.getElementById('searchInput');
   if (btnSearch) btnSearch.addEventListener('click', performSearch);
-  if (searchInput) searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') performSearch();
-  });
+  if (searchInput) {
+    searchInput.maxLength = SEARCH_MAX_QUERY;
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.isComposing) performSearch();
+    });
+  }
 });

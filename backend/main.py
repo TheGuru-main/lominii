@@ -97,7 +97,47 @@ async def startup():
 
         await connection.run_sync(Base.metadata.create_all)
 
+        # Alphabet-grid / number-marker columns (tables exist after create_all).
+        token_marker_migrations = [
+            "ALTER TABLE IF EXISTS crawler.website_tokens ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
+            "ALTER TABLE IF EXISTS crawler.website_characters ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
+            "ALTER TABLE IF EXISTS crawler.website_characters ALTER COLUMN character TYPE VARCHAR(8)",
+            "ALTER TABLE IF EXISTS search.dictionary_lexical_tokens ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
+            "ALTER TABLE IF EXISTS search.dictionary_letter_index ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
+            "ALTER TABLE IF EXISTS search.dictionary_grid_entries ADD COLUMN IF NOT EXISTS grid_columns SMALLINT",
+        ]
+        for migration_sql in token_marker_migrations:
+            await connection.execute(text(migration_sql))
+
+    asyncio.create_task(_ensure_search_indexes())
     asyncio.create_task(start_webhook_proxy_loop())
+
+
+async def _ensure_search_indexes():
+    """Trigram indexes so the crawler's fallback ILIKE search stops scanning every page.
+
+    Built CONCURRENTLY in the background so startup and writes are not blocked.
+    If pg_trgm is unavailable this only logs and search keeps working.
+    """
+    statements = [
+        "CREATE EXTENSION IF NOT EXISTS pg_trgm",
+        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_crawler_pages_title_trgm "
+        "ON crawler.pages USING gin (title gin_trgm_ops)",
+        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_crawler_pages_content_trgm "
+        "ON crawler.pages USING gin (content gin_trgm_ops)",
+    ]
+    try:
+        async with engine.connect() as connection:
+            connection = await connection.execution_options(isolation_level="AUTOCOMMIT")
+            for statement in statements:
+                try:
+                    await connection.execute(text(statement))
+                except Exception as exc:
+                    print(f"Search index step skipped: {exc}")
+                    if statement.startswith("CREATE EXTENSION"):
+                        return
+    except Exception as exc:
+        print(f"Search index setup skipped: {exc}")
 
 
 @app.get("/health")

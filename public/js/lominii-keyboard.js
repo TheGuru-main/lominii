@@ -12,9 +12,12 @@
     en: { name: "English", rows: ["qwertyuiop", "asdfghjkl", "zxcvbnm"], extra: [] },
     fr: { name: "Français", rows: ["azertyuiop", "qsdfghjklm", "wxcvbn"], extra: [] },
     de: { name: "Deutsch", rows: ["qwertzuiop", "asdfghjkl", "yxcvbnm"], extra: ["ä", "ö", "ü", "ß"] },
-    yo: { name: "Yorùbá", rows: ["qwertyuiop", "asdfghjkl", "zxcvbnm"], extra: ["ẹ", "ọ", "ṣ"] },
-    ha: { name: "Hausa", rows: ["qwertyuiop", "asdfghjkl", "zxcvbnm"], extra: ["ɓ", "ɗ", "ƙ", "ƴ"] },
-    ig: { name: "Igbo", rows: ["qwertyuiop", "asdfghjkl", "zxcvbnm"], extra: ["ị", "ọ", "ụ", "ṅ"] }
+    // Official alphabets: yo 25 (gb is one letter), ha 28 (sh, ts), ig 36 (9 digraphs).
+    // Keys show only letters of the language; digraphs are typed with two keys.
+    yo: { name: "Yorùbá", rows: ["wertyuiop", "asdfghjkl", "bnm"], extra: ["ẹ", "ọ", "ṣ"] },
+    ha: { name: "Hausa", rows: ["wertyuio", "asdfghjkl", "zcbnm"], extra: ["ɓ", "ɗ", "ƙ", "ƴ"] },
+    // Igbo has no standalone "c", so "ch" gets its own key.
+    ig: { name: "Igbo", rows: ["wertyuiop", "asdfghjkl", "zvbnm"], extra: ["ị", "ọ", "ụ", "ṅ"], digraphs: ["ch"] }
   };
 
   const eligible = [
@@ -31,7 +34,29 @@
   let language = "en";
   let originalInputMode = new WeakMap();
 
+  const LANGUAGE_KEY = "lominii_keyboard_language";
+  let lastInsert = null; // which layout typed the last characters, and into which field
+
+  function chosenLanguage() {
+    try {
+      const value = localStorage.getItem(LANGUAGE_KEY) || "";
+      return LANGUAGES[value] ? value : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function rememberLanguage(code) {
+    try {
+      if (code) localStorage.setItem(LANGUAGE_KEY, code);
+      else localStorage.removeItem(LANGUAGE_KEY);
+    } catch (_) {}
+  }
+
+  // The keyboard's own choice wins; otherwise the settings or page language.
   function currentLanguage() {
+    const chosen = chosenLanguage();
+    if (chosen) return chosen;
     const setting = document.querySelector("#settingLanguage, [name='language']");
     const value = (setting?.value || document.documentElement.lang || "en")
       .toLowerCase().split("-")[0];
@@ -72,6 +97,7 @@
   function insertText(text) {
     if (!active || !isEditable(active)) return;
     const el = active;
+    lastInsert = { el, language, at: Date.now() };
     el.focus();
 
     if (el.isContentEditable && !("value" in el)) {
@@ -190,6 +216,7 @@
     });
     langSelect.addEventListener("change", () => {
       language = langSelect.value;
+      rememberLanguage(language);
       renderKeyboard();
     });
 
@@ -220,8 +247,9 @@
       makeRow(panel, keys);
     });
 
-    if (layout.extra.length) {
-      makeRow(panel, layout.extra.map(letter =>
+    const extraKeys = [...layout.extra, ...(layout.digraphs || [])];
+    if (extraKeys.length) {
+      makeRow(panel, extraKeys.map(letter =>
         createKey(letter, () => insertText((shifted || caps) ? letter.toLocaleUpperCase() : letter))
       ));
     }
@@ -367,12 +395,18 @@
     });
 
     document.addEventListener("change", event => {
-      if (event.target.matches("#settingLanguage, [name='language']") &&
-          panel && !panel.hidden) {
+      if (!event.target.matches("#settingLanguage, [name='language']")) return;
+      rememberLanguage(""); // the settings choice replaces an earlier keyboard choice
+      if (panel && !panel.hidden) {
         language = currentLanguage();
         renderKeyboard();
       }
     });
+
+    // Typing on the device's own keyboard means the layout no longer applies.
+    document.addEventListener("input", event => {
+      if (event.isTrusted && lastInsert && lastInsert.el === event.target) lastInsert = null;
+    }, true);
 
     new MutationObserver(records => {
       for (const record of records) {
@@ -400,8 +434,19 @@
     setLanguage(code) {
       if (LANGUAGES[code]) {
         language = code;
+        rememberLanguage(code);
         renderKeyboard();
       }
+    },
+    getLanguage() {
+      return language;
+    },
+    // Layout that typed into this field, or "" if it was not typed with the keyboard.
+    languageFor(el) {
+      if (!lastInsert || lastInsert.el !== el) return "";
+      if (Date.now() - lastInsert.at > 120000) return "";
+      if (!String(getValue(el)).trim()) return "";
+      return lastInsert.language;
     }
   });
 })();

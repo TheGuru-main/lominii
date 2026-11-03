@@ -1,6 +1,6 @@
 """OTP Service – generate, send, verify via Africa's Talking (Platform Layer)"""
 import os
-import random
+import secrets
 import africastalking
 
 # Initialize Africa's Talking
@@ -12,7 +12,7 @@ sms = africastalking.SMS
 
 def generate_otp() -> str:
     """Generate a 6‑digit OTP."""
-    return str(random.randint(100000, 999999))
+    return str(secrets.randbelow(900000) + 100000)
 
 async def send_otp(phone: str, otp: str) -> bool:
     """Send OTP via Africa's Talking SMS. Returns True on success."""

@@ -99,8 +99,8 @@ class AISummaryIndexService:
     ):
 
         return gsp_place(
-            L=L,
-            S=S,
+            Lsum=L,
+            Ssum=S,
             c=c,
             K=5,
             D=8,

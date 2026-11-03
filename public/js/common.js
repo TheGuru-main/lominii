@@ -654,3 +654,12 @@ if (authToken) {
   if (dashboardView) dashboardView.style.display = 'none';
   if (particleCanvas) particleCanvas.style.display = 'block';
 }
+
+// ========== Service worker (offline support, notifications) ==========
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch((error) => {
+      console.warn('LOMINII service worker unavailable:', error);
+    });
+  });
+}
