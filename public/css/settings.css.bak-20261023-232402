@@ -1,0 +1,70 @@
+/* Settings Panel (slide‑in) */
+
+.settings-panel {
+  position: fixed;
+  top: 0; right: -420px;
+  width: 100%; max-width: 420px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -10px 0 35px rgba(0,0,0,0.15);
+  z-index: 300;
+  transition: right 0.35s ease;
+  display: flex;
+  flex-direction: column;
+}
+.settings-panel.open {
+  right: 0;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+.settings-section h4 {
+  margin: 0 0 0.8rem;
+  color: #203040;
+}
+.settings-section label {
+  display: block;
+  margin-bottom: 0.6rem;
+  color: #476074;
+  font-size: 0.95rem;
+}
+.settings-section select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #d9e4ee;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toggle-row input[type="checkbox"] {
+  width: 18px; height: 18px;
+}
+.bj-info p {
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+}
+.bj-info span {
+  font-weight: 600;
+  color: #2f80ed;
+}
+.btn-outline {
+  background: transparent;
+  border: 2px solid #2f80ed;
+  color: #2f80ed;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}

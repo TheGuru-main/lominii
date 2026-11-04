@@ -367,6 +367,7 @@ function openLominiiAccountPanel(section) {
   overlay.querySelector('#lmAccountSignin').hidden = !isGuest;
 
   overlay.hidden = false;
+  if (window.LominiiProfile) window.LominiiProfile.open(overlay);
 
   if (section === 'about') {
     overlay.querySelector('#lmAboutSection').scrollIntoView({
@@ -491,6 +492,59 @@ async function requestAuth(path, payload) {
   throw lastError || new Error('Could not reach the authentication service.');
 }
 
+let loginPhoneRegion = 'NG';
+
+function loginPhoneHint(region) {
+  let name = region;
+  try {
+    name = new Intl.DisplayNames(['en'], { type: 'region' }).of(region) || region;
+  } catch (_) {}
+  return 'Phone number: use the number you signed up with, in local (0…) or ' +
+    'international (+…) format. Local numbers are read as ' + name + ' numbers.';
+}
+
+function completeLogin(result, identifier) {
+  if (!result || !result.access_token) {
+    throw new Error('The server did not return a login token.');
+  }
+  localStorage.setItem('lominii_token', result.access_token);
+  localStorage.setItem('lominii_account_type', 'registered');
+  localStorage.setItem('lominii_email', identifier || result.email || '');
+  if (result.full_name) localStorage.setItem('lominii_username', result.full_name);
+  else localStorage.removeItem('lominii_username');
+  authToken = result.access_token;
+  showDashboard();
+  switchToWorkspace('home');
+}
+
+function prepareLoginExtras(overlay) {
+  if (!window.LominiiGoogle) return;
+  const hint = overlay.querySelector('#lominiiLoginHint');
+  const button = overlay.querySelector('#lominiiGoogleButton');
+  const divider = overlay.querySelector('#lominiiGoogleOr');
+  const status = overlay.querySelector('#lominiiLoginStatus');
+
+  window.LominiiGoogle.config().then(settings => {
+    const region = String((settings && settings.default_phone_region) || 'NG').toUpperCase();
+    loginPhoneRegion = region;
+    if (hint) hint.textContent = loginPhoneHint(region);
+  });
+
+  window.LominiiGoogle.render(button, async credential => {
+    status.textContent = '';
+    try {
+      const result = await requestAuth('/auth/google', { credential });
+      completeLogin(result, result.email);
+      overlay.hidden = true;
+    } catch (error) {
+      status.textContent = error.message || 'Google sign-in failed. Please try again.';
+      status.className = 'lm-status lm-error';
+    }
+  }, { width: 280 }).then(shown => {
+    if (divider) divider.hidden = !shown;
+  }).catch(() => {});
+}
+
 function openLoginModal() {
   let overlay = document.getElementById('lominiiLoginModal');
 
@@ -516,10 +570,12 @@ function openLoginModal() {
         </div>
         <form id="lominiiLoginForm">
           <div class="lm-field">
-            <label for="lominiiLoginEmail">Email address</label>
-            <input id="lominiiLoginEmail" name="email" type="email"
-              autocomplete="username" required maxlength="254">
+            <label for="lominiiLoginEmail">Email, phone number or Lomimail address</label>
+            <input id="lominiiLoginEmail" name="email" type="text" inputmode="email"
+              autocomplete="username" autocapitalize="none" spellcheck="false"
+              required maxlength="254">
           </div>
+          <p class="lm-hint" id="lominiiLoginHint">Phone number: local (0…) or international (+…) format.</p>
           <div class="lm-field">
             <label for="lominiiLoginPassword">Password</label>
             <input id="lominiiLoginPassword" name="password" type="password"
@@ -535,6 +591,8 @@ function openLoginModal() {
             </button>
           </div>
         </form>
+        <div class="lm-or" id="lominiiGoogleOr" hidden><span>or</span></div>
+        <div class="lm-google" id="lominiiGoogleButton" hidden></div>
       </section>`;
 
     document.body.appendChild(overlay);
@@ -568,23 +626,15 @@ function openLoginModal() {
       submit.textContent = 'Signing in…';
 
       try {
-        const result = await requestAuth('/auth/login', {
-          email: form.elements.email.value.trim(),
-          password: form.elements.password.value
-        });
+        const identifier = form.elements.email.value.trim();
+        const payload = { email: identifier, password: form.elements.password.value };
+        // Without "@" this is a phone number: say which country's local format to expect.
+        if (!identifier.includes('@')) payload.country_iso2 = loginPhoneRegion;
+        const result = await requestAuth('/auth/login', payload);
 
-        if (!result.access_token) {
-          throw new Error('The server did not return a login token.');
-        }
-
-        localStorage.setItem('lominii_token', result.access_token);
-        localStorage.setItem('lominii_account_type', 'registered');
-        localStorage.setItem('lominii_email', form.elements.email.value.trim());
-        authToken = result.access_token;
+        completeLogin(result, identifier);
         overlay.hidden = true;
         form.reset();
-        showDashboard();
-        switchToWorkspace('home');
       } catch (error) {
         status.textContent = error.message || 'Sign-in failed. Please try again.';
         status.className = 'lm-status lm-error';
@@ -596,6 +646,7 @@ function openLoginModal() {
   }
 
   overlay.hidden = false;
+  prepareLoginExtras(overlay);
   const email = overlay.querySelector('#lominiiLoginEmail');
   if (email) email.focus();
 }

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>LOMINII – Light, Knowledge, Intelligence</title>
+  <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/landing.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/search.css">
+<link rel="stylesheet" href="css/games.css">
+<link rel="stylesheet" href="css/social.css">
+<link rel="stylesheet" href="css/edu.css">
+<link rel="stylesheet" href="css/quran.css">
+<link rel="stylesheet" href="css/settings.css">
+<link rel="stylesheet" href="css/modal.css">
+<link rel="stylesheet" href="css/footer.css">
+</head>
+<body>
+
+  <canvas id="particleCanvas"></canvas>
+
+  
+<!-- ========================================================= -->
+<!-- !-- LANDING PAGE -->
+<!-- =========================================================-->
+
+  <div id="landingView">
+    <div class="landing-container">
+    <div class="logo-icon">♾️</div>
+    <h1> LOMINII search</h1>
+    <p class="tagline">Your adaptive, informative, and educational search engine🔍🌍</p>
+<p class="tagline">
+▪️ Browse ⚪ Education ⚪ Research ⚪ Discovery ⚪ Fun ⚪ Connect ▪️
+</p>
+    <p class="sub-tagline">🔍 – 📚 – 👥 – 🎮 Fun.</p>
+      <button class="btn btn-primary" id="btnSignup">Create account</button>
+      <button class="btn btn-outline" id="btnExplore">Explore free</button>
+      <button class="btn btn-ghost" id="btnLogin">I already have an account</button>
+      <p class="footer-note">Powered by - THEGURUINNOVATION</p>
+    </div>
+  </div>
+
+  
+<!-- ========================================================= -->
+<!-- !-- DASHBOARD -->
+<!-- =========================================================-->
+
+  <div id="dashboardView" style="display: none;">
+    <header class="header">
+      <a class="logo" href="#"><span class="logo-icon">♾️</span><span>LOMINII</span></a>
+      <div class="user-icon" id="userIcon">A
+        <div class="dropdown" id="userDropdown">
+          <a href="#" id="btnProfile">My Profile</a>
+          <a href="#">Privacy & Consent</a>
+          <a href="#">Premium Status</a>
+          <a href="#">Language & Preferences</a>
+          <a href="#" id="btnLogout">Logout</a>
+        </div>
+<!-- SETTINGS PANEL (slide‑in) -->
+<div id="settingsPanel" class="settings-panel">
+  <div class="panel-header">
+    <h3>⚙️ Settings</h3>
+    <button class="close-btn" onclick="closeSettings()">✕</button>
+  </div>
+
+  <div class="settings-content">
+    <!-- General -->
+    <div class="settings-section">
+      <h4>🌐 General</h4>
+      <label>Language</label>
+      <select id="settingLanguage">
+        <option value="en">English</option>
+        <option value="yo">Yoruba</option>
+        <option value="ha">Hausa</option>
+        <option value="ig">Igbo</option>
+      </select>
+      <label>Country</label>
+      <select id="settingCountry">
+        <option value="Nigeria">Nigeria</option>
+        <option value="Ghana">Ghana</option>
+        <option value="Kenya">Kenya</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- Data Sources -->
+    <div class="settings-section">
+      <h4>📡 Data Sources</h4>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceWikipedia" checked>
+        <span>Wikipedia</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceBanking">
+        <span>Banking / Finance</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceNews" checked>
+        <span>News</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceDictionary" checked>
+        <span>Dictionary</span>
+      </label>
+    </div>
+
+    <!-- BubbleJumbo Security -->
+    <div class="settings-section">
+      <h4>🔐 BubbleJumbo Security</h4>
+      <div class="bj-info">
+        <p><strong>Your Primary Cell:</strong> <span id="bjCell">—</span></p>
+        <p><strong>Current K (replicas):</strong> <span id="bjK">5</span></p>
+        <p><strong>Failed attempts:</strong> <span id="bjFails">0</span></p>
+      </div>
+      <label class="toggle-row">
+        <input type="checkbox" id="bjChallenge">
+        <span>Enable cell‑challenge for sensitive actions</span>
+      </label>
+      <button class="btn btn-outline" onclick="resetSecurityCounter()">Reset failure counter</button>
+    </div>
+
+    <!-- Save button -->
+    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    <div id="settingsMsg" style="margin-top:0.8rem; font-size:0.9rem;"></div>
+  </div>
+</div>
+      </div>
+    </header>
+
+    <div class="main-content" id="mainContent">
+
+ 
+<!-- ========================================================= -->
+<!-- !-- SEARCH HOME -->
+<!-- =========================================================-->
+
+
+<div id="homeView">
+  <div class="search-section">
+    <input type="text" class="search-input" placeholder="Search anything…" id="searchInput">
+    <button class="btn" id="btnSearch">Search</button>
+  </div>
+  <div id="searchResults" class="search-results"></div>
+
+  <!-- Quick‑access cards (Trending, News, Map, Prayer Times) -->
+  <div class="card-grid" id="homeCards">
+    <div class="card" id="cardTrending">
+      <div class="icon">🔥</div>
+      <h3>Trending Now</h3>
+      <div id="trendingList" class="loading-text">Loading…</div>
+    </div>
+    <div class="card" id="cardNews">
+      <div class="icon">📰</div>
+      <h3>Latest News</h3>
+      <div id="newsList" class="loading-text">Loading…</div>
+    </div>
+    <div class="card" id="cardMap">
+      <div class="icon">🗺️</div>
+      <h3>See Map</h3>
+      <p id="mapStatus">Detecting location…</p>
+    </div>
+    <div class="card" id="cardPrayer">
+      <div class="icon">🕌</div>
+      <h3>Prayer Times</h3>
+      <div id="prayerList" class="loading-text">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Game carousel (static for now) -->
+  <div class="game-carousel">
+    <div class="game-card" id="openGames">
+      <div class="icon">🎮</div>
+      <h4>LOMINII Play</h4>
+      <p>Ludo · Chess · Draft · Snooker</p>
+    </div>
+  </div>
+</div>
+
+ ========================================================= -->
+<!-- !-- GAMES WORKSPACE -->>
+<!-- ========================================================= --><
+
+      <div id="gamesView" style="display: none;">
+        <h2>🎮 Games</h2>
+        <div class="game-carousel" id="gameCarousel">
+  <!-- populated by script.js -->
+</div>
+        <div class="placeholder">More games coming soon!</div>
+      </div>
+
+
+<!-- ========================================================= -->
+<!-- SOCIAL WORKSPACE -->
+<!-- ========================================================= -->
+<div id="socialView" class="workspace-view" style="display:none;">
+
+    <div class="social-workspace">
+
+        <!-- =============================================== -->
+        <!-- HEADER -->
+        <!-- =============================================== -->
+        <header class="social-header">
+
+            <div class="social-title">
+                <h2>LOMINII Social</h2>
+                <small>Friends • News • Conversations</small>
+            </div>
+
+            <div class="status-circle-container">
+
+                <div
+                    class="status-circle"
+                    id="statusCircle"
+                    onclick="openStatusDropdown()">
+
+                    <span id="statusInitial">A</span>
+
+                    <span
+                        id="statusBadge"
+                        class="status-badge"
+                        style="display:none;">
+                        0
+                    </span>
+
+                </div>
+
+                <!-- Friends Status Dropdown -->
+                <div
+                    id="statusDropdown"
+                    class="status-dropdown">
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =============================================== -->
+        <!-- FRIENDS | NEWS -->
+        <!-- =============================================== -->
+
+        <div class="social-toggle">
+
+            <button
+                id="toggleFriends"
+                class="toggle-btn active"
+                onclick="switchSocialTab('friends')">
+
+                👥 Friends
+
+            </button>
+
+            <button
+                id="toggleNews"
+                class="toggle-btn"
+                onclick="switchSocialTab('news')">
+
+                📰 News
+
+            </button>
+
+        </div>
+
+
+        <!-- =============================================== -->
+        <!-- FRIENDS TAB -->
+        <!-- =============================================== -->
+
+        <section
+            id="friendsTab"
+            class="social-tab active">
+
+            <div class="create-post">
+
+                <textarea
+                    id="postContent"
+                    rows="3"
+                    maxlength="3000"
+                    placeholder="What's happening?">
+                </textarea>
+
+                <div class="create-post-actions">
+
+                    <button
+                        class="btn btn-primary"
+                        onclick="createPost()">
+
+                        Publish
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- Friends Feed -->
+
+            <div
+                id="friendsFeed"
+                class="feed">
+
+                <div class="loading-text">
+
+                    Loading feed...
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- NEWS TAB -->
+        <!-- =============================================== -->
+
+        <section
+            id="newsTab"
+            class="social-tab">
+
+            <div class="news-filters">
+
+                <select
+                    id="newsCategory"
+                    onchange="loadNewsFeed()">
+
+                    <option value="">All Categories</option>
+
+                    <option value="politics">
+                        Politics 
+                    </option>
+
+                    <option value="technology">
+                        Technology 
+                    </option>
+
+                    <option value="education">
+                        Education 
+                    </option>
+
+                    <option value="sports">
+                        Sports 
+                    </option>
+
+                    <option value="business">
+                        Business 
+                    </option>
+
+                    <option value="health">
+                        Health 
+                    </option>
+
+                    <option value="science">
+                        Science 
+                    </option>
+
+                    <option value="entertainment">
+                        Entertainment
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div
+                id="newsFeed"
+                class="feed">
+
+                <div class="loading-text">
+
+                    Loading news...
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- FRIENDS PANEL -->
+        <!-- =============================================== -->
+
+        <aside
+            id="friendsPanel"
+            class="friends-panel">
+
+            <div class="panel-header">
+
+                <h3>Friends</h3>
+
+                <button
+                    class="close-btn"
+                    onclick="closeFriendsPanel()">
+
+                    ✕
+
+                </button>
+
+            </div>
+
+            <div
+                id="friendsListContainer"
+                class="friends-list">
+
+                <div class="loading-text">
+
+                    Loading friends...
+
+                </div>
+
+            </div>
+<!-- =============================================== -->
+            <!-- CHAT AREA -->
+            <!-- =============================================== -->
+
+            <section
+                id="chatArea"
+                class="chat-area"
+                style="display:none;">
+
+                <div class="chat-header">
+
+                    <button
+                        class="back-btn"
+                        onclick="closeChat()">
+
+                        ←
+
+                    </button>
+
+                    <span id="chatPartnerName">
+
+                        Conversation
+
+                    </span>
+
+                </div>
+
+                <div
+                    id="chatMessages"
+                    class="chat-messages">
+
+                    <div class="loading-text">
+
+                        Select a friend to start chatting.
+
+                    </div>
+
+                </div>
+
+                <div class="chat-input-area">
+
+                    <input
+                        id="messageInput"
+                        type="text"
+                        maxlength="4000"
+                        placeholder="Type a message..."
+                        onkeydown="if(event.key==='Enter'){sendMessage();}">
+
+                    <button
+                        class="btn btn-primary"
+                        onclick="sendMessage()">
+
+                        Send
+
+                    </button>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+
+        <!-- =============================================== -->
+        <!-- WATCH MODE -->
+        <!-- =============================================== -->
+
+        <section
+            id="watchMode"
+            class="watch-mode"
+            style="display:none;">
+
+            <div
+                id="watchFriendName"
+                class="watch-friend-name">
+
+            </div>
+
+            <div
+                id="watchPosts"
+                class="watch-posts">
+
+                <div class="loading-text">
+
+                    No stories available.
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- QUICK MESSAGE BOX -->
+        <!-- =============================================== -->
+
+        <section
+            id="messageBox"
+            class="message-box">
+
+            <div class="message-header">
+
+                <span id="messageFriendName">
+
+                    Friend
+
+                </span>
+
+                <button
+                    class="msg-close"
+                    onclick="closeMessage()">
+
+                    ✕
+
+                </button>
+
+            </div>
+
+            <div
+                id="messageHistory"
+                class="message-history">
+
+            </div>
+
+            <div class="message-input-area">
+
+                <input
+                    id="messageInputSocial"
+                    type="text"
+                    maxlength="4000"
+                    placeholder="Reply..."
+                    onkeydown="if(event.key==='Enter'){sendSocialMessage();}">
+
+                <button
+                    class="btn btn-primary"
+                    onclick="sendSocialMessage()">
+
+                    Send
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- STATUS VIEWER -->
+        <!-- =============================================== -->
+
+        <section
+            id="statusViewer"
+            class="status-viewer">
+
+            <div
+                id="viewerContent"
+                class="viewer-content">
+
+            </div>
+
+            <div class="viewer-controls">
+
+                <button
+                    class="btn btn-primary"
+                    onclick="closeStatusViewer()">
+
+                    Close
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- CREATE STATUS -->
+        <!-- =============================================== -->
+
+        <section
+            id="statusCreator"
+            class="status-creator">
+
+            <div class="creator-panel">
+
+                <h3>Create Status</h3>
+
+                <textarea
+                    id="statusText"
+                    maxlength="500"
+                    placeholder="Share something with your friends...">
+                </textarea>
+
+                <div class="lifespan-slider">
+
+                    <input
+                        id="lifespanSlider"
+                        type="range"
+                        min="0"
+                        max="3"
+                        step="1"
+                        value="1">
+
+                    <div class="lifespan-labels">
+
+                        <span>2h</span>
+
+                        <span>24h</span>
+
+                        <span>7d</span>
+
+                        <span>30d</span>
+
+                    </div>
+
+                </div>
+
+                <button
+                    class="btn btn-primary"
+                    onclick="createStatus()">
+
+                    Publish Status
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =============================================== -->
+        <!-- FLOATING CHAT BUTTON -->
+        <!-- =============================================== -->
+
+        <button
+            class="fab"
+            id="socialFab"
+            onclick="openFriendsPanel()">
+
+            💬
+
+        </button>
+
+
+        <!-- =============================================== -->
+        <!-- WATCH / FEED SWITCH -->
+        <!-- =============================================== -->
+
+        <button
+            id="switchBtn"
+            class="switch-btn"
+            onclick="toggleSocialMode()">
+
+            <span id="switchLabel">
+
+                Watch
+
+            </span>
+
+        </button>
+
+    </div>
+
+</div>
+
+           <!-- =============================================== -->
+        <!-- <!-- EDU WORKSPACE -->>
+        <!-- =============================================== -->
+
+   <div id="eduView">
+<div id="switchTeacherTab" class="edu-tab">
+
+<div id="switchStudentTab" class="edu-tab active">
+  <h2>🎓 EDU</h2>
+
+  <!-- Sub-tabs: Student | Teacher -->
+  <div class="edu-toggle">
+    <button class="toggle-btn active" id="toggleStudent" onclick="switchEduTab('student')">
+      🎓 Student
+    </button>
+
+    <button class="toggle-btn" id="toggleTeacher" onclick="switchEduTab('teacher')">
+       Teacher
+    </button>
+  </div>
+
+  <!-- STUDENT TAB -->
+  <div id="studentTab" class="edu-tab active">
+
+    <!-- Curriculum Browser -->
+    <div id="curriculumBrowser" class="curriculum-browser">
+      <h3>📚 Curriculum</h3>
+
+      <div class="subject-grid" id="subjectGrid">
+        <p class="loading-text">Loading subjects…</p>
+      </div>
+    </div>
+
+    <!-- Daily Lesson -->
+    <div class="daily-card">
+      <h3> Today's Lesson</h3>
+
+      <div id="dailyLesson">
+        <p class="loading-text">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Practice Quiz -->
+    <div class="quiz-card">
+      <h3> Quick Practice</h3>
+
+      <div id="quizContainer">
+        <button class="btn" onclick="startPracticeQuiz()">
+          Start Practice Quiz
+        </button>
+      </div>
+    </div>
+
+    <!-- Mastery Progress -->
+    <div class="mastery-card">
+      <h3> Your Progress</h3>
+
+      <div id="masteryBars">
+        <p class="loading-text">Loading mastery data...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TEACHER TAB -->
+  <div id="teacherTab" class="edu-tab" style="display:none;">
+
+    <div class="placeholder">
+      <h3>🏫 Teacher Portal</h3>
+
+      <p>Create classrooms.</p>
+      <p>Upload lessons.</p>
+      <p>Assign coursework.</p>
+      <p>Track student progress.</p>
+
+      <br>
+
+      <strong>Coming Soon.</strong>
+    </div>
+
+  </div>
+</div>
+
+      <!-- QURAN WORKSPACE -->
+
+      <div id="quranView" style="display: none;">
+        <h2>📖 Quran</h2>
+        <div class="placeholder">Quran reader and prayer times will appear here.</div>
+      </div>
+    </div>
+
+    <nav class="footer-nav">
+      <div class="nav-icon active" data-workspace="Search"><span></span></div>
+      <div class="nav-icon" data-workspace="games"><span>Games</span></div>
+      <div class="nav-icon" data-workspace="Social"><span>Social</span></div>
+      <div class="nav-icon" data-workspace="edu"><span>Education</span></div>
+      <div class="nav-icon" data-workspace="quran"><span>Search</span></div>
+    </nav>
+
+    <div class="back-toggle" id="backToggle" onclick="goHome()">← Back to Search</div>
+   <br> <footer class="footer">Powered by  <strong>THE_GURUINNOVATION</strong></footer>
+  </div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/landing.js"></script>
+<script src="js/newsnotificationmanager.js"></script>
+<script src="js/search.js"></script>
+<script src="js/social.js"></script>
+<script src="js/games.js"></script>
+<script src="js/PerformSearch.js"></script>
+<script src="js/edu.js"></script>
+<script src="js/quran.js"></script>
+<script src="js/settings.js"></script>

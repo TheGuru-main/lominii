@@ -1,0 +1,377 @@
+/* ===== SEARCH ===== */
+
+/* =========================================================
+   LOMINII — search.css
+   Search Home —
+   Fast. Minimal. Focused.
+   ========================================================= */
+
+#homeView{
+    padding: var(--space-lg) var(--space-md) var(--space-md);
+    max-width: 900px;
+    margin: 0 auto;
+}
+.search-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-section{
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: var(--space-lg);
+}
+
+.search-input{
+    flex: 1;
+    font-size: 1.05rem;
+    padding: 1rem 1.25rem;
+    border-radius: 18px;
+}
+
+.search-input:focus{
+    outline: none;
+    border-color: var(--accent);
+}
+
+#btnSearch{
+    background: var(--accent);
+    color: #0B1524;
+    border-radius: var(--radius-md);
+    padding: 0 1.6rem;
+    font-weight: 600;
+}
+
+.search-results{
+    margin-bottom: var(--space-lg);
+}
+
+.search-results:empty{
+    display: none;
+}
+
+#homeCards{
+    margin-bottom: var(--space-lg);
+}
+
+/* Game preview strip on Search Home */
+.game-carousel{
+    padding: 0 var(--space-md);
+}
+
+
+#homeCards.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+#homeCards > .card {
+  background: var(--glass);
+  border: 1px solid var(--glass-hi);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+#homeCards > .card:active {
+  transform: scale(0.97);
+}
+
+#homeCards > .card .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#homeCards > .card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+}
+
+#homeCards > .card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.game-card{
+    background: var(--glass);
+    border: 1px solid var(--glass-hi);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    cursor: pointer;
+    transition: border-color var(--speed) var(--ease);
+}
+
+.game-card:hover{
+    border-color: var(--accent);
+}
+
+.game-card .icon{
+    font-size: 1.5rem;
+}
+
+.game-card p{
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.lomiplay-card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+.lomiplay-header {
+  background: var(--color-accent);
+  color: white;
+  text-align: center;
+  padding: 0.4rem;
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-weight: 700;
+}
+/* ===== PLACEHOLDER ===== */
+
+.placeholder {
+  background: #fff;
+  border: 1px dashed #d0dce4;
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  color: #4a6578;
+  margin-bottom: 1.5rem;
+}
+
+.ai-summary-card {
+  background: #fff;
+  border-left: 4px solid #8b5cf6;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.ai-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8b5cf6;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.definition-card {
+  background: #fff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+.def-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cell-info {
+  font-size: 0.8rem;
+  color: #6b7f8e;
+  margin-bottom: 1rem;
+  text-align: right;
+}
+
+.did-you-mean {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.did-you-mean span {
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.news-item {
+  background: #fff;
+  border: 1px solid #d0dce4;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.related-q {
+  background: #f0f4ff;
+  border: 1px solid #d0dce4;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.loading-pulse {
+  text-align: center;
+  padding: 2rem;
+  color: #3b82f6;
+  font-weight: 600;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0%,100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* ── Small button variant (for inline actions) ── */
+.btn-sm {
+  display: inline-block;
+  width: auto;
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  border-radius: 20px;
+  margin-top: 0.5rem;
+}
+
+/* LOMINII search home: responsive layout and readable cards */
+#homeView {
+  width: 100%;
+  max-width: 1180px;
+  padding: clamp(1rem, 3vw, 2.2rem);
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.search-section {
+  display: flex;
+  align-items: stretch;
+  gap: .55rem;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 1.4rem;
+  padding: .45rem;
+  border: 1px solid rgba(96, 165, 250, .35);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .18);
+}
+
+.search-input {
+  min-width: 0;
+  width: 100%;
+  color: #172338;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 16px;
+}
+
+.search-input::placeholder { color: #738096; }
+
+.search-input:focus {
+  border-color: rgba(59, 130, 246, .45);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+}
+
+#btnSearch {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 1.35rem;
+  border: 0;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, .25);
+  font-weight: 700;
+}
+
+#searchResults {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 1.5rem;
+}
+
+#homeCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+#homeCards > .card {
+  min-width: 0;
+  width: 100%;
+  border-radius: 20px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .10);
+}
+
+#homeCards > .card .icon { font-size: 2rem; }
+#homeCards > .card h3 { color: #172338; }
+
+#homeCards > .card p,
+#homeCards > .card #newsList,
+#homeCards > .card #trendingList,
+#homeCards > .card #prayerList { color: #41516a; }
+
+.trend-chip {
+  display: inline-flex;
+  align-items: center;
+  margin: .2rem;
+  padding: .5rem .8rem;
+  border: 1px solid rgba(59, 130, 246, .22);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, .09);
+  color: #1d4ed8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.news-headline {
+  padding: .65rem 0;
+  border-bottom: 1px solid #e5eaf1;
+  line-height: 1.45;
+}
+
+.game-carousel { padding: 0; margin-top: 1rem; }
+.game-card { border-radius: 20px; }
+
+@media (max-width: 640px) {
+  #homeView {
+    padding: 1rem .8rem calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .search-section { gap: .3rem; border-radius: 18px; }
+  .search-input { padding: .9rem .7rem; font-size: 1rem; }
+  #btnSearch { min-height: 44px; padding: 0 .9rem; }
+  #homeCards { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  #homeCards > .card { padding: 1.15rem; }
+}

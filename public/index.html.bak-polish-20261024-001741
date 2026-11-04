@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <title>LOMINII – Light, Knowledge, Intelligence</title>
+  <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/landing.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/lominii-keyboard.css">
+<link rel="stylesheet" href="css/games.css">
+<link rel="stylesheet" href="css/quran.css">
+<link rel="stylesheet" href="css/settings.css">
+<link rel="stylesheet" href="css/modal.css">
+<link rel="stylesheet" href="css/footer.css">
+<link rel="stylesheet" href="css/lomimail-registration.css">
+<link rel="stylesheet" href="css/scrapingbee.css">
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+</head>
+<body>
+
+  <canvas id="particleCanvas"></canvas>
+
+  
+<!-- ========================================================= -->
+<!-- !-- LANDING PAGE -->
+<!-- =========================================================-->
+
+  <div id="landingView">
+    <div class="landing-container">
+    <div class="logo-icon" aria-label="LOMINII"><i class="fa fa-globe" aria-hidden="true"></i></div>
+    <h1> LOMINII search</h1>
+    <p class="tagline">Your adaptive, informative, and educational search engine.</p>
+<div class="landing-features" aria-label="Explore LOMINII"><span><i class="fa fa-search" aria-hidden="true"></i> Browse</span><span><i class="fa fa-book" aria-hidden="true"></i> Education</span><span><i class="fa fa-flask" aria-hidden="true"></i> Research</span><span><i class="fa fa-compass" aria-hidden="true"></i> Discovery</span><span><i class="fa fa-gamepad" aria-hidden="true"></i> Fun</span><span><i class="fa fa-users" aria-hidden="true"></i> Connect</span></div>
+    <p class="sub-tagline"><i class="fa fa-search" aria-hidden="true"></i> &nbsp;–&nbsp; <i class="fa fa-book" aria-hidden="true"></i> &nbsp;–&nbsp; <i class="fa fa-users" aria-hidden="true"></i> &nbsp;–&nbsp; <i class="fa fa-gamepad" aria-hidden="true"></i> Fun.</p>
+      <button class="btn btn-primary" id="btnSignup"><i class="fa fa-user-plus" aria-hidden="true"></i> Create account</button>
+      <button class="btn btn-outline" id="btnExplore"><i class="fa fa-search" aria-hidden="true"></i> Explore free</button>
+      <button class="btn btn-ghost" id="btnLogin"><i class="fa fa-sign-in" aria-hidden="true"></i> I already have an account</button>
+      <p class="footer-note">Powered by - THEGURUINNOVATION</p>
+    </div>
+  </div>
+
+  
+<!-- ========================================================= -->
+<!-- !-- DASHBOARD -->
+<!-- =========================================================-->
+
+  <div id="dashboardView" style="display: none;">
+    <header class="header">
+      <a class="logo" href="#" id="homeLogo"><span class="logo-icon">♾️</span><span>LOMINII</span></a>
+      <div class="user-icon" id="userIcon">A
+        <div class="dropdown" id="userDropdown">
+          <a href="#" id="btnProfile">My Profile</a>
+          <a href="#">Privacy & Consent</a>
+          <a href="#">Premium Status</a>
+          <a href="#">Language & Preferences</a>
+          <a href="#" id="btnLogout">Logout</a>
+        </div>
+<!-- SETTINGS PANEL (slide‑in) -->
+<div id="settingsPanel" class="settings-panel">
+  <div class="panel-header">
+    <h3>⚙️ Settings</h3>
+    <button class="close-btn" onclick="closeSettings()">✕</button>
+  </div>
+
+  <div class="settings-content">
+    <!-- General -->
+    <div class="settings-section">
+      <h4>🌐 General</h4>
+      <label>Language</label>
+      <select id="settingLanguage">
+        <option value="en">English</option>
+        <option value="yo">Yoruba</option>
+        <option value="ha">Hausa</option>
+        <option value="ig">Igbo</option>
+      </select>
+      <label>Country</label>
+      <select id="settingCountry">
+        <option value="Nigeria">Nigeria</option>
+        <option value="Ghana">Ghana</option>
+        <option value="Kenya">Kenya</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- Data Sources -->
+    <div class="settings-section">
+      <h4>📡 Data Sources</h4>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceWikipedia" checked>
+        <span>Wikipedia</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceBanking">
+        <span>Banking / Finance</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceNews" checked>
+        <span>News</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="sourceDictionary" checked>
+        <span>Dictionary</span>
+      </label>
+    </div>
+
+    <!-- BubbleJumbo Security -->
+    <div class="settings-section">
+      <h4>🔐 BubbleJumbo Security</h4>
+      <div class="bj-info">
+        <p><strong>Your Primary Cell:</strong> <span id="bjCell">—</span></p>
+        <p><strong>Current K (replicas):</strong> <span id="bjK">5</span></p>
+        <p><strong>Failed attempts:</strong> <span id="bjFails">0</span></p>
+      </div>
+      <label class="toggle-row">
+        <input type="checkbox" id="bjChallenge">
+        <span>Enable cell‑challenge for sensitive actions</span>
+      </label>
+      <button class="btn btn-outline" onclick="resetSecurityCounter()">Reset failure counter</button>
+    </div>
+
+    <!-- Save button -->
+    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    <div id="settingsMsg" style="margin-top:0.8rem; font-size:0.9rem;"></div>
+  </div>
+</div>
+      </div>
+    </header>
+
+    <div class="main-content" id="mainContent">
+
+ 
+<!-- ========================================================= -->
+<!-- !-- SEARCH HOME -->
+<!-- =========================================================-->
+
+
+<div id="homeView">
+  <div class="search-section">
+    <input type="text" class="search-input" placeholder="Search anything…" id="searchInput">
+    <button class="btn" id="btnSearch">Search</button>
+  </div>
+  <div id="searchResults" class="search-results"></div>
+
+  <!-- Quick‑access cards (Trending, News, Map, Prayer Times) -->
+  <div class="card-grid" id="homeCards">
+    <div class="card" id="cardTrending">
+      <div class="icon">🔥</div>
+      <h3>Trending Now</h3>
+      <div id="trendingList" class="loading-text">Loading…</div>
+    </div>
+    <div class="card" id="cardNews">
+      <div class="icon">📰</div>
+      <h3>Latest News</h3>
+      <div id="newsList" class="loading-text">Loading…</div>
+    </div>
+    <div class="card" id="cardMap">
+      <div class="icon">🗺️</div>
+      <h3>See Map</h3>
+      <p id="mapStatus">Detecting location…</p>
+    </div>
+    <div class="card" id="cardPrayer">
+      <div class="icon">🕌</div>
+      <h3>Prayer Times</h3>
+      <div id="prayerList" class="loading-text">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Game carousel (static for now) -->
+  <div class="game-carousel">
+    <div class="game-card" id="openGames">
+      <div class="icon">🎮</div>
+      <h4>LOMINII Play</h4>
+      <p>Ludo · Chess · Draft · Snooker</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- GAMES WORKSPACE -->
+<!-- ========================================================= -->
+
+      <div id="gamesView" style="display: none;">
+        <h2>🎮 LOMINII Play Space</h2>
+        <div class="placeholder" role="status">
+          Play Space is currently unavailable. Game access is coming soon.
+        </div>
+      </div>
+
+
+<!-- ========================================================= -->
+<!-- QURAN WORKSPACE -->
+
+      <div id="quranView" style="display: none;">
+        <h2>📖 Quran</h2>
+        <div class="placeholder">Quran reader and prayer times will appear here.</div>
+      </div>
+    </div>
+
+    <nav class="footer-nav" aria-label="LOMINII navigation">
+      <div class="nav-icon active" data-destination="search"
+           role="button" tabindex="0" aria-label="Search">
+        <i class="fa fa-search" aria-hidden="true"></i><span>Search</span>
+      </div>
+      <div class="nav-icon" data-destination="play"
+           role="button" tabindex="0" aria-label="LOMINII Play">
+        <i class="fa fa-gamepad" aria-hidden="true"></i><span>Play</span>
+      </div>
+      <div class="nav-icon" data-destination="research"
+           role="button" tabindex="0" aria-label="Research and news">
+        <i class="fa fa-flask" aria-hidden="true"></i><span>Research</span>
+      </div>
+      <div class="nav-icon" data-destination="discovery"
+           role="button" tabindex="0" aria-label="Video discovery">
+        <i class="fa fa-compass" aria-hidden="true"></i><span>Discover</span>
+      </div>
+      <div class="nav-icon" data-destination="quran"
+           role="button" tabindex="0" aria-label="Quran, coming soon">
+        <i class="fa fa-book" aria-hidden="true"></i><span>Quran</span>
+      </div>
+      <div class="nav-icon" data-destination="connect"
+           role="button" tabindex="0" aria-label="Connect">
+        <i class="fa fa-external-link" aria-hidden="true"></i><span>Connect</span>
+      </div>
+    </nav>
+
+    <div class="back-toggle" id="backToggle" onclick="goHome()">← Back to Search</div>
+   <br> <footer class="footer">Powered by  <strong>THE_GURUINNOVATION</strong></footer>
+  </div>
+
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/landing.js"></script>
+<script src="js/newsnotificationmanager.js"></script>
+<script src="js/search.js"></script>
+<script src="js/quran.js"></script>
+<script src="js/lominii-keyboard.js"></script>
+
+<script src="js/settings.js"></script>
+<script src="js/lomimail-registration.js"></script>
+
+<script src="js/scrapingbee.js"></script>
+
+<!-- ACCD-CODESPACE-P5 -->
+<div id="codePanel" style="display:none !important; flex-direction:column; position:fixed; inset:0; background:#0b1120; z-index:9999;">
+  <div style="display:flex; gap:6px; padding:8px 10px; background:#111827; align-items:center; flex-wrap:wrap; border-bottom:1px solid #1e293b; flex:0 0 auto;">
+    <button type="button" id="btnCodeBack" style="background:none;border:1px solid #334155;color:#e2e8f0;padding:6px 10px;border-radius:6px;cursor:pointer;">←</button>
+    <button type="button" id="btnToggleSidebar" style="background:none;border:1px solid #334155;color:#e2e8f0;padding:6px 10px;border-radius:6px;cursor:pointer;">☰</button>
+    <strong style="color:#e2e8f0;">Codespace</strong>
+    <span id="codeActivePath" style="color:#94a3b8;font-size:12px;max-width:36vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <select id="codeRepoSelect" style="padding:5px;border-radius:4px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;max-width:140px;"></select>
+    <button type="button" id="btnNewRepo" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">+ Repo</button>
+    <button type="button" id="btnNewFile" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">+ File</button>
+    <button type="button" id="btnNewFolder" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">+ Folder</button>
+    <button type="button" id="btnSaveFile" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">Save</button>
+    <button type="button" id="btnPushRepo" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">Push</button>
+    <button type="button" id="btnRunCode" style="padding:6px 12px;border-radius:6px;border:none;background:#22d3ee;color:#0f172a;font-weight:700;cursor:pointer;">▶ Run</button>
+    <button type="button" id="btnToggleTerm" style="padding:5px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;cursor:pointer;">Terminal ▾</button>
+    <button type="button" id="btnCloseCode" style="margin-left:auto;background:none;border:1px solid #334155;color:#94a3b8;padding:6px 10px;border-radius:6px;cursor:pointer;">✕</button>
+  </div>
+  <div id="codeBody" style="flex:1 1 auto; display:flex; min-height:0;">
+    <aside id="codeSidebar" style="width:200px; flex:0 0 200px; background:#0f172a; border-right:1px solid #1e293b; overflow:auto; padding:8px; color:#cbd5e1; font-size:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="opacity:0.55;">Explorer</span>
+        <button type="button" id="btnCloseSidebar" style="background:none;border:none;color:#94a3b8;cursor:pointer;">✕</button>
+      </div>
+      <div id="codeFileTree"></div>
+    </aside>
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; background:#1e1e1e;">
+      <div id="codeTabBar" style="flex:0 0 auto; display:flex; overflow-x:auto; background:#0b1120; border-bottom:1px solid #1e293b; min-height:32px; align-items:flex-end; padding:0 4px;"></div>
+      <div id="monacoContainer" style="flex:1; min-height:0; background:#1e1e1e;"></div>
+    </div>
+  </div>
+  <div id="codeConsole" style="flex:0 0 30%; min-height:120px; max-height:50%; background:#020617; border-top:1px solid #1e293b; display:flex; flex-direction:column; position:relative;">
+    <div style="padding:4px 10px; font-size:11px; color:#64748b; flex:0 0 auto; display:flex; justify-content:space-between;">
+      <span>Terminal</span>
+      <span style="opacity:0.5;">tap to type</span>
+    </div>
+    <div id="codeOutput" tabindex="0" style="flex:1; margin:0; padding:8px 10px; overflow:auto; font-size:12px; color:#e2e8f0; white-space:pre-wrap; font-family:ui-monospace,Menlo,monospace; cursor:text; outline:none; line-height:1.45;"></div>
+    <div id="termActionBar" style="display:flex; gap:8px; align-items:center; padding:6px 10px; border-top:1px solid #1e293b; background:#0a0f1a; flex:0 0 auto;">
+      <button type="button" id="btnTermRun" style="padding:6px 12px;border-radius:6px;border:none;background:#22d3ee;color:#0f172a;font-weight:700;cursor:pointer;">▶ Term</button>
+    </div>
+  </div>
+</div>
+
+
+

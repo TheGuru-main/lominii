@@ -414,6 +414,19 @@ async def _verify_google_id_token(id_token) -> dict:
     raise failed
 
 
+@router.get("/config")
+async def public_config():
+    """Public client settings. A Google client ID is public by design."""
+    client_ids = _google_client_ids()
+    region = os.getenv("DEFAULT_PHONE_REGION", "NG").strip().upper()
+    if len(region) != 2 or not region.isalpha():
+        region = "NG"
+    return {
+        "google_client_id": client_ids[0] if client_ids else None,
+        "default_phone_region": region,
+    }
+
+
 @router.post("/google")
 async def google_auth(request: Request, db: AsyncSession = Depends(get_db)):
     """Sign in with Google. The client sends the ID token (credential); nothing else is trusted."""

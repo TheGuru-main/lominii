@@ -1,0 +1,272 @@
+"""LOMINII Auth Room – Signup, Login, Guest, Google, Phone OTP (Real DB)"""
+from datetime import datetime, timedelta
+from fastapi import APIRouter, HTTPException, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from lominii_platform.auth import verify_password, get_password_hash, get_current_user
+from lominii_platform.bubblejumbo import (
+    create_token as create_bjt,
+    record_failure,
+    reset_failures,
+    get_required_copies,
+    get_failure_count
+)
+from lominii_platform.content_filter import is_blocked
+from lominii_platform.database import get_db
+from lominii_platform.models.public import User, OTP
+from lominii_platform.otp_service import generate_otp, send_otp
+import re
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def is_valid_email(email: str) -> bool:
+    return re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email) is not None
+
+# ---------------------------------------------------------------------------
+# Email + Password Signup
+# ---------------------------------------------------------------------------
+@router.post("/signup")
+async def signup(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    full_name = data.get("full_name", "").strip()
+    creator_role = data.get("creator_role", "creator").strip().lower()
+    news_category = data.get("news_category", "").strip()
+
+    # Validation
+    if not is_valid_email(email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    if not full_name:
+        raise HTTPException(status_code=400, detail="Full name is required")
+    if creator_role not in ("creator", "newscaster"):
+        raise HTTPException(status_code=400, detail="Invalid creator role")
+    if creator_role == "newscaster" and not news_category:
+        raise HTTPException(status_code=400, detail="News category required for newscasters")
+    if is_blocked(email) or is_blocked(password) or is_blocked(full_name):
+        raise HTTPException(status_code=400, detail="Blocked content")
+
+    # Check existing user
+    existing = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="User already exists")
+
+    # Create user
+    account_preferences = {"creator_role": creator_role}
+    if creator_role == "newscaster":
+        account_preferences["news_category"] = news_category
+
+    user = User(
+        email=email,
+        full_name=full_name,
+        password_hash=get_password_hash(password),
+        news_preferences=account_preferences,
+    )
+    db.add(user)
+    await db.commit()
+
+    # Issue token (normal K=5, no failures yet)
+    token = create_bjt(email)
+    return {"access_token": token, "token_type": "bearer", "email": email}
+
+# ---------------------------------------------------------------------------
+# Email + Password Login (with dynamic K‑escalation)
+# ---------------------------------------------------------------------------
+@router.post("/login")
+async def login(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="Email and password required")
+
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+
+    # Check credentials
+    if not user or not user.password_hash or not verify_password(password, user.password_hash):
+        fails = await record_failure(email, db)
+        raise HTTPException(
+            status_code=401,
+            detail=(
+                "Invalid credentials. Warning: account security "
+                f"increased after 5 failures. (Attempt {fails})"
+            ),
+        )
+
+    # Preserve the current security level for this token, then reset failures.
+    copies = await get_required_copies(email, db)
+    await reset_failures(email, db)
+
+    # Use email as the token identity for protected account endpoints.
+    token = create_bjt(email, copies=copies)
+    return {"access_token": token, "token_type": "bearer", "email": email}
+
+# ---------------------------------------------------------------------------
+# Guest Session
+# ---------------------------------------------------------------------------
+@router.post("/guest")
+async def guest():
+    import uuid
+    guest_name = f"guest-{uuid.uuid4().hex[:8]}"
+    token = create_bjt(guest_name)
+    return {"access_token": token, "token_type": "bearer", "guest": True}
+
+# ---------------------------------------------------------------------------
+# Google OAuth (placeholder – real verification can be added later)
+# ---------------------------------------------------------------------------
+@router.post("/google")
+async def google_auth(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    google_id = data.get("google_id")
+    email = data.get("email", "").strip().lower()
+    full_name = data.get("full_name", "").strip()
+
+    if not google_id or not email or not full_name:
+        raise HTTPException(status_code=400, detail="Missing Google credentials")
+
+    user = (await db.execute(select(User).where((User.google_id == google_id) | (User.email == email)))).scalar_one_or_none()
+    if not user:
+        user = User(
+            email=email,
+            full_name=full_name,
+            google_id=google_id,
+            password_hash=""
+        )
+        db.add(user)
+        await db.commit()
+    else:
+        if not user.google_id:
+            user.google_id = google_id
+            await db.commit()
+
+    token = create_bjt(user.email)
+    return {"access_token": token, "token_type": "bearer", "email": user.email}
+
+# ---------------------------------------------------------------------------
+# Phone OTP – Request
+# ---------------------------------------------------------------------------
+@router.post("/phone/request")
+async def phone_request(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    phone = data.get("phone", "").strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number required")
+
+    otp_code = generate_otp()
+    expires = datetime.utcnow() + timedelta(minutes=5)
+
+    otp_entry = OTP(phone=phone, code=otp_code, expires_at=expires)
+    db.add(otp_entry)
+    await db.commit()
+
+    success = await send_otp(phone, otp_code)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
+
+    return {"message": "OTP sent successfully"}
+
+# ---------------------------------------------------------------------------
+# Phone OTP – Verify
+# ---------------------------------------------------------------------------
+@router.post("/phone/verify")
+async def phone_verify(request: Request, db: AsyncSession = Depends(get_db)):
+    data = await request.json()
+    phone = data.get("phone", "").strip()
+    otp_input = data.get("otp", "").strip()
+    full_name = data.get("full_name", "").strip()
+
+    if not phone or not otp_input or not full_name:
+        raise HTTPException(status_code=400, detail="Missing fields")
+
+    otp_record = (await db.execute(
+        select(OTP).where(OTP.phone == phone, OTP.verified == False)
+        .order_by(OTP.created_at.desc()).limit(1)
+    )).scalar_one_or_none()
+
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="No OTP requested for this number")
+
+    if datetime.utcnow() > otp_record.expires_at:
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+
+    if otp_record.code != otp_input:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    otp_record.verified = True
+    await db.commit()
+
+    user = (await db.execute(select(User).where(User.phone == phone))).scalar_one_or_none()
+    if not user:
+        user = User(
+            email=f"{phone}@lominii.local",
+            full_name=full_name,
+            phone=phone,
+            password_hash=""
+        )
+        db.add(user)
+        await db.commit()
+
+    token = create_bjt(user.email)
+    return {"access_token": token, "token_type": "bearer", "phone": phone}
+
+
+# ---------------------------------------------------------------------------
+# Bubblejumbo attack and failure logs count Set-up
+# ---------------------------------------------------------------------------
+
+@router.get("/failure-count")
+async def failure_count(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    count = await get_failure_count(email, db)
+    return {"failures": count}
+
+@router.post("/reset-failures")
+async def reset_failures_endpoint(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await reset_failures(email, db)
+    return {"message": "Failure counter reset"}
+
+# ---------------------------------------------------------------------------
+# Preference setting.
+# ---------------------------------------------------------------------------
+
+@router.put("/preferences")
+async def save_preferences(request: Request, db: AsyncSession = Depends(get_db), email: str = Depends(get_current_user)):
+    data = await request.json()
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one()
+    # data_sources is part of news_preferences – we merge them
+    current = user.news_preferences or {}
+    current["wikipedia"] = data.get("wikipedia", False)
+    current["banking"] = data.get("banking", False)
+    current["news"] = data.get("news", True)
+    current["dictionary"] = data.get("dictionary", True)
+    user.news_preferences = current
+    # also update language & country if provided
+    if "language" in data:
+        user.language = data["language"]
+    if "country" in data:
+        # You may want to add a country column, but for now we can store in news_preferences
+        current["country"] = data["country"]
+        user.news_preferences = current
+    await db.commit()
+    return {"message": "Preferences saved"}
+
+
+@router.get("/preferences")
+async def get_preferences(email: str = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one()
+    prefs = user.news_preferences or {}
+    return {
+        "language": user.language,
+        "country": prefs.get("country", "Nigeria"),
+        "data_sources": {
+            "wikipedia": prefs.get("wikipedia", False),
+            "banking": prefs.get("banking", False),
+            "news": prefs.get("news", True),
+            "dictionary": prefs.get("dictionary", True),
+        }
+    }
