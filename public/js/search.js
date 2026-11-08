@@ -85,6 +85,8 @@ function renderSearchResults(resultsDiv, query, data) {
   const webResults = list(data.web_results);
   const crawlerResults = list(data.crawler_results);
   const related = list(data.related_questions);
+  const dictionaryMatches = list(data.dictionary_matches)
+    .filter(item => item && typeof item.word === 'string' && item.word.trim());
   const didYouMean = typeof data.did_you_mean === 'string' ? data.did_you_mean.trim() : '';
   const similar = list(data.suggestions)
     .filter(word => typeof word === 'string' && word.trim() &&
@@ -92,7 +94,7 @@ function renderSearchResults(resultsDiv, query, data) {
     .slice(0, 4);
   const hasResults = Boolean(
     data.ai_summary || data.definition || news.length || wikipedia.length ||
-    webResults.length || crawlerResults.length
+    webResults.length || crawlerResults.length || dictionaryMatches.length
   );
 
   let html = '';
@@ -143,6 +145,19 @@ function renderSearchResults(resultsDiv, query, data) {
           ? `<small class="dictionary-source">Source: ${escapeSearchHtml(data.dictionary.source)}</small>`
           : ''}
       </div>`;
+  }
+
+  // Dictionary entries found by word and definition (lexical matching)
+  if (dictionaryMatches.length > 0) {
+    html += '<h4 style="margin-top:1.5rem;">📖 In the dictionary</h4>';
+    dictionaryMatches.forEach(item => {
+      const word = escapeSearchHtml(item.word.trim());
+      const partOfSpeech = item.part_of_speech
+        ? ` <span class="dictionary-pos">${escapeSearchHtml(item.part_of_speech)}</span>`
+        : '';
+      const meaning = item.definition ? `<p>${escapeSearchHtml(item.definition)}</p>` : '';
+      html += `<div class="source-item"><button type="button" class="search-query-action dict-match" data-search-query="${word}">${word}</button>${partOfSpeech}${meaning}</div>`;
+    });
   }
 
   // Cell info: the column is the language's own letter (server label), not just A-Z.

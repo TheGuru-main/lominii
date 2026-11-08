@@ -66,9 +66,30 @@
     node.className = 'lm-status' + (kind ? ' lm-' + kind : '');
   }
 
+  // Who the token belongs to (a display hint only; the server decides what is allowed).
+  function tokenIdentity(token) {
+    try {
+      const part = String(token).split('.')[1] || '';
+      const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+      const payload = JSON.parse(json);
+      return typeof payload.sub === 'string' ? payload.sub : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   function isRegistered() {
-    return Boolean(localStorage.getItem('lominii_token')) &&
-      localStorage.getItem('lominii_account_type') === 'registered';
+    const token = localStorage.getItem('lominii_token');
+    if (!token) return false;
+    const identity = tokenIdentity(token);
+    if (identity) {
+      // Guest tokens are named guest-...; anything else is a real account. This also
+      // repairs a stored type that an older sign-up flow left as "guest".
+      const registered = !identity.startsWith('guest-');
+      if (registered) localStorage.setItem('lominii_account_type', 'registered');
+      return registered;
+    }
+    return localStorage.getItem('lominii_account_type') === 'registered';
   }
 
   async function send(path, method, body) {

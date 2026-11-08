@@ -601,6 +601,10 @@ const country = selectCountry();
 
         // Store only the session token. Do not store the internal uID here.
         localStorage.setItem("lominii_token", result.access_token);
+        // Without this the app kept treating a brand-new account as a guest.
+        localStorage.setItem("lominii_account_type", "registered");
+        localStorage.setItem("lominii_username", payload.full_name || "");
+        localStorage.setItem("lominii_email", payload.phone || "");
         if (typeof authToken !== "undefined") authToken = result.access_token;
 
         setStatus(

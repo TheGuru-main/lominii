@@ -239,6 +239,7 @@ async def _scrapingbee_search(client: httpx.AsyncClient, query: str) -> list[dic
             "render_js": "false", "block_ads": "true",
         }, timeout=httpx.Timeout(18.0, connect=4.0))
         if response.status_code != 200:
+            print(f"ScrapingBee returned HTTP {response.status_code}: {response.text[:160]!r}")
             return []
         return _parse_web_results(response.text, limit=8)
     except Exception as exc:
@@ -255,6 +256,7 @@ async def _gnews_search(client: httpx.AsyncClient, query: str, lang: str) -> lis
             "q": query, "lang": language, "max": 6, "apikey": GNEWS_API_KEY,
         })
         if response.status_code != 200:
+            print(f"GNews returned HTTP {response.status_code}: {response.text[:160]!r}")
             return []
         articles = []
         for article in response.json().get("articles", [])[:6]:
@@ -941,6 +943,194 @@ async def _create_dictionary_grid_snapshots(db, checkpoint_size: int = 2000):
         next_checkpoint += checkpoint_size
 
 
+# ---- dictionary grid: one entry, lexical matching, status ------------------
+EXPECTED_SCHEMA_COLUMNS = (
+    ("search", "dictionary_grid_entries", "grid_columns"),
+    ("search", "dictionary_lexical_tokens", "kind"),
+    ("search", "dictionary_letter_index", "kind"),
+    ("crawler", "website_tokens", "kind"),
+    ("crawler", "website_characters", "kind"),
+)
+# The boot-time seeder keeps this up to date; /api/search/status reports it.
+SEEDER_STATE = {"enabled": None, "running": False, "last_batch_at": None,
+                "last_error": None, "languages": {}}
+
+
+async def _upsert_dictionary_entry(db, lang: str, item):
+    """Place one headword on the GSP grid. Returns (outcome, entry).
+
+    outcome is "inserted", "updated" or "skipped" (entry is None when skipped).
+    Used by the admin batch endpoint and by the boot-time seeder.
+    """
+    if not isinstance(item, dict):
+        return "skipped", None
+
+    word = str(item.get("word") or "").strip()
+    definition = str(item.get("definition") or "").strip()
+    if (
+        not word
+        or not definition
+        or len(word) > 255
+        or len(definition) > 12000
+        or len(word.split()) != 1
+        or not any(ch.isalpha() for ch in word)
+    ):
+        return "skipped", None
+
+    normalized = normalise(word, lang).strip()
+    if not normalized or len(normalized) > 255:
+        return "skipped", None
+
+    marker = query_marker(normalized, lang)
+    chain = marker["uid"]
+    L = marker["L"]
+    S = marker["S"]
+
+    # Main GSP column is the alphabet index; keyboard_column is physical.
+    gsp_column = marker["c"]
+    physical_keyboard_column = keyboard_column_index(normalized, lang)
+
+    placement = gsp_place(L, S, gsp_column, K=5, C=marker["columns"], R=64)
+    primary = placement.get("primary_cell") or {}
+    if "col" not in primary or "row" not in primary:
+        return "skipped", None
+
+    result = await db.execute(
+        select(DictionaryGridEntry).where(
+            DictionaryGridEntry.language == lang,
+            DictionaryGridEntry.normalized_word == normalized,
+        ).limit(1)
+    )
+    entry = result.scalar_one_or_none()
+    now = datetime.utcnow()
+
+    values = {
+        "word": word,
+        "normalized_word": normalized,
+        "language": lang,
+        "definition": definition,
+        "phonetic": str(item.get("phonetic") or "")[:255],
+        "part_of_speech": str(item.get("part_of_speech") or "")[:100],
+        "source": str(item.get("source") or "LOMINII Lexicon")[:255],
+        "source_url": str(item.get("source_url") or "")[:2000] or None,
+        "uid_chain": chain,
+        "L_sum": L,
+        "S_sum": S,
+        "keyboard_column": physical_keyboard_column,
+        "grid_columns": marker["columns"],
+        "primary_cell_col": primary["col"],
+        "primary_cell_row": primary["row"],
+        "replica_cells": [
+            {"col": cell["col"], "row": cell["row"], "k": cell["k"]}
+            for cell in (placement.get("cells") or [])
+        ],
+        "last_seen_at": now,
+    }
+
+    if entry is None:
+        entry = DictionaryGridEntry(**values, indexed_at=now)
+        db.add(entry)
+        outcome = "inserted"
+    else:
+        for key, value in values.items():
+            setattr(entry, key, value)
+        outcome = "updated"
+
+    # The entry needs a database ID before its child indexes are built.
+    await db.flush()
+    return outcome, entry
+
+
+async def _lexical_dictionary_matches(db, norm_query: str, lang: str, limit: int = 5) -> list[dict]:
+    """Entries whose headword or definition contains the words the person typed."""
+    tokens = list(dict.fromkeys(
+        word for word in re.findall(r"[^\W\d_]+", norm_query, flags=re.UNICODE)
+        if len(word) >= 2
+    ))[:6]
+    if not tokens:
+        return []
+    try:
+        hits = (await db.execute(
+            select(DictionaryLexicalToken.dictionary_entry_id, func.count().label("hits"))
+            .where(
+                DictionaryLexicalToken.language == lang,
+                DictionaryLexicalToken.normalized_token.in_(tokens),
+            )
+            .group_by(DictionaryLexicalToken.dictionary_entry_id)
+            .order_by(func.count().desc())
+            .limit(limit * 3)
+        )).all()
+        ids = [row[0] for row in hits]
+        if not ids:
+            return []
+        entries = (await db.execute(
+            select(DictionaryGridEntry).where(DictionaryGridEntry.id.in_(ids))
+        )).scalars().all()
+    except Exception as exc:
+        await db.rollback()
+        print(f"Lexical dictionary matching failed: {exc}")
+        return []
+
+    by_id = {entry.id: entry for entry in entries}
+    matches = []
+    for entry_id, count in hits:
+        entry = by_id.get(entry_id)
+        if entry is None or normalise(entry.word, lang).strip() == norm_query:
+            continue
+        meaning = (entry.definition or "").strip()
+        matches.append({
+            "word": entry.word,
+            "part_of_speech": entry.part_of_speech or "",
+            "definition": meaning[:220] + ("…" if len(meaning) > 220 else ""),
+            "matched": int(count),
+        })
+        if len(matches) >= limit:
+            break
+    return matches
+
+
+@router.get("/status")
+async def search_status(db: AsyncSession = Depends(get_db)):
+    """Counts and on/off flags only (no secrets): why search is or is not working."""
+    report = {
+        "ok": True,
+        "sources": {
+            "web results (SCRAPINGBEE_API_KEY)": bool(SCRAPINGBEE_API_KEY),
+            "news (GNEWS_API_KEY)": bool(GNEWS_API_KEY),
+            "dictionary api (no key needed)": True,
+            "wikipedia (no key needed)": True,
+        },
+        "seeder": SEEDER_STATE,
+    }
+    try:
+        counts = (await db.execute(
+            select(DictionaryGridEntry.language, func.count())
+            .group_by(DictionaryGridEntry.language)
+        )).all()
+        report["dictionary_entries"] = {row[0]: int(row[1]) for row in counts}
+        report["lexical_tokens"] = int((await db.execute(
+            select(func.count()).select_from(DictionaryLexicalToken)
+        )).scalar() or 0)
+        report["crawler_pages"] = int((await db.execute(
+            select(func.count()).select_from(CrawlerPage)
+        )).scalar() or 0)
+        rows = (await db.execute(text(
+            "SELECT table_schema, table_name, column_name FROM information_schema.columns "
+            "WHERE table_schema IN ('search', 'crawler')"
+        ))).all()
+        have = {(row[0], row[1], row[2]) for row in rows}
+        report["schema"] = {
+            f"{schema}.{table}.{column}": (schema, table, column) in have
+            for schema, table, column in EXPECTED_SCHEMA_COLUMNS
+        }
+        report["ok"] = all(report["schema"].values())
+    except Exception as exc:
+        await db.rollback()
+        report["ok"] = False
+        report["error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+    return report
+
+
 @router.post("/dictionary/index")
 async def index_dictionary_batch(
     request: Request,
@@ -989,98 +1179,14 @@ async def index_dictionary_batch(
 
     try:
         for item in entries:
-            if not isinstance(item, dict):
-                skipped += 1
-                continue
-
-            word = str(item.get("word") or "").strip()
-            definition = str(item.get("definition") or "").strip()
-
-            if (
-                not word
-                or not definition
-                or len(word) > 255
-                or len(definition) > 12000
-                or len(word.split()) != 1
-                or not any(ch.isalpha() for ch in word)
-            ):
-                skipped += 1
-                continue
-
-            normalized = normalise(word, lang).strip()
-
-            if not normalized or len(normalized) > 255:
-                skipped += 1
-                continue
-
-            marker = query_marker(normalized, lang)
-            chain = marker["uid"]
-            L = marker["L"]
-            S = marker["S"]
-
-            # Main GSP column is the alphabet index; keyboard_column is physical.
-            gsp_column = marker["c"]
-            physical_keyboard_column = keyboard_column_index(normalized, lang)
-
-            placement = gsp_place(
-                L, S, gsp_column, K=5, C=marker["columns"], R=64
-            )
-            primary = placement.get("primary_cell") or {}
-
-            if "col" not in primary or "row" not in primary:
-                skipped += 1
-                continue
-
-            result = await db.execute(
-                select(DictionaryGridEntry).where(
-                    DictionaryGridEntry.language == lang,
-                    DictionaryGridEntry.normalized_word == normalized,
-                ).limit(1)
-            )
-            entry = result.scalar_one_or_none()
-            now = datetime.utcnow()
-
-            values = {
-                "word": word,
-                "normalized_word": normalized,
-                "language": lang,
-                "definition": definition,
-                "phonetic": str(item.get("phonetic") or "")[:255],
-                "part_of_speech": str(item.get("part_of_speech") or "")[:100],
-                "source": str(item.get("source") or "LOMINII Lexicon")[:255],
-                "source_url": str(item.get("source_url") or "")[:2000] or None,
-                "uid_chain": chain,
-                "L_sum": L,
-                "S_sum": S,
-                "keyboard_column": physical_keyboard_column,
-                "grid_columns": marker["columns"],
-                "primary_cell_col": primary["col"],
-                "primary_cell_row": primary["row"],
-                "replica_cells": [
-                    {
-                        "col": cell["col"],
-                        "row": cell["row"],
-                        "k": cell["k"],
-                    }
-                    for cell in (placement.get("cells") or [])
-                ],
-                "last_seen_at": now,
-            }
-
+            outcome, entry = await _upsert_dictionary_entry(db, lang, item)
             if entry is None:
-                entry = DictionaryGridEntry(
-                    **values,
-                    indexed_at=now,
-                )
-                db.add(entry)
+                skipped += 1
+                continue
+            if outcome == "inserted":
                 inserted += 1
             else:
-                for key, value in values.items():
-                    setattr(entry, key, value)
                 updated += 1
-
-            # Ensure the entry has a database ID before creating child indexes.
-            await db.flush()
             await _rebuild_dictionary_lexical_indexes(db, entry)
             indexed_ids.append(entry.id)
 
@@ -1389,6 +1495,11 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
         if did_you_mean is None and suggestions:
             did_you_mean = suggestions[0]
 
+    # Words and definitions in the lexicon that contain what was typed.
+    dictionary_matches: list[dict] = []
+    if marker["face"] == "L" and not (definition and is_single_dictionary_term):
+        dictionary_matches = await _lexical_dictionary_matches(db, norm_query, lang)
+
     response = {
         "query": query, "L": L, "Lsum": L, "uID": uid_chain, "S": S, "Ssum": S, "c": c,
         "primary_cell_col": primary["col"], "primary_cell_row": primary["row"],
@@ -1397,7 +1508,7 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
         "gsp": gsp, "elastic_cloud": cloud, "elastic_cloud_size": len(cloud),
         "definition": definition, "dictionary": dictionary, "news": news_articles,
         "wikipedia": wiki_articles, "web_results": web_results, "crawler_results": crawler_results,
-        "ai_summary": ai_summary, "did_you_mean": did_you_mean, "suggestions": suggestions,
+        "ai_summary": ai_summary, "did_you_mean": did_you_mean, "suggestions": suggestions, "dictionary_matches": dictionary_matches,
         "related_questions": [],
         "gsg_cell": gsg_data,
         "source_status": {"dictionary": bool(definition), "news": bool(news_articles),
@@ -1415,7 +1526,9 @@ async def unified_search(request: Request, email: str = Depends(get_search_ident
             db.add(SearchCache(cache_key=cache_key, result=stored, cached_at=datetime.utcnow()))
     try:
         await db.commit()
-    except Exception:
+    except Exception as exc:
+        # The results are already computed: failing to save the cache or the
+        # indexes must not turn into "search unavailable".
         await db.rollback()
-        raise
+        print(f"Search persistence failed (results still returned): {type(exc).__name__}: {exc}")
     return response

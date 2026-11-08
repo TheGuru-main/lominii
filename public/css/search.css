@@ -437,3 +437,21 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Dictionary matches */
+.source-item .dict-match {
+  background: var(--soft-surface);
+  border: 1px solid var(--glass-hi);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 0.15rem 0.8rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.source-item .dict-match:hover,
+.source-item .dict-match:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}

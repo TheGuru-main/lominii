@@ -110,6 +110,11 @@ async def startup():
             await connection.execute(text(migration_sql))
 
     asyncio.create_task(_ensure_search_indexes())
+    try:
+        from apps.lominii.search.seeder import run_dictionary_seeder
+        asyncio.create_task(run_dictionary_seeder())
+    except Exception as exc:
+        print(f"Dictionary seeder not started: {exc}")
     asyncio.create_task(start_webhook_proxy_loop())
 
 
