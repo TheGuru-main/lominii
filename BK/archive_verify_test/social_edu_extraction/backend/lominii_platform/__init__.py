@@ -1,1 +1,0 @@
-"""LOMINII shared platform services."""
