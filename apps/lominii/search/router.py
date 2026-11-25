@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import case, or_, select, text, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
-from lominii_platform import ingest
+from lominii_platform import ingest, gridcrawler, gridcrawler
 from lominii_platform.gsp import (calculate_lsum, calculate_ssum, calculate_uid_chain,
     elastic_cloud, first_letter_index, keyboard_column_index, gsp_place, normalise,
     place_text, query_marker)
@@ -370,143 +370,322 @@ async def _rebuild_website_lexical_index(
     await ingest.rebuild_index(db, url_hash, title, content, language)
 
 
-async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> list[dict]:
-    """Retrieve crawler pages using indexed lexical tokens, then fallback."""
+async def _crawler_lookup(
+    db: AsyncSession,
+    query: str,
+    lang: str = "en",
+) -> list[dict]:
+    """
+    Retrieve crawler pages through exact lexical matches and GSP traversal.
+
+    Exact matching:
+        normalized query tokens -> indexed website tokens
+
+    Word traversal:
+        query word -> 250 crawler GSP cells -> indexed word cells
+
+    Text traversal:
+        complete query -> 250 crawler GSP cells -> page text cells
+
+    GridCrawler traverses; it does not place or store.
+    """
+    language = (lang or "en").lower().split("-", 1)[0]
+
     tokens = list(dict.fromkeys(
-        token for token in re.findall(r"[^\W_]+", query.lower(), flags=re.UNICODE)
-        if len(token) >= 2 or word_kind(token, lang or "en") == "N"
+        token
+        for token in re.findall(
+            r"[^\W_]+",
+            query.lower(),
+            flags=re.UNICODE,
+        )
+        if len(token) >= 2 or word_kind(token, language) == "N"
     ))[:10]
 
     if not tokens:
         return []
 
     try:
-        # First pass: exact normalized-token matches in fetched website text.
         normalized_tokens = []
+
         for token in tokens:
             try:
-                normalized_tokens.append(normalise(token, lang or "en").strip().lower())
+                normalized = normalise(token, language).strip().lower()
             except Exception:
-                normalized_tokens.append(token)
+                normalized = token
 
-        normalized_tokens = list(dict.fromkeys(t for t in normalized_tokens if t))
+            if normalized:
+                normalized_tokens.append(normalized)
 
-        matched = []
-        if normalized_tokens:
-            token_statement = (
+        normalized_tokens = list(dict.fromkeys(normalized_tokens))
+
+        if not normalized_tokens:
+            return []
+
+        # ---------------------------------------------------------
+        # 1. Exact lexical matching
+        # ---------------------------------------------------------
+        exact_rows = (
+            await db.execute(
                 select(
                     CrawlerWebsiteToken.url_hash,
                     func.count(
-                        func.distinct(CrawlerWebsiteToken.normalized_token)
+                        func.distinct(
+                            CrawlerWebsiteToken.normalized_token
+                        )
                     ).label("matched_tokens"),
                 )
                 .where(
-                    CrawlerWebsiteToken.normalized_token.in_(normalized_tokens)
+                    CrawlerWebsiteToken.language == language,
+                    CrawlerWebsiteToken.normalized_token.in_(
+                        normalized_tokens
+                    ),
                 )
                 .group_by(CrawlerWebsiteToken.url_hash)
-                .order_by(func.count(
-                    func.distinct(CrawlerWebsiteToken.normalized_token)
-                ).desc())
-                .limit(30)
+                .order_by(
+                    func.count(
+                        func.distinct(
+                            CrawlerWebsiteToken.normalized_token
+                        )
+                    ).desc()
+                )
+                .limit(40)
             )
-            matched = (await db.execute(token_statement)).all()
+        ).all()
 
-        results = []
-        if matched:
-            scores = {row.url_hash: int(row.matched_tokens or 0) for row in matched}
+        exact_scores = {
+            row.url_hash: int(row.matched_tokens or 0)
+            for row in exact_rows
+        }
+
+        # ---------------------------------------------------------
+        # 2. Word-level GridCrawler traversal
+        # ---------------------------------------------------------
+        word_cells = []
+
+        for token in normalized_tokens[:8]:
+            try:
+                word_cells.extend(
+                    gridcrawler.walk(
+                        token,
+                        language,
+                        entry="word",
+                    )
+                )
+            except Exception as exc:
+                print(f"GridCrawler word traversal failed: {exc}")
+
+        word_cells = list(dict.fromkeys(word_cells))
+
+        grid_rows = []
+
+        if word_cells:
+            grid_rows = (
+                await db.execute(
+                    select(
+                        CrawlerWebsiteToken.url_hash,
+                        func.count(
+                            func.distinct(
+                                CrawlerWebsiteToken.normalized_token
+                            )
+                        ).label("grid_matches"),
+                    )
+                    .where(
+                        CrawlerWebsiteToken.language == language,
+                        CrawlerWebsiteToken.gsp_cell.in_(word_cells),
+                    )
+                    .group_by(CrawlerWebsiteToken.url_hash)
+                    .order_by(
+                        func.count(
+                            func.distinct(
+                                CrawlerWebsiteToken.normalized_token
+                            )
+                        ).desc()
+                    )
+                    .limit(50)
+                )
+            ).all()
+
+        grid_scores = {
+            row.url_hash: int(row.grid_matches or 0)
+            for row in grid_rows
+        }
+
+        # ---------------------------------------------------------
+        # 3. Full-query text traversal
+        # ---------------------------------------------------------
+        text_cells = []
+
+        try:
+            text_cells = gridcrawler.walk(
+                normalise(query, language),
+                language,
+                entry="text",
+            )
+        except Exception as exc:
+            print(f"GridCrawler text traversal failed: {exc}")
+
+        text_cell_query = None
+
+        if text_cells:
+            # Only compare pages that have indexed content in this language.
+            language_pages = (
+                select(CrawlerWebsiteToken.url_hash)
+                .where(CrawlerWebsiteToken.language == language)
+                .distinct()
+            )
+
+            text_cell_query = (
+                select(CrawlerPage.url_hash)
+                .where(
+                    CrawlerPage.gsp_cell.in_(text_cells),
+                    CrawlerPage.url_hash.in_(language_pages),
+                )
+                .limit(50)
+            )
+
+        text_page_hashes = set()
+
+        if text_cell_query is not None:
+            text_page_hashes = set(
+                (await db.execute(text_cell_query)).scalars().all()
+            )
+
+        # ---------------------------------------------------------
+        # 4. Combine candidate pages
+        # ---------------------------------------------------------
+        candidate_hashes = list(dict.fromkeys(
+            list(exact_scores)
+            + list(grid_scores)
+            + list(text_page_hashes)
+        ))
+
+        pages = []
+
+        if candidate_hashes:
             pages = (
                 await db.execute(
                     select(CrawlerPage).where(
-                        CrawlerPage.url_hash.in_(list(scores.keys()))
+                        CrawlerPage.url_hash.in_(candidate_hashes)
                     )
                 )
             ).scalars().all()
 
-            # GSP-aware ranking: cell agreement is a relevance signal,
-            # not a hard filter that can hide otherwise relevant pages.
-            query_cell = None
-            try:
-                normalized_query = normalise(query, lang or "en")
-                resolved = place_text(normalized_query, lang or "en", K=5)
-                primary = resolved.get("primary_cell") or {}
-                if "col" in primary and "row" in primary:
-                    query_cell = _cell_key(resolved)
-            except Exception as exc:
-                print(f"GSP query resolution unavailable: {exc}")
+        query_lower = query.casefold()
+        query_phrase = " ".join(query_lower.split())
+        query_terms = set(normalized_tokens)
+        text_cell_set = set(text_cells)
 
-            query_lower = query.casefold()
-            query_terms = set(normalized_tokens)
-            query_phrase = " ".join(query_lower.split())
+        def page_relevance(page):
+            title = (page.title or "").casefold()
+            content = (page.content or "").casefold()
 
-            def page_relevance(page):
-                title = (page.title or "").casefold()
-                content = (page.content or "").casefold()
-                page_cell = (page.gsp_cell or "").strip()
+            phrase_title = int(
+                bool(query_phrase and query_phrase in title)
+            )
 
-                title_hits = sum(
-                    1 for term in query_terms if term and term in title
-                )
-                phrase_title = int(
-                    bool(query_phrase and query_phrase in title)
-                )
-                phrase_body = int(
-                    bool(query_phrase and query_phrase in content)
-                )
-                gsp_match = int(
-                    bool(query_cell and page_cell == query_cell)
-                )
+            phrase_body = int(
+                bool(query_phrase and query_phrase in content)
+            )
 
-                return (
-                    phrase_title,
-                    gsp_match,
-                    scores.get(page.url_hash, 0),
-                    title_hits,
-                    phrase_body,
-                    float(page.pagerank or 0.0),
-                    page.last_crawled.timestamp()
-                    if page.last_crawled else 0.0,
-                )
+            title_hits = sum(
+                1 for term in query_terms
+                if term and term in title
+            )
 
-            pages.sort(key=page_relevance, reverse=True)
+            text_grid_match = int(
+                bool(page.gsp_cell and page.gsp_cell in text_cell_set)
+            )
 
-            for page in pages[:8]:
-                results.append({
-                    "title": page.title or page.url,
-                    "url": page.url,
-                    "snippet": _snippet(page.content, query),
-                    "pagerank": float(page.pagerank or 0.0),
-                    "source": "LOMINII crawler",
-                })
+            exact_hits = exact_scores.get(page.url_hash, 0)
+            grid_hits = grid_scores.get(page.url_hash, 0)
+
+            return (
+                phrase_title,
+                exact_hits,
+                grid_hits,
+                text_grid_match,
+                title_hits,
+                phrase_body,
+                float(page.pagerank or 0.0),
+                page.last_crawled.timestamp()
+                if page.last_crawled else 0.0,
+            )
+
+        pages.sort(key=page_relevance, reverse=True)
+
+        results = []
+
+        for page in pages[:12]:
+            exact_hits = exact_scores.get(page.url_hash, 0)
+            grid_hits = grid_scores.get(page.url_hash, 0)
+            text_match = bool(
+                page.gsp_cell and page.gsp_cell in text_cell_set
+            )
+
+            if exact_hits and grid_hits:
+                match_type = "exact+grid"
+            elif exact_hits:
+                match_type = "exact"
+            elif grid_hits:
+                match_type = "grid traversal"
+            else:
+                match_type = "text traversal"
+
+            results.append({
+                "title": page.title or page.url,
+                "url": page.url,
+                "snippet": _snippet(page.content, query),
+                "pagerank": float(page.pagerank or 0.0),
+                "source": (
+                    "LOMINII GridCrawler"
+                    if grid_hits or text_match
+                    else "LOMINII crawler"
+                ),
+                "match_type": match_type,
+                "exact_matches": exact_hits,
+                "grid_matches": grid_hits,
+                "text_grid_match": text_match,
+            })
 
         if results:
             return results
 
-        # Compatibility fallback for older pages not yet lexically indexed.
+        # ---------------------------------------------------------
+        # 5. Compatibility fallback for older, unindexed pages
+        # ---------------------------------------------------------
         conditions = []
+
         for token in tokens[:6]:
             pattern = f"%{token}%"
             conditions.append(CrawlerPage.title.ilike(pattern))
-            # Trigram indexes cover 3+ characters; shorter tokens would scan every page.
+
             if len(token) >= 3:
                 conditions.append(CrawlerPage.content.ilike(pattern))
+
+        if not conditions:
+            return []
 
         statement = (
             select(CrawlerPage)
             .where(or_(*conditions))
             .order_by(
-                case(
-                    (CrawlerPage.title.ilike(f"%{_like_escape(query)}%", escape="\\"), 0),
-                    else_=1,
-                ),
                 CrawlerPage.pagerank.desc(),
                 CrawlerPage.last_crawled.desc(),
             )
             .limit(8)
         )
-        # Never let the fallback scan run away; restore the default afterwards.
-        await db.execute(text("SET LOCAL statement_timeout = 2500"))
-        rows = (await db.execute(statement)).scalars().all()
-        await db.execute(text("SET LOCAL statement_timeout = DEFAULT"))
+
+        await db.execute(
+            text("SET LOCAL statement_timeout = 2500")
+        )
+
+        rows = (
+            await db.execute(statement)
+        ).scalars().all()
+
+        await db.execute(
+            text("SET LOCAL statement_timeout = DEFAULT")
+        )
 
         return [{
             "title": row.title or row.url,
@@ -514,11 +693,12 @@ async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> lis
             "snippet": _snippet(row.content, query),
             "pagerank": float(row.pagerank or 0.0),
             "source": "LOMINII crawler",
+            "match_type": "legacy fallback",
         } for row in rows]
 
     except Exception as exc:
         await db.rollback()
-        print(f"Crawler lexical lookup failed: {exc}")
+        print(f"Crawler GridCrawler retrieval failed: {exc}")
         return []
 
 async def _stored_news_lookup(db: AsyncSession, query: str, domain: str, intent: str) -> list[dict]:
