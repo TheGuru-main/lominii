@@ -37,6 +37,10 @@ class CrawlerPage(Base):
 
     last_crawled = Column(DateTime, server_default="now()")
 
+    # Media (video) pages keep their full crawled payload here.
+    payload = Column(JSONB)
+    media_type = Column(String(16))
+
 # ===========================================================================
 # WEBSITE LEXICAL INDEX
 # Indexes words and character positions extracted from resolved web pages.
@@ -82,6 +86,9 @@ class CrawlerWebsiteToken(Base):
     # L letters only, N digits only, M mixed.
     kind = Column(String(1), nullable=False, default="L", server_default="L")
 
+    # Primary crawler GSP cell ("col,row"); replicas are computed, never stored.
+    gsp_cell = Column(String(12))
+
 
 class CrawlerWebsiteCharacter(Base):
     __tablename__ = "website_characters"
@@ -110,6 +117,9 @@ class CrawlerWebsiteCharacter(Base):
 
     # L letter of the alphabet, N number, F foreign letter.
     kind = Column(String(1), nullable=False, default="L", server_default="L")
+
+    # Its 0-based alphabet index is the one fixed token id of a letter (no GSP math).
+    token_id = Column(SmallInteger)
 
     # Position within the normalized token.
     character_position = Column(Integer, nullable=False)

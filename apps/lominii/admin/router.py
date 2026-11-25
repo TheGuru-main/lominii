@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 
+from lominii_platform import ingest
 from lominii_platform.auth import get_current_user
 from lominii_platform.crawler import (
     CRAWLER_ENABLED,
@@ -96,13 +97,16 @@ async def _save_page(metadata, title, content, outgoing):
             session.add(page)
 
         page.url = metadata["url"]
-        page.gsp_cell = metadata["cell_key"][:10]
+        lang = ingest.detect_lang(content)
+        page.gsp_cell = ingest.page_cell(content, lang)
         page.title = title
         page.content = content
         page.out_links = outgoing
         page.pagerank = 0.0
         page.last_crawled = datetime.utcnow()
 
+        await session.commit()
+        await ingest.rebuild_index(session, metadata["hash"], title, content, lang)
         await session.commit()
 
 

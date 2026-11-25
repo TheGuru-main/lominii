@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import case, or_, select, text, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
+from lominii_platform import ingest
 from lominii_platform.gsp import (calculate_lsum, calculate_ssum, calculate_uid_chain,
     elastic_cloud, first_letter_index, keyboard_column_index, gsp_place, normalise,
     place_text, query_marker)
@@ -358,49 +359,6 @@ def _snippet(content: str | None, query: str, limit: int = 260) -> str:
 
 
 
-def _website_token_records(url_hash: str, text: str, language: str, section: str):
-    """Extract normalized token occurrences and their character positions."""
-    records = []
-    character_records = []
-
-    for position, match in enumerate(
-        re.finditer(r"[^\W_]+(?:['’\-][^\W_]+)*", text or "", flags=re.UNICODE)
-    ):
-        original = match.group(0)
-        normalized = normalise(original, language).strip().lower()
-
-        if not normalized or len(normalized) > 255:
-            continue
-
-        records.append({
-            "url_hash": url_hash,
-            "normalized_token": normalized,
-            "original_token": original,
-            "language": (language or "en")[:16],
-            "section": section,
-            "token_position": position,
-            "char_start": match.start(),
-            "kind": word_kind(normalized, language or "en"),
-        })
-
-        # One row per tokenizer unit: a digraph letter ("gb", "sh") is one row,
-        # digits are marked N so they are never read as letters, and letters
-        # outside the alphabet are marked F instead of being dropped.
-        for char_position, unit in enumerate(tokenize(normalized, language or "en")):
-            character_records.append({
-                "url_hash": url_hash,
-                "character": unit.value[:8],
-                "kind": unit.kind,
-                "character_position": char_position,
-                "normalized_token": normalized,
-                "language": (language or "en")[:16],
-                "section": section,
-                "token_position": position,
-            })
-
-    return records, character_records
-
-
 async def _rebuild_website_lexical_index(
     db: AsyncSession,
     url_hash: str,
@@ -408,43 +366,8 @@ async def _rebuild_website_lexical_index(
     content: str,
     language: str,
 ) -> None:
-    """Replace lexical records for one fetched page."""
-    await db.execute(
-        delete(CrawlerWebsiteToken).where(
-            CrawlerWebsiteToken.url_hash == url_hash
-        )
-    )
-    await db.execute(
-        delete(CrawlerWebsiteCharacter).where(
-            CrawlerWebsiteCharacter.url_hash == url_hash
-        )
-    )
-
-    token_rows = []
-    character_rows = []
-
-    for section, text in (
-        ("title", title or ""),
-        ("body", content or ""),
-    ):
-        tokens, characters = _website_token_records(
-            url_hash, text, language or "en", section
-        )
-        token_rows.extend(tokens)
-        character_rows.extend(characters)
-
-    # Bound per-page indexing work to avoid pathological page payloads.
-    token_rows = token_rows[:50000]
-    character_rows = character_rows[:250000]
-
-    if token_rows:
-        await db.execute(CrawlerWebsiteToken.__table__.insert(), token_rows)
-
-    if character_rows:
-        await db.execute(
-            CrawlerWebsiteCharacter.__table__.insert(),
-            character_rows,
-        )
+    """Replace lexical records for one fetched page (shared ingest module)."""
+    await ingest.rebuild_index(db, url_hash, title, content, language)
 
 
 async def _crawler_lookup(db: AsyncSession, query: str, lang: str = 'en') -> list[dict]:
@@ -737,7 +660,7 @@ async def _fetch_and_index_web_results(
 
             now = datetime.utcnow()
             title = page["title"]
-            cell = _cell_key(place_text(normalise(title, lang), lang, K=5))
+            cell = ingest.page_cell(page["content"], lang)
 
             if existing:
                 existing.title = title

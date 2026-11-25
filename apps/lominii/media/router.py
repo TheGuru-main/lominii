@@ -10,8 +10,12 @@ from datetime import datetime, timezone
 from urllib.parse import quote_plus, urlparse
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from lominii_platform import ingest
+from lominii_platform.database import get_db
 
 router = APIRouter(
     prefix="/api/media/scrapingbee",
@@ -163,66 +167,54 @@ def decode_json_string(value: str) -> str:
         return html.unescape(value).strip()
 
 
+def _field(chunk: str, key: str) -> str:
+    """First text value that follows a YouTube renderer key (best effort)."""
+    pos = chunk.find('"' + key + '"')
+    if pos < 0:
+        return ""
+    found = re.search(
+        r'"(?:simpleText|text)"\s*:\s*"((?:\\.|[^"\\])*)"',
+        chunk[pos:pos + 600],
+    )
+    return decode_json_string(found.group(1)) if found else ""
+
+
 def extract_suggestions(page: str, limit: int = 8) -> list:
-    """Extract accessible video titles and links from YouTube search HTML."""
+    """Extract video results with their full payload from YouTube search HTML."""
     results = []
     seen = set()
-
-    starts = list(
-        re.finditer(r'"videoRenderer"\s*:\s*\{', page)
-    )
-
+    starts = list(re.finditer(r'"videoRenderer"\s*:\s*\{', page))
     for index, match in enumerate(starts):
-        end = (
-            starts[index + 1].start()
-            if index + 1 < len(starts)
-            else match.end() + 12000
-        )
+        end = starts[index + 1].start() if index + 1 < len(starts) else match.end() + 12000
         chunk = page[match.end():min(end, match.end() + 12000)]
-
-        video_id = re.search(
-            r'"videoId"\s*:\s*"([A-Za-z0-9_-]{11})"',
-            chunk,
-        )
-        title_match = re.search(
-            r'"title"\s*:\s*\{\s*"runs"\s*:\s*'
-            r'\[\s*\{\s*"text"\s*:\s*"((?:\\.|[^"\\])*)"',
-            chunk,
-        )
-
-        if not video_id or not title_match:
+        video_id = re.search(r'"videoId"\s*:\s*"([A-Za-z0-9_-]{11})"', chunk)
+        title = _field(chunk, "title")
+        if not video_id or not title:
             continue
-
         vid = video_id.group(1)
-        title = decode_json_string(title_match.group(1))
-
-        if not title or vid in seen:
+        if vid in seen:
             continue
-
         seen.add(vid)
-
         thumbnail = re.search(
-            r'"thumbnails"\s*:\s*\[\s*\{\s*"url"\s*:\s*"([^"]+)"',
-            chunk,
+            r'"thumbnails"\s*:\s*\[\s*\{\s*"url"\s*:\s*"([^"]+)"', chunk
         )
-
         item = {
             "title": title,
             "url": f"https://www.youtube.com/watch?v={vid}",
             "platform": "YouTube",
             "provider": "scrapingbee",
+            "video_id": vid,
+            "channel": _field(chunk, "ownerText"),
+            "duration": _field(chunk, "lengthText"),
+            "views": _field(chunk, "viewCountText"),
+            "published": _field(chunk, "publishedTimeText"),
+            "description": _field(chunk, "descriptionSnippet"),
         }
-
         if thumbnail:
-            item["thumbnail"] = decode_json_string(
-                thumbnail.group(1)
-            )
-
-        results.append(item)
-
+            item["thumbnail"] = decode_json_string(thumbnail.group(1))
+        results.append({k: v for k, v in item.items() if v})
         if len(results) >= limit:
             break
-
     return results
 
 
@@ -287,29 +279,90 @@ def extract_metadata(page: str, source_url: str) -> dict:
     }
 
 
+PLATFORM_NAMES = {
+    "youtube.com": "YouTube", "youtu.be": "YouTube", "vimeo.com": "Vimeo",
+    "tiktok.com": "TikTok", "dailymotion.com": "Dailymotion", "twitch.tv": "Twitch",
+}
+VIDEO_LINK_RE = re.compile(
+    r"^(?:https?://)?(?:[\w-]+\.)*(?:"
+    + "|".join(re.escape(h) for h in VIDEO_HOSTS)
+    + r")[/?#]\S+$",
+    re.I,
+)
+
+
+def platform_of(url: str) -> str:
+    host = (urlparse(url).hostname or "").lower()
+    for domain, name in PLATFORM_NAMES.items():
+        if host == domain or host.endswith("." + domain):
+            return name
+    return "Video"
+
+
+def http_match(query: str):
+    """The https video URL when the query is itself a supported video link."""
+    q = query.strip()
+    if not VIDEO_LINK_RE.match(q):
+        return None
+    if not re.match(r"https?://", q, re.I):
+        q = "https://" + q
+    elif q[:5].lower() == "http:":
+        q = "https:" + q[5:]
+    try:
+        return validate_video_url(q)
+    except HTTPException:
+        return None
+
+
+async def persist_videos(db: AsyncSession, items: list) -> None:
+    """Index each video in the crawler index and keep its full payload."""
+    for item in items:
+        try:
+            body = " ".join(
+                str(item[key]) for key in ("title", "description", "channel")
+                if item.get(key)
+            )
+            await ingest.ingest_page(
+                db, item["url"], item.get("title") or item["url"], body,
+                payload=item, media_type="video",
+            )
+            await db.commit()
+        except Exception as exc:
+            await db.rollback()
+            print(f"Video index failed: {type(exc).__name__}: {exc}")
+
+
 @router.get("/suggestions")
 async def video_suggestions(
     request: Request,
-    q: str = Query(min_length=1, max_length=120),
+    q: str = Query(min_length=1, max_length=2048),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Discover public YouTube results through ScrapingBee."""
+    """Video suggestions: an http match for a video link, else a word search."""
     check_rate_limit(request)
-
     query = q.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Enter a search term.")
 
-    search_url = (
-        "https://www.youtube.com/results?search_query="
-        + quote_plus(query)
-    )
+    link = http_match(query)
+    if link:
+        meta = extract_metadata(await scrape_page(link), link)
+        suggestions = []
+        if meta["title"]:
+            suggestions.append({**meta, "platform": platform_of(link), "match": "http"})
+    else:
+        if len(query) > 120:
+            raise HTTPException(status_code=400, detail="Search term too long.")
+        page = await scrape_page(
+            "https://www.youtube.com/results?search_query=" + quote_plus(query)
+        )
+        suggestions = [{**item, "match": "word"} for item in extract_suggestions(page)]
 
-    page = await scrape_page(search_url)
-    suggestions = extract_suggestions(page)
-
+    await persist_videos(db, suggestions)
     return {
         "query": query,
         "provider": "scrapingbee",
+        "match": "http" if link else "word",
         "suggestions": suggestions,
         "count": len(suggestions),
     }

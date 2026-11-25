@@ -92,25 +92,40 @@ class GSGPlacement(PlacementSource):
         return self._nsid
 
 
-class CrawlerPlacement(PlacementSource):
-    """Placement for a crawled web page."""
+CRAWLER_K = 250
+CRAWLER_D = 8
+CRAWLER_PHASES = ("word", "text")
 
-    def __init__(self, url: str):
-        self.url = url
-        self._K = 27
-        self._D = 27
+
+class CrawlerPlacement(PlacementSource):
+    """Crawler placement inputs, separate from user placement.
+
+    Only words and full text are calculated and placed.
+    L = word length (word) or text length (text, spaces excluded).
+    S = sum of the 0-based letter-index chain, c = its first index.
+    Letters are never calculated: a letter is only its 0-based index marker.
+    Pass normalised text, as for every other GSP placement.
+    """
+
+    def __init__(self, text: str, lang: str = "en", phase: str = "word"):
+        if phase not in CRAWLER_PHASES:
+            raise ValueError("phase must be word or text")
+        self.text = text
+        self.lang = lang
+        self.phase = phase
+        self._K = CRAWLER_K
+        self._D = CRAWLER_D
 
     def identity_inputs(self) -> dict:
-        return {"url": self.url}
+        return {"text": self.text, "language": self.lang, "phase": self.phase}
 
     def parameters(self) -> dict:
-        from urllib.parse import urlparse
-        domain = urlparse(self.url).netloc
-        first_letter = domain[0].lower() if domain else 'a'
-        c = ord(first_letter) - 97 if 'a' <= first_letter <= 'z' else 0
-        L = len(self.url)
-        S = int(hashlib.sha256(self.url.encode()).hexdigest()[:8], 16) % 1_000_000
-        return {"L": L, "S": S, "c": c, "C": 26, "K": self._K, "D": self._D}
+        marker = query_marker(self.text, self.lang)
+        chain = list(marker["uid"] or marker["numbers"])
+        length = len("".join(self.text.split())) if self.phase == "text" else len(chain)
+        return {"L": length, "S": sum(chain), "c": chain[0] if chain else 0,
+                "C": marker["columns"], "K": self._K, "D": self._D,
+                "face": marker["face"]}
 
     def namespace_id(self) -> int:
         return NSID.CRAWLER

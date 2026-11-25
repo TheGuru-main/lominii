@@ -102,6 +102,11 @@ async def startup():
             "ALTER TABLE IF EXISTS crawler.website_tokens ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
             "ALTER TABLE IF EXISTS crawler.website_characters ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
             "ALTER TABLE IF EXISTS crawler.website_characters ALTER COLUMN character TYPE VARCHAR(8)",
+            "ALTER TABLE IF EXISTS crawler.website_tokens ADD COLUMN IF NOT EXISTS gsp_cell VARCHAR(12)",
+            "ALTER TABLE IF EXISTS crawler.website_characters DROP COLUMN IF EXISTS gsp_cell",
+            "ALTER TABLE IF EXISTS crawler.pages ADD COLUMN IF NOT EXISTS payload JSONB",
+            "ALTER TABLE IF EXISTS crawler.pages ADD COLUMN IF NOT EXISTS media_type VARCHAR(16)",
+            "ALTER TABLE IF EXISTS crawler.website_characters ADD COLUMN IF NOT EXISTS token_id SMALLINT",
             "ALTER TABLE IF EXISTS search.dictionary_lexical_tokens ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
             "ALTER TABLE IF EXISTS search.dictionary_letter_index ADD COLUMN IF NOT EXISTS kind VARCHAR(1) NOT NULL DEFAULT 'L'",
             "ALTER TABLE IF EXISTS search.dictionary_grid_entries ADD COLUMN IF NOT EXISTS grid_columns SMALLINT",
@@ -130,6 +135,12 @@ async def _ensure_search_indexes():
         "ON crawler.pages USING gin (title gin_trgm_ops)",
         "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_crawler_pages_content_trgm "
         "ON crawler.pages USING gin (content gin_trgm_ops)",
+        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_crawler_pages_media_type "
+        "ON crawler.pages (media_type) WHERE media_type IS NOT NULL",
+        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_crawler_website_characters_token_id "
+        "ON crawler.website_characters (language, kind, token_id)",
+        "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_crawler_website_tokens_cell "
+        "ON crawler.website_tokens (gsp_cell)",
     ]
     try:
         async with engine.connect() as connection:
