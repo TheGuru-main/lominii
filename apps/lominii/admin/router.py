@@ -7,7 +7,7 @@ from html.parser import HTMLParser
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from lominii_platform import ingest
 from lominii_platform.auth import get_current_user
@@ -21,7 +21,11 @@ from lominii_platform.crawler import (
     normalize_url,
 )
 from lominii_platform.database import async_session
-from lominii_platform.models.crawler import CrawlerPage
+from lominii_platform.models.crawler import (
+    CrawlerPage,
+    CrawlerWebsiteToken,
+    CrawlerWebsiteCharacter,
+)
 from lominii_platform.pagerank import compute_pagerank
 
 router = APIRouter(prefix="/api/admin/crawler", tags=["Admin"])
@@ -261,7 +265,35 @@ async def start_crawler(
 async def crawler_status(
     email: str = Depends(get_current_user),
 ):
+    async with async_session() as session:
+        pages_total = await session.scalar(
+            select(func.count()).select_from(CrawlerPage)
+        ) or 0
+
+        indexed_pages = await session.scalar(
+            select(func.count(func.distinct(CrawlerWebsiteToken.url_hash)))
+        ) or 0
+
+        token_rows = await session.scalar(
+            select(func.count()).select_from(CrawlerWebsiteToken)
+        ) or 0
+
+        character_rows = await session.scalar(
+            select(func.count()).select_from(CrawlerWebsiteCharacter)
+        ) or 0
+
+    grid_ready = indexed_pages > 0 and token_rows > 0
+
     return {
         "enabled": CRAWLER_ENABLED,
+        "grid_ready": grid_ready,
+        "seed_required": not grid_ready,
+        "index": {
+            "pages_total": int(pages_total),
+            "indexed_pages": int(indexed_pages),
+            "unindexed_pages": max(0, int(pages_total) - int(indexed_pages)),
+            "token_rows": int(token_rows),
+            "character_rows": int(character_rows),
+        },
         **_state,
     }

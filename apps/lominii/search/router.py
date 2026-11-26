@@ -405,6 +405,14 @@ async def _crawler_lookup(
         return []
 
     try:
+        # GridCrawler must not perform matching against an unseeded grid.
+        indexed_pages = await db.scalar(
+            select(func.count(func.distinct(CrawlerWebsiteToken.url_hash)))
+        ) or 0
+
+        if indexed_pages < 1:
+            return []
+
         normalized_tokens = []
 
         for token in tokens:
