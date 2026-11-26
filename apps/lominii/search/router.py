@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import case, or_, select, text, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
-from lominii_platform import ingest, gridcrawler, gridcrawler
+from lominii_platform import ingest, gridcrawler, semantic
 from lominii_platform.gsp import (calculate_lsum, calculate_ssum, calculate_uid_chain,
     elastic_cloud, first_letter_index, keyboard_column_index, gsp_place, normalise,
     place_text, query_marker)
@@ -582,10 +582,19 @@ async def _crawler_lookup(
         query_phrase = " ".join(query_lower.split())
         query_terms = set(normalized_tokens)
         text_cell_set = set(text_cells)
+        semantic_scores = {}
 
         def page_relevance(page):
             title = (page.title or "").casefold()
             content = (page.content or "").casefold()
+
+            semantic_signal = semantic.relevance(
+                query=query,
+                title=page.title or "",
+                content=page.content or "",
+                language=language,
+            )
+            semantic_scores[page.url_hash] = semantic_signal
 
             phrase_title = int(
                 bool(query_phrase and query_phrase in title)
@@ -614,6 +623,7 @@ async def _crawler_lookup(
                 text_grid_match,
                 title_hits,
                 phrase_body,
+                semantic_signal["score"],
                 float(page.pagerank or 0.0),
                 page.last_crawled.timestamp()
                 if page.last_crawled else 0.0,
@@ -639,11 +649,25 @@ async def _crawler_lookup(
             else:
                 match_type = "text traversal"
 
+            semantic_signal = semantic_scores.get(
+                page.url_hash,
+                semantic.relevance(
+                    query=query,
+                    title=page.title or "",
+                    content=page.content or "",
+                    language=language,
+                ),
+            )
+
             results.append({
                 "title": page.title or page.url,
                 "url": page.url,
                 "snippet": _snippet(page.content, query),
                 "pagerank": float(page.pagerank or 0.0),
+                "semantic_score": semantic_signal["score"],
+                "semantic_body_score": semantic_signal["body_score"],
+                "semantic_title_score": semantic_signal["title_score"],
+                "semantic_matched_terms": semantic_signal["matched_terms"],
                 "source": (
                     "LOMINII GridCrawler"
                     if grid_hits or text_match
